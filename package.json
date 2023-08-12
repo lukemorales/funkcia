@@ -1,0 +1,56 @@
+{
+  "name": "funkcia",
+  "version": "1.0.0",
+  "description": "",
+  "author": "",
+  "keywords": [],
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "typings": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "default": "./dist/index.mjs",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "module": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "prettier": "@lukemorales/prettier-config",
+  "eslintConfig": {
+    "extends": [
+      "lukemorales",
+      "lukemorales/oss"
+    ]
+  },
+  "scripts": {
+    "build": "run-p build:*",
+    "build:tsup": "tsup --dts --minify",
+    "changeset": "changeset",
+    "clean": "rimraf dist",
+    "dev": "pnpm run test:coverage --ui",
+    "lint": "run-p lint:*",
+    "lint:eslint": "eslint src --ext .ts",
+    "lint:eslint:fix": "pnpm run lint:eslint --fix",
+    "lint:format": "prettier --check ./src",
+    "lint:format:fix": "prettier --write ./src",
+    "lint:tsc": "tsc --project tsconfig.json --noEmit",
+    "prerelease": "run-p build test:ci",
+    "release": "changeset publish",
+    "test": "vitest --passWithNoTests",
+    "test:ci": "pnpm run test:coverage --run",
+    "test:coverage": "pnpm run test --coverage"
+  },
+  "devDependencies": {
+    "@lukemorales/prettier-config": "^1.0.0",
+    "eslint-config-lukemorales": "^0.2.4",
+    "npm-run-all": "^4.1.5",
+    "tsup": "^7.1.0",
+    "typescript": "4"
+  }
+}
