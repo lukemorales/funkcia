@@ -1,15 +1,11 @@
-import { none, some } from './_internals/option';
+import { none } from './_internals/option';
+import { someOption } from './_internals/testing';
 import * as N from './number';
 import * as O from './option';
 import * as S from './string';
 import { compose, pipe } from './utils';
 
 describe('Option', () => {
-  function someOption<T>(value: T) {
-    const { pipe: _, ...option } = some(value);
-    return option;
-  }
-
   describe('conversions', () => {
     describe('fromNullable', () => {
       it('creates a Some when value is not nullable', () => {
