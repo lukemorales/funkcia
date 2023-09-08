@@ -3,7 +3,7 @@
   "display": "Strictest",
   "_version": "2.0.0",
   "compilerOptions": {
-    "target": "ES2016",
+    "target": "ES2020",
     "moduleResolution": "Node",
     "strict": true,
     "allowUnusedLabels": false,
@@ -19,9 +19,8 @@
     "checkJs": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "types": ["vitest/globals"]
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }
