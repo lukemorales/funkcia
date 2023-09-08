@@ -14,9 +14,10 @@ describe('Option', () => {
         );
       });
 
-      it('creates a None when value is null or undefined', () => {
-        expect(O.fromNullable(null)).toEqual(none());
-        expect(O.fromNullable(undefined)).toEqual(none());
+      const eachCase = it.each([undefined, null]);
+
+      eachCase('creates a None when value is %s', (nullable) => {
+        expect(O.fromNullable(nullable)).toEqual(none());
       });
     });
 
@@ -29,14 +30,10 @@ describe('Option', () => {
         expect(O.fromFalsy(1)).toMatchObject(someOption(1));
       });
 
-      it('creates a None when value is falsy', () => {
-        expect(O.fromFalsy(null)).toEqual(none());
-        expect(O.fromFalsy(undefined)).toEqual(none());
-        expect(O.fromFalsy(0)).toEqual(none());
-        expect(O.fromFalsy(0n)).toEqual(none());
-        expect(O.fromFalsy(NaN)).toEqual(none());
-        expect(O.fromFalsy(false)).toEqual(none());
-        expect(O.fromFalsy('')).toEqual(none());
+      const eachCase = it.each([null, undefined, 0, 0n, NaN, false, '']);
+
+      eachCase('creates a None when value is %s', (falsy) => {
+        expect(O.fromFalsy(falsy)).toEqual(none());
       });
     });
 
@@ -257,7 +254,7 @@ describe('Option', () => {
         ).toBe('no one to greet');
       });
 
-      it('passes the Option value if it is a Some into the onSome function and returns its result', () => {
+      it('passes the Option value if it’s a Some into the onSome function and returns its result', () => {
         expect(
           O.some('hello').pipe(
             O.match(
@@ -270,7 +267,7 @@ describe('Option', () => {
     });
 
     describe('getOrElse', () => {
-      it('unwraps the Option value if it is a Some', () => {
+      it('unwraps the Option value if it’s a Some', () => {
         expect(O.some('hello').pipe(O.getOrElse(() => 'no one to greet'))).toBe(
           'hello',
         );
@@ -284,7 +281,7 @@ describe('Option', () => {
     });
 
     describe('unwrap', () => {
-      it('unwraps the Option value if it is a Some', () => {
+      it('unwraps the Option value if it’s a Some', () => {
         expect(O.some('hello').pipe(O.unwrap)).toBe('hello');
       });
 
@@ -298,7 +295,7 @@ describe('Option', () => {
     describe('expect', () => {
       class NotFoundException extends Error {}
 
-      it('unwraps the Option value if it is a Some', () => {
+      it('unwraps the Option value if it’s a Some', () => {
         expect(
           O.some('hello').pipe(
             O.expect(() => new NotFoundException('Greeting not found')),
@@ -316,7 +313,7 @@ describe('Option', () => {
     });
 
     describe('toNull', () => {
-      it('unwraps the Option value if it is a Some', () => {
+      it('unwraps the Option value if it’s a Some', () => {
         expect(O.some('hello').pipe(O.toNull)).toBe('hello');
       });
 
@@ -326,7 +323,7 @@ describe('Option', () => {
     });
 
     describe('toUndefined', () => {
-      it('unwraps the Option value if it is a Some', () => {
+      it('unwraps the Option value if it’s a Some', () => {
         expect(O.some('hello').pipe(O.toUndefined)).toBe('hello');
       });
 
@@ -336,7 +333,7 @@ describe('Option', () => {
     });
 
     describe('toArray', () => {
-      it('returns the Option value wrapped in an array if it is a Some', () => {
+      it('returns the Option value wrapped in an array if it’s a Some', () => {
         expect(O.some('hello').pipe(O.toArray)).toEqual(['hello']);
       });
 
