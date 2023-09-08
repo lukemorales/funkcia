@@ -63,7 +63,7 @@ export function fromFalsy<T>(
  * import { O } from 'funkcia';
  *
  * const someOption = O.fromThrowable(() => JSON.parse('{ "enabled": true }'));
- *             //^?  Some<any>
+ *             //^?  Some<{ enabled: true }>
  *
  * const emptyOption = O.fromThrowable(() => JSON.parse('{{ }}'));
  *              //^?  None
@@ -163,7 +163,7 @@ export function liftNullable<A extends readonly unknown[], B>(
  * const safeJsonParse = O.liftThrowable(JSON.parse)
  *
  * const someOption = safeJsonParse('{ "enabled": true }');
- *             //^?  Some<any>
+ *             //^?  Some<{ enabled: true }>
  *
  * const emptyOption = safeJsonParse('{{ }}');
  *              //^?  None
@@ -261,9 +261,65 @@ export const flatten: <A>(self: _.Option<_.Option<A>>) => _.Option<A> =
 // filtering
 // -------------------------------------
 
+/**
+ * Filters an `Option` using a predicate.
+ *
+ * If the predicate is satisfied, the original `Option` is left untouched. If the predicate is not satisfied or the `Option` is `None`, it returns `None`.
+ *
+ * @example
+ * import { O } from 'funkcia';
+ *
+ * interface Square {
+ *   kind: 'square';
+ *   size: number;
+ * }
+ *
+ * interface Circle {
+ *   kind: 'circle';
+ *   radius: number;
+ * }
+ *
+ * type Shape = Square | Circle;
+ *
+ * const someOption = O.some<Shape>({ kind: 'square', size: 2 }).pipe(
+ *   O.filter((body): body is Square => body.kind === 'square')
+ * ); // Some<Square>
+ *
+ * const emptyOption = O.some<Shape>({ kind: 'square', size: 2 }).pipe(
+ *   O.filter((body): body is Circle => body.kind === 'circle')
+ * ); // None
+ */
 export function filter<A, B extends A>(
   typePredicate: TypePredicate<A, B>,
 ): (self: _.Option<A>) => _.Option<B>;
+/**
+ * Filters an `Option` using a predicate.
+ *
+ * If the predicate is satisfied, the original `Option` is left untouched. If the predicate is not satisfied or the `Option` is `None`, it returns `None`.
+ *
+ * @example
+ * import { O } from 'funkcia';
+ *
+ * interface Square {
+ *   kind: 'square';
+ *   size: number;
+ * }
+ *
+ * interface Circle {
+ *   kind: 'circle';
+ *   radius: number;
+ * }
+ *
+ * type Shape = Square | Circle;
+ *
+ * const someOption = O.some<Shape>({ kind: 'square', size: 2 }).pipe(
+ *   O.filter((body) => body.kind === 'square')
+ * ); // Some<Shape>
+ *
+ * const emptyOption = O.some<Shape>({ kind: 'square', size: 2 }).pipe(
+ *   O.filter((body) => body.kind === 'circle')
+ * ); // None
+ */
 export function filter<A>(
   predicate: Predicate<A>,
 ): (self: _.Option<A>) => _.Option<A>;
@@ -283,6 +339,19 @@ export function filter(
 // getters
 // -------------------------------------
 
+/**
+ * Matches the given `Option` and returns either the provided `onNone` value or the result of the provided `onSome`
+ * function when passed the `Option`'s value.
+ *
+ * @example
+ * import { O } from 'funkcia';
+ *
+ * const greeting = O.some('John').pipe(O.match(() => 'Greeting!', name => `Hello, ${name}`));
+ *           //^?  'Hello, John'
+ *
+ * const salutation = O.none().pipe(O.match(() => 'Greeting!', name => `Hello, ${name}`));
+ *             //^?  'Greeting!'
+ */
 export function match<A, B, C>(
   onNone: LazyValue<C>,
   onSome: (value: A) => B,
@@ -295,13 +364,13 @@ export function match<A, B, C>(
  *
  * @example
  * ```ts
- * import { O, pipe } from 'funkcia';
+ * import { O } from 'funkcia';
  *
  * const greeting = O.some('Hello world').pipe(O.getOrElse(() => 'Greeting!'));
  *           //^?  'Hello world'
  *
- * const fullName = O.none().pipe(O.getOrElse(() => 'John Doe'));
- *           //^? 'John Doe'
+ * const salutation = O.none().pipe(O.getOrElse(() => 'Greeting!'));
+ *             //^?  'John Doe'
  * ```
  */
 export function getOrElse<B>(
@@ -315,13 +384,13 @@ export function getOrElse<B>(
  *
  * @example
  * ```ts
- * import { O, pipe } from 'funkcia';
+ * import { O } from 'funkcia';
  *
  * const greeting = O.some('Hello world').pipe(O.unwrap);
  *           //^?  'Hellow world'
  *
- * const firstName = O.none().pipe(O.unwrap);
- *            //^? Uncaught exception: 'Failed to unwrap Option value'
+ * const salutation = O.none().pipe(O.unwrap);
+ *             //^?  Uncaught exception: 'Failed to unwrap Option value'
  * ```
  */
 export const unwrap = getOrElse(() => {
@@ -333,13 +402,13 @@ export const unwrap = getOrElse(() => {
  *
  * @example
  * ```ts
- * import { O, pipe } from 'funkcia';
+ * import { O } from 'funkcia';
  *
  * const user = O.some<User>({ id: 'user_01' }).pipe(O.expect(() => UserNotFound('user_01')));
  *       //^?  User
  *
- * const team = O.none().pipe(O.expect(() => TeamNotFound(user.teamId)));
- *       //^? Uncaught exception: 'Team not found: "team_01"'
+ * const team = O.none().pipe(O.expect(() => TeamNotFound('team_01')));
+ *       //^?  Uncaught exception: 'Team not found: "team_01"'
  * ```
  */
 export function expect<B extends Error>(onNone: LazyValue<B>) {
@@ -353,7 +422,7 @@ export function expect<B extends Error>(onNone: LazyValue<B>) {
  *
  * @example
  * ```ts
- * import { O, pipe } from 'funkcia';
+ * import { O } from 'funkcia';
  *
  * const user = O.some<User>({ id: 'user_01' }).pipe(O.toNull);
  *       //^?  User | null
@@ -397,6 +466,8 @@ export function toArray<A>(self: _.Option<A>): A[] {
 
 /**
  * Returns `true` if the predicate is satisfied by the wrapped value.
+ *
+ * If the predicate is not satisfied or the `Option` is `None`, it returns `false`.
  *
  * @example
  * ```ts
