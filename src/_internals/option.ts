@@ -30,7 +30,7 @@ export function some<T>(value: T): Option<T> {
     value,
     pipe() {
       // eslint-disable-next-line prefer-rest-params
-      return pipeable(this, arguments);
+      return pipeable({ ...this }, arguments);
     },
   };
 }
