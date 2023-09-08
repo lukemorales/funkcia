@@ -1,3 +1,4 @@
+/* eslint-disable prefer-rest-params */
 /* eslint-disable no-param-reassign */
 import * as _ from './_internals/option';
 import type { Predicate, TypePredicate } from './_internals/predicate';
@@ -77,6 +78,15 @@ export function fromThrowable<A>(f: () => A): _.Option<A> {
   }
 }
 
+interface FromPredicate {
+  <A, B extends A>(
+    typePredicate: TypePredicate<A, B>,
+  ): (value: A) => _.Option<B>;
+  <A>(predicate: Predicate<A>): (value: A) => _.Option<A>;
+  <A, B extends A>(value: A, typePredicate: TypePredicate<A, B>): _.Option<B>;
+  <A>(value: A, predicate: Predicate<A>): _.Option<A>;
+}
+
 /**
  * Constructs an `Option` based on a type predicate. If the predicate evaluates to `false`, returns `None`.
  *
@@ -84,44 +94,73 @@ export function fromThrowable<A>(f: () => A): _.Option<A> {
  *
  * @example
  * ```ts
- * import { O, pipe } from 'funkcia';
+ * import { O } from 'funkcia';
  *
- * type ValidDividend = number;
+ * interface Square {
+ *   kind: 'square';
+ *   size: number;
+ * }
  *
- * const someOption = pipe(10, O.fromPredicate((value): value is ValidDividend => vale !== 0));
- *             //^?  Some<ValidDividend>
+ * interface Circle {
+ *   kind: 'circle';
+ *   radius: number;
+ * }
  *
- * const emptyOption = pipe(0, O.fromPredicate((value): value is ValidDividend => vale !== 0));
- *              //^?  None
+ * type Shape = Square | Circle;
+ *
+ * const shape: Shape = { kind: 'square', size: 2 };
+ *
+ * const someOption = O.fromPredicate(
+ *   shape,
+ *   (figure): figure is Square => figure.kind === 'square',
+ * ); // Some<Square>
+ *
+ * const emptyOption = O.fromPredicate<Shape>(
+ *   shape,
+ *   (figure) => figure.kind === 'circle',
+ * ); // None
  * ```
- */
-export function fromPredicate<A, B extends A>(
-  typePredicate: TypePredicate<A, B>,
-): (value: A) => _.Option<B>;
-/**
- * Constructs an `Option` based on a predicate. If the predicate evaluates to `false`, returns `None`.
  *
- * Otherwise, returns the value wrapped in a `Some`.
  *
  * @example
  * ```ts
  * import { O, pipe } from 'funkcia';
  *
- * const validDivision = pipe(10, O.fromPredicate(value => vale !== 0));
- *                //^?  Some<number>
+ * interface Square {
+ *   kind: 'square';
+ *   size: number;
+ * }
  *
- * const invalidDivision = pipe(0, O.fromPredicate(value => vale !== 0));
- *                  //^?  None
+ * interface Circle {
+ *   kind: 'circle';
+ *   radius: number;
+ * }
+ *
+ * type Shape = Square | Circle;
+ *
+ * const shape: Shape = { kind: 'square', size: 2 };
+ *
+ * const someOption = pipe(
+ *   shape,
+ *   O.fromPredicate((figure): figure is Square => figure.kind === 'square'),
+ * ); // Some<Square>
+ *
+ * const emptyOption = pipe(
+ *   shape,
+ *   O.fromPredicate((figure) => figure.kind === 'circle'),
+ * ); // None
  * ```
  */
-export function fromPredicate<A>(
-  predicate: Predicate<A>,
-): (value: A) => _.Option<A>;
-export function fromPredicate(
-  predicate: Predicate<unknown>,
-): (value: unknown) => _.Option<unknown> {
-  return (value) => (predicate(value) ? _.some(value) : _.none());
-}
+// eslint-disable-next-line func-names
+export const fromPredicate = function () {
+  if (arguments.length === 2) {
+    const [value, predicate] = arguments;
+
+    return predicate(value) ? _.some(value) : _.none();
+  }
+
+  return (value: any) => (arguments[0](value) ? _.some(value) : _.none());
+} as FromPredicate;
 
 // -------------------------------------
 // lifting
@@ -135,10 +174,10 @@ export function fromPredicate(
  * import { O } from 'funkcia';
  *
  * function divide(dividend: number, divisor: number): number | null {
- *   return divisor === 0 ? null : dividend / divisor
+ *   return divisor === 0 ? null : dividend / divisor;
  * }
  *
- * const safeDivide = O.liftNullable(divide)
+ * const safeDivide = O.liftNullable(divide);
  *
  * const someOption = safeDivide(10, 2);
  *             //^?  Some<number>
@@ -160,7 +199,7 @@ export function liftNullable<A extends readonly unknown[], B>(
  * ```ts
  * import { O } from 'funkcia';
  *
- * const safeJsonParse = O.liftThrowable(JSON.parse)
+ * const safeJsonParse = O.liftThrowable(JSON.parse);
  *
  * const someOption = safeJsonParse('{ "enabled": true }');
  *             //^?  Some<{ enabled: true }>
@@ -214,8 +253,8 @@ export function map<A, B>(
  * import { O } from 'funkcia';
  *
  * interface Address {
- *   home?: { street: string | null }
- * }
+ *   home?: { street: string | null };
+ * };
  *
  * const address: Address = { home: { street: '5th Avenue' } };
  *
@@ -240,8 +279,8 @@ export function flatMap<A, B>(
  * import { O } from 'funkcia';
  *
  * interface Address {
- *   home?: { street: string | null }
- * }
+ *   home?: { street: string | null };
+ * };
  *
  * const address: Address = { home: { street: '5th Avenue' } };
  *
@@ -281,12 +320,14 @@ export const flatten: <A>(self: _.Option<_.Option<A>>) => _.Option<A> =
  *
  * type Shape = Square | Circle;
  *
- * const someOption = O.some<Shape>({ kind: 'square', size: 2 }).pipe(
- *   O.filter((body): body is Square => body.kind === 'square')
+ * const shape: Shape = { kind: 'square', size: 2 };
+ *
+ * const someOption = O.some(shape).pipe(
+ *   O.filter((figure): figure is Square => figure.kind === 'square'),
  * ); // Some<Square>
  *
- * const emptyOption = O.some<Shape>({ kind: 'square', size: 2 }).pipe(
- *   O.filter((body): body is Circle => body.kind === 'circle')
+ * const emptyOption = O.some(shape).pipe(
+ *   O.filter((figure): figure is Circle => figure.kind === 'circle'),
  * ); // None
  */
 export function filter<A, B extends A>(
@@ -313,11 +354,11 @@ export function filter<A, B extends A>(
  * type Shape = Square | Circle;
  *
  * const someOption = O.some<Shape>({ kind: 'square', size: 2 }).pipe(
- *   O.filter((body) => body.kind === 'square')
+ *   O.filter((figure) => figure.kind === 'square'),
  * ); // Some<Shape>
  *
  * const emptyOption = O.some<Shape>({ kind: 'square', size: 2 }).pipe(
- *   O.filter((body) => body.kind === 'circle')
+ *   O.filter((figure) => figure.kind === 'circle'),
  * ); // None
  */
 export function filter<A>(

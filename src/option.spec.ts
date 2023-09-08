@@ -2,11 +2,11 @@ import { none, some } from './_internals/option';
 import * as N from './number';
 import * as O from './option';
 import * as S from './string';
-import { compose } from './utils';
+import { compose, pipe } from './utils';
 
 describe('Option', () => {
   function someOption<T>(value: T) {
-    const { pipe, ...option } = some(value);
+    const { pipe: _, ...option } = some(value);
     return option;
   }
 
@@ -57,8 +57,59 @@ describe('Option', () => {
     });
 
     describe('fromPredicate', () => {
-      it.todo('creates a Some when the predicate is satisfied');
-      it.todo('creates a None when the predicate is not satisfied');
+      interface Square {
+        kind: 'square';
+        size: number;
+      }
+
+      interface Circle {
+        kind: 'circle';
+        radius: number;
+      }
+
+      type Shape = Square | Circle;
+
+      const shape = { kind: 'square', size: 2 } as Shape;
+
+      describe('data-first', () => {
+        it('creates a Some when the predicate is satisfied', () => {
+          expect(
+            O.fromPredicate(
+              shape,
+              (body): body is Square => body.kind === 'square',
+            ),
+          ).toMatchObject(someOption({ kind: 'square', size: 2 }));
+        });
+
+        it('creates a None when the predicate is not satisfied', () => {
+          expect(
+            O.fromPredicate(
+              shape,
+              (body): body is Circle => body.kind === 'circle',
+            ),
+          ).toMatchObject(none());
+        });
+      });
+
+      describe('data-last', () => {
+        it('creates a Some when the predicate is satisfied', () => {
+          expect(
+            pipe(
+              shape,
+              O.fromPredicate((body): body is Square => body.kind === 'square'),
+            ),
+          ).toMatchObject(someOption({ kind: 'square', size: 2 }));
+        });
+
+        it('creates a None when the predicate is not satisfied', () => {
+          expect(
+            pipe(
+              shape,
+              O.fromPredicate((body): body is Circle => body.kind === 'circle'),
+            ),
+          ).toMatchObject(none());
+        });
+      });
     });
   });
 
