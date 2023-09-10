@@ -1,9 +1,10 @@
 import { none } from './_internals/option';
 import { someOption } from './_internals/testing';
+import * as E from './either';
+import { compose, pipe } from './functions';
 import * as N from './number';
 import * as O from './option';
 import * as S from './string';
-import { compose, pipe } from './utils';
 
 describe('Option', () => {
   describe('conversions', () => {
@@ -104,6 +105,18 @@ describe('Option', () => {
         });
       });
     });
+
+    describe('fromEither', () => {
+      it('creates a Some when Either is a Right', () => {
+        expect(O.fromEither(E.right('hello world'))).toMatchObject(
+          someOption('hello world'),
+        );
+      });
+
+      it('creates a None when Either is a Left', () => {
+        expect(O.fromEither(E.left('Computation failure'))).toEqual(none());
+      });
+    });
   });
 
   describe('lifting', () => {
@@ -114,11 +127,11 @@ describe('Option', () => {
 
       const safeDivide = O.liftNullable(divide);
 
-      it('creates a Some when the returned value is not nullable', () => {
+      it('creates a Some when the lifted function returns a non-nullable value', () => {
         expect(safeDivide(10, 2)).toMatchObject(someOption(5));
       });
 
-      it('creates a None when the returned value is null or undefined', () => {
+      it('creates a None when the lifted function returns null or undefined', () => {
         expect(safeDivide(2, 0)).toEqual(none());
       });
     });
@@ -126,14 +139,30 @@ describe('Option', () => {
     describe('liftThrowable', () => {
       const safeJsonParse = O.liftThrowable(JSON.parse);
 
-      it('creates a Some when the original function succeeds', () => {
+      it('creates a Some when the lifted function succeeds', () => {
         expect(safeJsonParse('{ "enabled": true }')).toMatchObject(
           someOption({ enabled: true }),
         );
       });
 
-      it('creates a None when the original function throws an exception', () => {
+      it('creates a None when the lifted function throws an exception', () => {
         expect(safeJsonParse('{{ }}')).toEqual(none());
+      });
+    });
+  });
+
+  describe('replacements', () => {
+    describe('fallback', () => {
+      it('does not replace the original Option when it’s a Some', () => {
+        expect(O.some('a').pipe(O.fallback(() => O.some('b')))).toMatchObject(
+          someOption('a'),
+        );
+      });
+
+      it('replaces the original Option with the provided fallback when it’s a None', () => {
+        expect(O.none().pipe(O.fallback(() => O.some('b')))).toMatchObject(
+          someOption('b'),
+        );
       });
     });
   });
@@ -159,7 +188,7 @@ describe('Option', () => {
         O.fromPredicate((length) => length >= 5),
       );
 
-      it('maps the value to another Option if Option is a Some', () => {
+      it('maps the value if Option is a Some and flattens the result to a single Option', () => {
         expect(
           O.some('hello').pipe(O.flatMap(transformToAnotherOption)),
         ).toMatchObject(someOption(5));
@@ -187,7 +216,7 @@ describe('Option', () => {
         },
       };
 
-      it('flat maps into a Some option if returning value is not nullable', () => {
+      it('flat maps into a Some if returning value is not nullable', () => {
         expect(
           O.fromNullable(profile.address).pipe(
             O.flatMapNullable((address) => address.home),
@@ -195,7 +224,7 @@ describe('Option', () => {
         ).toMatchObject(someOption('21st street'));
       });
 
-      it('flat maps into a None option if returning value is nullable', () => {
+      it('flat maps into a None if returning value is nullable', () => {
         expect(
           O.fromNullable(profile.address).pipe(
             O.flatMapNullable((address) => address.work),
@@ -212,10 +241,7 @@ describe('Option', () => {
 
       it('flattens an Option of an Option into a single Option', () => {
         expect(
-          O.fromNullable('hello').pipe(
-            O.map(transformToAnotherOption),
-            O.flatten,
-          ),
+          O.some('hello').pipe(O.map(transformToAnotherOption), O.flatten),
         ).toMatchObject(someOption(5));
       });
     });
@@ -224,19 +250,17 @@ describe('Option', () => {
   describe('filtering', () => {
     describe('filter', () => {
       it('keeps the Option value if it matches the predicate', () => {
-        expect(
-          O.fromNullable('hello').pipe(O.filter(S.isString)),
-        ).toMatchObject(someOption('hello'));
-      });
-
-      it('filters the Option value out if it doesn’t match the predicate', () => {
-        expect(O.fromNullable('hello').pipe(O.filter(N.isNumber))).toEqual(
-          none(),
+        expect(O.some('hello').pipe(O.filter(S.isString))).toMatchObject(
+          someOption('hello'),
         );
       });
 
+      it('filters the Option value out if it doesn’t match the predicate', () => {
+        expect(O.some('hello').pipe(O.filter(N.isNumber))).toEqual(none());
+      });
+
       it('is a no-op if Option is a None', () => {
-        expect(O.fromNullable(null).pipe(O.filter(S.isString))).toEqual(none());
+        expect(O.none().pipe(O.filter(S.isString))).toEqual(none());
       });
     });
   });

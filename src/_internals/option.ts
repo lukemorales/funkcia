@@ -12,13 +12,13 @@ export interface None extends Pipeable {
   readonly _tag: 'None';
 }
 
-const _none: Option<never> = {
+const _none = Object.freeze<Option<never>>({
   _tag: 'None',
   pipe() {
     // eslint-disable-next-line prefer-rest-params
     return pipeable(this, arguments);
   },
-};
+});
 
 export function none(): Option<never> {
   return _none;

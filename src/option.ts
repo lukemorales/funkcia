@@ -1,12 +1,35 @@
-/* eslint-disable prefer-rest-params */
-/* eslint-disable no-param-reassign */
+/* eslint-disable no-param-reassign,, prefer-destructuring */
+import { dual } from './_internals/dual';
+import { isRight, type Either } from './_internals/either';
 import * as _ from './_internals/option';
 import type { Predicate, TypePredicate } from './_internals/predicate';
-import { type Mutable, type Nullable } from './_internals/types';
-import { constNull, constUndefined, identity, type LazyValue } from './utils';
+import { type Falsy, type Mutable, type Nullable } from './_internals/types';
+import {
+  constNull,
+  constUndefined,
+  identity,
+  type LazyValue,
+} from './functions';
 
-export { isNone, isOption, isSome, none, some } from './_internals/option';
 export type { None, Option, Some } from './_internals/option';
+
+// -------------------------------------
+// constructors
+// -------------------------------------
+
+export const some = _.some;
+
+export const none = _.none;
+
+// -------------------------------------
+// refinements
+// -------------------------------------
+
+export const isSome = _.isSome;
+
+export const isNone = _.isNone;
+
+export const isOption = _.isOption;
 
 // -------------------------------------
 // conversions
@@ -30,8 +53,6 @@ export type { None, Option, Some } from './_internals/option';
 export function fromNullable<T>(value: Nullable<T>): _.Option<NonNullable<T>> {
   return value == null ? _.none() : _.some(value);
 }
-
-type Falsy = false | '' | 0 | 0n | null | undefined;
 
 /**
  * If value is a falsy value (`undefined | null | NaN | 0 | 0n | "" (empty string) | false`), returns `None`.
@@ -151,16 +172,29 @@ interface FromPredicate {
  * ); // None
  * ```
  */
-// eslint-disable-next-line func-names
-export const fromPredicate = function () {
-  if (arguments.length === 2) {
-    const [value, predicate] = arguments;
+export const fromPredicate: FromPredicate = dual(
+  2,
+  (value: any, predicate: Predicate<any>) =>
+    predicate(value) ? _.some(value) : _.none(),
+);
 
-    return predicate(value) ? _.some(value) : _.none();
-  }
-
-  return (value: any) => (arguments[0](value) ? _.some(value) : _.none());
-} as FromPredicate;
+/**
+ * Transforms an `Either` into an `Option` discarding the error.
+ *
+ * @example
+ * ```ts
+ * import { O, E } from 'funkcia';
+ *
+ * const someOption = O.fromEither(E.right(10));
+ *             //^?  Some<number>
+ *
+ * const emptyOption = O.fromEither(E.left('Computation failure'));
+ *              //^?  None
+ * ```
+ */
+export function fromEither<A>(either: Either<unknown, A>): _.Option<A> {
+  return isRight(either) ? _.some(either.right) : _.none();
+}
 
 // -------------------------------------
 // lifting
@@ -215,6 +249,16 @@ export function liftThrowable<A extends readonly unknown[], B>(
 }
 
 // -------------------------------------
+// replacements
+// -------------------------------------
+
+export function fallback<B>(
+  spare: LazyValue<_.Option<B>>,
+): <A>(self: _.Option<A>) => _.Option<A | B> {
+  return (self) => (_.isNone(self) ? spare() : self);
+}
+
+// -------------------------------------
 // transforming
 // -------------------------------------
 
@@ -233,11 +277,11 @@ export function liftThrowable<A extends readonly unknown[], B>(
  *              //^?  None
  */
 export function map<A, B>(
-  cb: (value: A) => B,
+  onSome: (value: A) => B,
 ): (self: _.Option<A>) => _.Option<B> {
   return (self) => {
     if (_.isSome(self)) {
-      (self as unknown as Mutable<_.Some<B>>).value = cb(self.value);
+      (self as unknown as Mutable<_.Some<B>>).value = onSome(self.value);
     }
 
     return self as _.Option<B>;
@@ -265,9 +309,9 @@ export function map<A, B>(
  *              //^?  Option<Option<string>>
  */
 export function flatMap<A, B>(
-  cb: (value: A) => _.Option<B>,
+  onSome: (value: A) => _.Option<B>,
 ): (self: _.Option<A>) => _.Option<B> {
-  return (self) => (_.isSome(self) ? cb(self.value) : self);
+  return (self) => (_.isSome(self) ? onSome(self.value) : self);
 }
 
 /**
@@ -288,9 +332,9 @@ export function flatMap<A, B>(
  *             //^?  Option<string>
  */
 export function flatMapNullable<A, B>(
-  cb: (a: A) => Nullable<B>,
+  onSome: (a: A) => Nullable<B>,
 ): (self: _.Option<A>) => _.Option<NonNullable<B>> {
-  return (self) => (_.isSome(self) ? fromNullable(cb(self.value)) : self);
+  return (self) => (_.isSome(self) ? fromNullable(onSome(self.value)) : self);
 }
 
 export const flatten: <A>(self: _.Option<_.Option<A>>) => _.Option<A> =
@@ -366,7 +410,7 @@ export function filter<A>(
 ): (self: _.Option<A>) => _.Option<A>;
 export function filter(
   predicate: Predicate<unknown>,
-): (value: _.Option<unknown>) => _.Option<unknown> {
+): (self: _.Option<unknown>) => _.Option<unknown> {
   return (self) => {
     if (_.isNone(self)) {
       return self;
