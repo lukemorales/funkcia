@@ -1,5 +1,5 @@
-export * as N from './number';
-export * as O from './option';
-export * as S from './string';
+import * as E from './either';
+import * as O from './option';
 
-export * from './utils';
+export * from './functions';
+export { E, O, E as either, O as option };
