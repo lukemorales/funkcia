@@ -509,11 +509,11 @@ export function expect<B extends Error>(onNone: LazyValue<B>) {
  * ```ts
  * import { O } from 'funkcia';
  *
- * const user = O.some<User>({ id: 'user_01' }).pipe(O.toNull);
+ * const user = O.some<User>({ id: 'user_01' }).pipe(O.toNullable);
  *       //^?  User | null
  * ```
  */
-export const toNull = getOrElse(constNull);
+export const toNullable = getOrElse(constNull);
 
 /**
  * Unwraps the `Option` value. If `Option` is a `None`, returns `undefined`.

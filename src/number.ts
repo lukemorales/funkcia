@@ -1,4 +1,8 @@
-import * as O from './option';
+import {
+  map as mapOption,
+  fromPredicate as optionFromPredicate,
+  type Option,
+} from './option';
 
 export function isNumber(value: unknown): value is number {
   return typeof value === 'number';
@@ -16,12 +20,10 @@ export function multiply(multiplier: number): (multiplicand: number) => number {
   return (multiplicand) => multiplicand * multiplier;
 }
 
-export function divide(
-  divisor: number,
-): (dividend: number) => O.Option<number> {
+export function divide(divisor: number): (dividend: number) => Option<number> {
   return (dividend) =>
-    O.fromPredicate(divisor, greaterThan(0)).pipe(
-      O.map((safeDivisor) => dividend / safeDivisor),
+    optionFromPredicate(divisor, greaterThan(0)).pipe(
+      mapOption((safeDivisor) => dividend / safeDivisor),
     );
 }
 

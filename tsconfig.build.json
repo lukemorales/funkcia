@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "noEmit": false,
+    "target": "ES2020",
+    "module": "ESNext"
+  },
+  "include": ["src"]
+}

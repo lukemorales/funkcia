@@ -336,13 +336,13 @@ describe('Option', () => {
       });
     });
 
-    describe('toNull', () => {
+    describe('toNullable', () => {
       it('unwraps the Option value if it’s a Some', () => {
-        expect(O.some('hello').pipe(O.toNull)).toBe('hello');
+        expect(O.some('hello').pipe(O.toNullable)).toBe('hello');
       });
 
       it('returns null if Option is a None', () => {
-        expect(O.none().pipe(O.toNull)).toBe(null);
+        expect(O.none().pipe(O.toNullable)).toBe(null);
       });
     });
 
