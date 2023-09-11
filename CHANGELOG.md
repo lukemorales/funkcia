@@ -1,5 +1,11 @@
 # funkcia
 
+## 0.1.4
+
+### Patch Changes
+
+- [`016638d`](https://github.com/lukemorales/funkcia/commit/016638d61fb3853b6a415beca2769189866212b5) Thanks [@lukemorales](https://github.com/lukemorales)! - Reorganize types and imports
+
 ## 0.1.3
 
 ### Patch Changes
