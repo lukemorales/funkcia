@@ -2,4 +2,4 @@
 'funkcia': minor
 ---
 
-Create `Option` and `Either`
+Create `Option` constructor for dealing with optional values
