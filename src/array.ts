@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-import { none, some, type Option } from './option';
+import type { Option } from './option';
+import { none, some } from './option';
 
 export function first<A>(array: readonly A[]): Option<A> {
   return array.length ? some(array[0]!) : none();

@@ -1,17 +1,6 @@
-import { pipeable, type Pipeable } from './pipeable';
-import { isPrimitive } from './primitives';
-
-export type Either<L, R> = Left<L> | Right<R>;
-
-export interface Right<R> extends Pipeable {
-  readonly _tag: 'Right';
-  readonly right: R;
-}
-
-export interface Left<L> extends Pipeable {
-  readonly _tag: 'Left';
-  readonly left: L;
-}
+import type { Either, Left, Right } from '../either';
+import { isPrimitive } from './core';
+import { pipeable } from './pipeable';
 
 export function left<L>(failure: L): Either<L, never> {
   return {

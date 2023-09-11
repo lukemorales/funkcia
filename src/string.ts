@@ -1,6 +1,10 @@
 import { compose } from './functions';
-import * as N from './number';
-import * as O from './option';
+import { greaterThanOrEqualTo } from './number';
+import {
+  fromNullable as optionFromNullable,
+  fromPredicate as optionFromPredicate,
+  type Option,
+} from './option';
 import { not } from './predicate';
 
 export const empty = '' as const;
@@ -125,26 +129,29 @@ export function normalize(
   return (self) => self.normalize(form);
 }
 
-export function charAt(index: number): (self: string) => O.Option<string> {
-  return (self) => O.fromPredicate(self.charAt(index), isNonEmpty);
+export function charAt(index: number): (self: string) => Option<string> {
+  return (self) => optionFromPredicate(self.charAt(index), isNonEmpty);
 }
 
 export function indexOf(
   searchString: string,
-): (self: string) => O.Option<number> {
+): (self: string) => Option<number> {
   return (self) =>
-    O.fromPredicate(self.indexOf(searchString), N.greaterThanOrEqualTo(0));
+    optionFromPredicate(self.indexOf(searchString), greaterThanOrEqualTo(0));
 }
 
 export function lastIndexOf(
   searchString: string,
-): (self: string) => O.Option<number> {
+): (self: string) => Option<number> {
   return (self) =>
-    O.fromPredicate(self.lastIndexOf(searchString), N.greaterThanOrEqualTo(0));
+    optionFromPredicate(
+      self.lastIndexOf(searchString),
+      greaterThanOrEqualTo(0),
+    );
 }
 
 export function match(
   regexp: RegExp | string,
-): (self: string) => O.Option<RegExpMatchArray> {
-  return (self) => O.fromNullable(self.match(regexp));
+): (self: string) => Option<RegExpMatchArray> {
+  return (self) => optionFromNullable(self.match(regexp));
 }

@@ -1,16 +1,28 @@
 /* eslint-disable no-param-reassign, prefer-destructuring */
 import { dual } from './_internals/dual';
 import * as _ from './_internals/either';
-import { isSome, type Option } from './_internals/option';
-import { type Predicate, type TypePredicate } from './_internals/predicate';
+import { isSome } from './_internals/option';
+import { type Pipeable } from './_internals/pipeable';
 import { type Falsy, type Mutable, type Nullable } from './_internals/types';
 import { identity, type LazyValue } from './functions';
-
-export type { Either, Left, Right } from './_internals/either';
+import type { Option } from './option';
+import type { Predicate, Refinement } from './predicate';
 
 // -------------------------------------
 // constructors
 // -------------------------------------
+
+export type Either<L, R> = Left<L> | Right<R>;
+
+export interface Right<R> extends Pipeable {
+  readonly _tag: 'Right';
+  readonly right: R;
+}
+
+export interface Left<L> extends Pipeable {
+  readonly _tag: 'Left';
+  readonly left: L;
+}
 
 export const right = _.right;
 
@@ -33,11 +45,11 @@ export const isEither = _.isEither;
 interface FromNullable {
   <L>(
     onNullable: LazyValue<L>,
-  ): <R>(value: Nullable<R>) => _.Either<L, NonNullable<R>>;
+  ): <R>(value: Nullable<R>) => Either<L, NonNullable<R>>;
   <L, R>(
     value: Nullable<R>,
     onNullable: LazyValue<L>,
-  ): _.Either<L, NonNullable<R>>;
+  ): Either<L, NonNullable<R>>;
 }
 
 export const fromNullable: FromNullable = dual(
@@ -49,11 +61,11 @@ export const fromNullable: FromNullable = dual(
 interface FromFalsy {
   <L>(
     onFalsy: LazyValue<L>,
-  ): <R>(value: R | Falsy) => _.Either<L, Exclude<NonNullable<R>, Falsy>>;
+  ): <R>(value: R | Falsy) => Either<L, Exclude<NonNullable<R>, Falsy>>;
   <L, R>(
     value: R | Falsy,
     onFalsy: LazyValue<L>,
-  ): _.Either<L, Exclude<NonNullable<R>, Falsy>>;
+  ): Either<L, Exclude<NonNullable<R>, Falsy>>;
 }
 
 export const fromFalsy: FromFalsy = dual(
@@ -64,23 +76,23 @@ export const fromFalsy: FromFalsy = dual(
 
 interface FromPredicate {
   <L, A, R extends A>(
-    typePredicate: TypePredicate<A, R>,
+    typePredicate: Refinement<A, R>,
     onDissatisfied: (failure: A) => L,
-  ): (value: A) => _.Either<L, R>;
+  ): (value: A) => Either<L, R>;
   <L, R>(
     predicate: Predicate<R>,
     onDissatisfied: (failure: R) => L,
-  ): (value: R) => _.Either<L, R>;
+  ): (value: R) => Either<L, R>;
   <L, A, R extends A>(
     value: A,
-    typePredicate: TypePredicate<A, R>,
+    typePredicate: Refinement<A, R>,
     onDissatisfied: (failure: A) => L,
-  ): _.Either<L, R>;
+  ): Either<L, R>;
   <L, R>(
     value: R,
     predicate: Predicate<R>,
     onDissatisfied: (failure: R) => L,
-  ): _.Either<L, R>;
+  ): Either<L, R>;
 }
 
 export const fromPredicate: FromPredicate = dual(
@@ -92,7 +104,7 @@ export const fromPredicate: FromPredicate = dual(
 export function fromThrowable<R, L>(
   cb: () => R,
   onException: (reason: unknown) => L,
-): _.Either<L, R> {
+): Either<L, R> {
   try {
     return _.right(cb());
   } catch (error) {
@@ -101,8 +113,8 @@ export function fromThrowable<R, L>(
 }
 
 interface FromOption {
-  <L>(onNone: LazyValue<L>): <R>(option: Option<R>) => _.Either<L, R>;
-  <L, R>(option: Option<R>, onNone: LazyValue<L>): _.Either<L, R>;
+  <L>(onNone: LazyValue<L>): <R>(option: Option<R>) => Either<L, R>;
+  <L, R>(option: Option<R>, onNone: LazyValue<L>): Either<L, R>;
 }
 
 export const fromOption: FromOption = dual(
@@ -118,14 +130,14 @@ export const fromOption: FromOption = dual(
 export function liftNullable<A extends readonly unknown[], R, L>(
   callback: (...args: A) => Nullable<R>,
   onNull: () => L,
-): (...args: A) => _.Either<L, NonNullable<R>> {
+): (...args: A) => Either<L, NonNullable<R>> {
   return (...args: A) => fromNullable(callback(...args), onNull);
 }
 
 export function liftThrowable<A extends readonly unknown[], R, L>(
   callback: (...args: A) => R,
   onException: (reason: unknown) => L,
-): (...args: A) => _.Either<L, R> {
+): (...args: A) => Either<L, R> {
   return (...args) => fromThrowable(() => callback(...args), onException);
 }
 
@@ -134,8 +146,8 @@ export function liftThrowable<A extends readonly unknown[], R, L>(
 // -------------------------------------
 
 export function fallback<L2, R2>(
-  spare: LazyValue<_.Either<L2, R2>>,
-): <L, R>(self: _.Either<L, R>) => _.Either<L2, R | R2> {
+  spare: LazyValue<Either<L2, R2>>,
+): <L, R>(self: Either<L, R>) => Either<L2, R | R2> {
   return (self) => (_.isRight(self) ? self : spare());
 }
 
@@ -145,10 +157,10 @@ export function fallback<L2, R2>(
 
 export function map<R, R2>(
   onRight: (success: R) => R2,
-): <L>(self: _.Either<L, R>) => _.Either<L, R2> {
+): <L>(self: Either<L, R>) => Either<L, R2> {
   return (self) => {
     if (_.isRight(self)) {
-      (self as unknown as Mutable<_.Right<R2>>).right = onRight(self.right);
+      (self as unknown as Mutable<Right<R2>>).right = onRight(self.right);
     }
 
     return self as any;
@@ -157,10 +169,10 @@ export function map<R, R2>(
 
 export function mapLeft<L, L2>(
   onLeft: (failure: L) => L2,
-): <R>(self: _.Either<L, R>) => _.Either<L2, R> {
+): <R>(self: Either<L, R>) => Either<L2, R> {
   return (self) => {
     if (_.isLeft(self)) {
-      (self as unknown as Mutable<_.Left<L2>>).left = onLeft(self.left);
+      (self as unknown as Mutable<Left<L2>>).left = onLeft(self.left);
     }
 
     return self as any;
@@ -170,12 +182,12 @@ export function mapLeft<L, L2>(
 export function mapBoth<L, L2, R, R2>(
   onLeft: (failure: L) => L2,
   onRight: (success: R) => R2,
-): (self: _.Either<L, R>) => _.Either<L2, R2> {
+): (self: Either<L, R>) => Either<L2, R2> {
   return (self) => {
     if (_.isLeft(self)) {
-      (self as unknown as Mutable<_.Left<L2>>).left = onLeft(self.left);
+      (self as unknown as Mutable<Left<L2>>).left = onLeft(self.left);
     } else {
-      (self as unknown as Mutable<_.Right<R2>>).right = onRight(self.right);
+      (self as unknown as Mutable<Right<R2>>).right = onRight(self.right);
     }
 
     return self as any;
@@ -183,39 +195,39 @@ export function mapBoth<L, L2, R, R2>(
 }
 
 export function flatMap<L, L2, R, R2>(
-  onRight: (success: R) => _.Either<L2, R2>,
-): (self: _.Either<L, R>) => _.Either<L | L2, R2> {
+  onRight: (success: R) => Either<L2, R2>,
+): (self: Either<L, R>) => Either<L | L2, R2> {
   return (self) => (_.isRight(self) ? onRight(self.right) : self);
 }
 
 export function flatMapNullable<L, L2, R, R2>(
   onRight: (success: R) => Nullable<R2>,
   onNullable: () => L2,
-): (self: _.Either<L, R>) => _.Either<L | L2, NonNullable<R2>> {
+): (self: Either<L, R>) => Either<L | L2, NonNullable<R2>> {
   return (self) =>
     _.isRight(self) ? fromNullable(onRight(self.right), onNullable) : self;
 }
 
 export const flatten: <L, L2, R>(
-  self: _.Either<L, _.Either<L2, R>>,
-) => _.Either<L | L2, R> = flatMap(identity);
+  self: Either<L, Either<L2, R>>,
+) => Either<L | L2, R> = flatMap(identity);
 
 // -------------------------------------
 // filtering
 // -------------------------------------
 
 export function filter<R, R2 extends R, L2>(
-  typePredicate: TypePredicate<R, R2>,
+  typePredicate: Refinement<R, R2>,
   onDissatisfied: (value: R) => L2,
-): <L>(self: _.Either<L, R>) => _.Either<L | L2, R2>;
+): <L>(self: Either<L, R>) => Either<L | L2, R2>;
 export function filter<R, L2>(
   predicate: Predicate<R>,
   onDissatisfied: (value: R) => L2,
-): <L>(self: _.Either<L, R>) => _.Either<L | L2, R>;
+): <L>(self: Either<L, R>) => Either<L | L2, R>;
 export function filter(
   predicate: Predicate<unknown>,
   onDissatisfied: (value: unknown) => unknown,
-): (self: _.Either<unknown, unknown>) => _.Either<unknown, unknown> {
+): (self: Either<unknown, unknown>) => Either<unknown, unknown> {
   return (self) => {
     if (_.isLeft(self)) {
       return self;
@@ -232,18 +244,18 @@ export function filter(
 export function match<L, R, L2, R2>(
   onLeft: (failure: L) => L2,
   onRight: (success: R) => R2,
-): (self: _.Either<L, R>) => L2 | R2 {
+): (self: Either<L, R>) => L2 | R2 {
   return (self) => (_.isRight(self) ? onRight(self.right) : onLeft(self.left));
 }
 
-export const merge: <L, R>(self: _.Either<L, R>) => L | R = match(
+export const merge: <L, R>(self: Either<L, R>) => L | R = match(
   identity,
   identity,
 );
 
 export function getOrElse<L, L2>(
   onLeft: (failure: L) => L2,
-): <R>(self: _.Either<L, R>) => L2 | R {
+): <R>(self: Either<L, R>) => L2 | R {
   return match(onLeft, identity);
 }
 

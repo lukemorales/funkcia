@@ -1,21 +1,33 @@
 /* eslint-disable no-param-reassign,, prefer-destructuring */
+
 import { dual } from './_internals/dual';
-import { isRight, type Either } from './_internals/either';
+import { isRight } from './_internals/either';
 import * as _ from './_internals/option';
-import type { Predicate, TypePredicate } from './_internals/predicate';
-import { type Falsy, type Mutable, type Nullable } from './_internals/types';
+import type { Pipeable } from './_internals/pipeable';
+import type { Falsy, Mutable, Nullable } from './_internals/types';
+import type { Either } from './either';
 import {
   constNull,
   constUndefined,
   identity,
   type LazyValue,
 } from './functions';
-
-export type { None, Option, Some } from './_internals/option';
+import type { Predicate, Refinement } from './predicate';
 
 // -------------------------------------
 // constructors
 // -------------------------------------
+
+export type Option<A> = None | Some<A>;
+
+export interface Some<A> extends Pipeable {
+  readonly _tag: 'Some';
+  readonly value: A;
+}
+
+export interface None extends Pipeable {
+  readonly _tag: 'None';
+}
 
 export const some = _.some;
 
@@ -50,7 +62,7 @@ export const isOption = _.isOption;
  *              //^?  None
  * ```
  */
-export function fromNullable<T>(value: Nullable<T>): _.Option<NonNullable<T>> {
+export function fromNullable<T>(value: Nullable<T>): Option<NonNullable<T>> {
   return value == null ? _.none() : _.some(value);
 }
 
@@ -71,7 +83,7 @@ export function fromNullable<T>(value: Nullable<T>): _.Option<NonNullable<T>> {
  */
 export function fromFalsy<T>(
   value: T | Falsy,
-): _.Option<Exclude<NonNullable<T>, Falsy>> {
+): Option<Exclude<NonNullable<T>, Falsy>> {
   return value ? _.some(value as any) : _.none();
 }
 
@@ -91,7 +103,7 @@ export function fromFalsy<T>(
  *              //^?  None
  * ```
  */
-export function fromThrowable<A>(f: () => A): _.Option<A> {
+export function fromThrowable<A>(f: () => A): Option<A> {
   try {
     return _.some(f());
   } catch {
@@ -100,12 +112,10 @@ export function fromThrowable<A>(f: () => A): _.Option<A> {
 }
 
 interface FromPredicate {
-  <A, B extends A>(
-    typePredicate: TypePredicate<A, B>,
-  ): (value: A) => _.Option<B>;
-  <A>(predicate: Predicate<A>): (value: A) => _.Option<A>;
-  <A, B extends A>(value: A, typePredicate: TypePredicate<A, B>): _.Option<B>;
-  <A>(value: A, predicate: Predicate<A>): _.Option<A>;
+  <A, B extends A>(typePredicate: Refinement<A, B>): (value: A) => Option<B>;
+  <A>(predicate: Predicate<A>): (value: A) => Option<A>;
+  <A, B extends A>(value: A, typePredicate: Refinement<A, B>): Option<B>;
+  <A>(value: A, predicate: Predicate<A>): Option<A>;
 }
 
 /**
@@ -192,7 +202,7 @@ export const fromPredicate: FromPredicate = dual(
  *              //^?  None
  * ```
  */
-export function fromEither<A>(either: Either<unknown, A>): _.Option<A> {
+export function fromEither<A>(either: Either<unknown, A>): Option<A> {
   return isRight(either) ? _.some(either.right) : _.none();
 }
 
@@ -222,7 +232,7 @@ export function fromEither<A>(either: Either<unknown, A>): _.Option<A> {
  */
 export function liftNullable<A extends readonly unknown[], B>(
   callback: (...args: A) => Nullable<B>,
-): (...args: A) => _.Option<NonNullable<B>> {
+): (...args: A) => Option<NonNullable<B>> {
   return (...args: A) => fromNullable(callback(...args));
 }
 
@@ -244,7 +254,7 @@ export function liftNullable<A extends readonly unknown[], B>(
  */
 export function liftThrowable<A extends readonly unknown[], B>(
   callback: (...args: A) => B,
-): (...args: A) => _.Option<B> {
+): (...args: A) => Option<B> {
   return (...args) => fromThrowable(() => callback(...args));
 }
 
@@ -253,8 +263,8 @@ export function liftThrowable<A extends readonly unknown[], B>(
 // -------------------------------------
 
 export function fallback<B>(
-  spare: LazyValue<_.Option<B>>,
-): <A>(self: _.Option<A>) => _.Option<A | B> {
+  spare: LazyValue<Option<B>>,
+): <A>(self: Option<A>) => Option<A | B> {
   return (self) => (_.isNone(self) ? spare() : self);
 }
 
@@ -278,13 +288,13 @@ export function fallback<B>(
  */
 export function map<A, B>(
   onSome: (value: A) => B,
-): (self: _.Option<A>) => _.Option<B> {
+): (self: Option<A>) => Option<B> {
   return (self) => {
     if (_.isSome(self)) {
-      (self as unknown as Mutable<_.Some<B>>).value = onSome(self.value);
+      (self as unknown as Mutable<Some<B>>).value = onSome(self.value);
     }
 
-    return self as _.Option<B>;
+    return self as Option<B>;
   };
 }
 
@@ -309,8 +319,8 @@ export function map<A, B>(
  *              //^?  Option<Option<string>>
  */
 export function flatMap<A, B>(
-  onSome: (value: A) => _.Option<B>,
-): (self: _.Option<A>) => _.Option<B> {
+  onSome: (value: A) => Option<B>,
+): (self: Option<A>) => Option<B> {
   return (self) => (_.isSome(self) ? onSome(self.value) : self);
 }
 
@@ -333,11 +343,11 @@ export function flatMap<A, B>(
  */
 export function flatMapNullable<A, B>(
   onSome: (a: A) => Nullable<B>,
-): (self: _.Option<A>) => _.Option<NonNullable<B>> {
+): (self: Option<A>) => Option<NonNullable<B>> {
   return (self) => (_.isSome(self) ? fromNullable(onSome(self.value)) : self);
 }
 
-export const flatten: <A>(self: _.Option<_.Option<A>>) => _.Option<A> =
+export const flatten: <A>(self: Option<Option<A>>) => Option<A> =
   flatMap(identity);
 
 // -------------------------------------
@@ -375,8 +385,8 @@ export const flatten: <A>(self: _.Option<_.Option<A>>) => _.Option<A> =
  * ); // None
  */
 export function filter<A, B extends A>(
-  typePredicate: TypePredicate<A, B>,
-): (self: _.Option<A>) => _.Option<B>;
+  typePredicate: Refinement<A, B>,
+): (self: Option<A>) => Option<B>;
 /**
  * Filters an `Option` using a predicate.
  *
@@ -407,10 +417,10 @@ export function filter<A, B extends A>(
  */
 export function filter<A>(
   predicate: Predicate<A>,
-): (self: _.Option<A>) => _.Option<A>;
+): (self: Option<A>) => Option<A>;
 export function filter(
   predicate: Predicate<unknown>,
-): (self: _.Option<unknown>) => _.Option<unknown> {
+): (self: Option<unknown>) => Option<unknown> {
   return (self) => {
     if (_.isNone(self)) {
       return self;
@@ -440,7 +450,7 @@ export function filter(
 export function match<A, B, C>(
   onNone: LazyValue<C>,
   onSome: (value: A) => B,
-): (self: _.Option<A>) => B | C {
+): (self: Option<A>) => B | C {
   return (option) => (_.isSome(option) ? onSome(option.value) : onNone());
 }
 
@@ -460,7 +470,7 @@ export function match<A, B, C>(
  */
 export function getOrElse<B>(
   onNone: LazyValue<B>,
-): <A>(self: _.Option<A>) => A | B {
+): <A>(self: Option<A>) => A | B {
   return match(onNone, identity);
 }
 
@@ -545,7 +555,7 @@ export const toUndefined = getOrElse(constUndefined);
  *                  //^?  []
  * ```
  */
-export function toArray<A>(self: _.Option<A>): A[] {
+export function toArray<A>(self: Option<A>): A[] {
   return _.isSome(self) ? [self.value] : [];
 }
 
@@ -564,6 +574,6 @@ export function toArray<A>(self: _.Option<A>): A[] {
  */
 export function satisfies<A>(
   predicate: Predicate<A>,
-): (self: _.Option<A>) => boolean {
+): (self: Option<A>) => boolean {
   return (self) => _.isSome(self) && predicate(self.value);
 }

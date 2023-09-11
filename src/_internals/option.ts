@@ -1,16 +1,6 @@
-import { pipeable, type Pipeable } from './pipeable';
-import { isPrimitive } from './primitives';
-
-export type Option<A> = None | Some<A>;
-
-export interface Some<A> extends Pipeable {
-  readonly _tag: 'Some';
-  readonly value: A;
-}
-
-export interface None extends Pipeable {
-  readonly _tag: 'None';
-}
+import type { None, Option, Some } from '../option';
+import { isPrimitive } from './core';
+import { pipeable } from './pipeable';
 
 const _none = Object.freeze<Option<never>>({
   _tag: 'None',
