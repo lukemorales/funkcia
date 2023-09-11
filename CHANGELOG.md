@@ -1,5 +1,13 @@
 # funkcia
 
+## 0.1.1
+
+### Patch Changes
+
+- [#3](https://github.com/lukemorales/funkcia/pull/3) [`350c50d`](https://github.com/lukemorales/funkcia/commit/350c50dad4f55f8b7d8f6799519907168d77183e) Thanks [@lukemorales](https://github.com/lukemorales)! - Improve `head` and `tail` return types and add `map` function to `array` module
+
+- [#3](https://github.com/lukemorales/funkcia/pull/3) [`350c50d`](https://github.com/lukemorales/funkcia/commit/350c50dad4f55f8b7d8f6799519907168d77183e) Thanks [@lukemorales](https://github.com/lukemorales)! - Simplify bundle setup
+
 ## 0.1.0
 
 ### Minor Changes
