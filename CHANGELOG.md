@@ -1,5 +1,11 @@
 # funkcia
 
+## 0.1.2
+
+### Patch Changes
+
+- [`3548efc`](https://github.com/lukemorales/funkcia/commit/3548efc23ca95126d76825a6f4b7901b1f20f336) Thanks [@lukemorales](https://github.com/lukemorales)! - More improvements to bundle
+
 ## 0.1.1
 
 ### Patch Changes
