@@ -27,55 +27,6 @@
       "types": "./dist/index.d.ts",
       "module": "./dist/index.mjs"
     },
-    "./array": {
-      "default": "./dist/array.mjs",
-      "import": "./dist/array.mjs",
-      "require": "./dist/array.js",
-      "types": "./dist/array.d.ts",
-      "module": "./dist/array.mjs"
-    },
-    "./either": {
-      "default": "./dist/either.mjs",
-      "import": "./dist/either.mjs",
-      "require": "./dist/either.js",
-      "types": "./dist/either.d.ts",
-      "module": "./dist/either.mjs"
-    },
-    "./functions": {
-      "default": "./dist/functions.mjs",
-      "import": "./dist/functions.mjs",
-      "require": "./dist/functions.js",
-      "types": "./dist/functions.d.ts",
-      "module": "./dist/functions.mjs"
-    },
-    "./number": {
-      "default": "./dist/number.mjs",
-      "import": "./dist/number.mjs",
-      "require": "./dist/number.js",
-      "types": "./dist/number.d.ts",
-      "module": "./dist/number.mjs"
-    },
-    "./option": {
-      "default": "./dist/option.mjs",
-      "import": "./dist/option.mjs",
-      "require": "./dist/option.js",
-      "types": "./dist/option.d.ts",
-      "module": "./dist/option.mjs"
-    },
-    "./predicate": {
-      "default": "./dist/predicate.mjs",
-      "import": "./dist/predicate.mjs",
-      "require": "./dist/predicate.js",
-      "types": "./dist/predicate.d.ts",
-      "module": "./dist/predicate.mjs"
-    },
-    "./string": {
-      "default": "./dist/string.mjs",
-      "import": "./dist/string.mjs",
-      "require": "./dist/string.js",
-      "types": "./dist/string.d.ts",
-      "module": "./dist/string.mjs"
-    },
     "./package.json": "./package.json"
   },
   "prettier": "@lukemorales/prettier-config",

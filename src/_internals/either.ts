@@ -1,5 +1,5 @@
 import type { Either, Left, Right } from '../either';
-import { isPrimitive } from './core';
+import { isFunkciaConstructor } from './core';
 import { pipeable } from './pipeable';
 
 export function left<L>(failure: L): Either<L, never> {
@@ -26,7 +26,8 @@ export function right<R>(success: R): Either<never, R> {
 
 export function isEither(value: unknown): value is Either<unknown, unknown> {
   return (
-    isPrimitive(value) && (value._tag === 'Left' || value._tag === 'Right')
+    isFunkciaConstructor(value) &&
+    (value._tag === 'Left' || value._tag === 'Right')
   );
 }
 

@@ -1,5 +1,5 @@
 import type { None, Option, Some } from '../option';
-import { isPrimitive } from './core';
+import { isFunkciaConstructor } from './core';
 import { pipeable } from './pipeable';
 
 const _none = Object.freeze<Option<never>>({
@@ -26,7 +26,10 @@ export function some<T>(value: T): Option<T> {
 }
 
 export function isOption(value: unknown): value is Option<unknown> {
-  return isPrimitive(value) && (value._tag === 'Some' || value._tag === 'None');
+  return (
+    isFunkciaConstructor(value) &&
+    (value._tag === 'Some' || value._tag === 'None')
+  );
 }
 
 export function isNone(value: Option<unknown>): value is None {

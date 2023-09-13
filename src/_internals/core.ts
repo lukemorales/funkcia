@@ -1,4 +1,6 @@
-export function isPrimitive(value: unknown): value is Record<'_tag', string> {
+export function isFunkciaConstructor(
+  value: unknown,
+): value is Record<'_tag', string> {
   return (
     typeof value === 'object' &&
     value != null &&
