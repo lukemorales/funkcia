@@ -1,5 +1,11 @@
 # funkcia
 
+## 0.1.6
+
+### Patch Changes
+
+- [`01c38b5`](https://github.com/lukemorales/funkcia/commit/01c38b543fb78e006db3cc18c04b33e4b157bf28) Thanks [@lukemorales](https://github.com/lukemorales)! - Expose constructor types in main entrypoint
+
 ## 0.1.5
 
 ### Patch Changes
