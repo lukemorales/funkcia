@@ -20,3 +20,6 @@ export {
   P as predicate,
   S as string,
 };
+
+export type { Either, Left, Right } from './either';
+export type { None, Option, Some } from './option';
