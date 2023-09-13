@@ -1,5 +1,11 @@
 # funkcia
 
+## 0.1.5
+
+### Patch Changes
+
+- [`97ed93e`](https://github.com/lukemorales/funkcia/commit/97ed93e80ced13269db865d90f4c480c508f3a5e) Thanks [@lukemorales](https://github.com/lukemorales)! - Build with single entry point
+
 ## 0.1.4
 
 ### Patch Changes
