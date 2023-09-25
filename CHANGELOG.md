@@ -1,5 +1,11 @@
 # funkcia
 
+## 0.2.0
+
+### Minor Changes
+
+- [`abbe058`](https://github.com/lukemorales/funkcia/commit/abbe058de87e0cf8be92ed6cfab0e809e822ac38) Thanks [@lukemorales](https://github.com/lukemorales)! - Replace `Either` with `Result`
+
 ## 0.1.6
 
 ### Patch Changes
