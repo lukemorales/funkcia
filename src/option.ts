@@ -1,11 +1,10 @@
 /* eslint-disable no-param-reassign,, prefer-destructuring */
 
 import { dual } from './_internals/dual';
-import { isRight } from './_internals/either';
 import * as _ from './_internals/option';
 import type { Pipeable } from './_internals/pipeable';
+import { error, isOk, ok } from './_internals/result';
 import type { Falsy, Mutable, Nullable } from './_internals/types';
-import type { Either } from './either';
 import {
   constNull,
   constUndefined,
@@ -13,12 +12,15 @@ import {
   type LazyValue,
 } from './functions';
 import type { Predicate, Refinement } from './predicate';
+import type { Result } from './result';
 
 // -------------------------------------
 // constructors
 // -------------------------------------
 
 export type Option<A> = None | Some<A>;
+
+export type AsyncOption<A> = Promise<Option<A>>;
 
 export interface Some<A> extends Pipeable {
   readonly _tag: 'Some';
@@ -112,9 +114,9 @@ export function fromThrowable<A>(f: () => A): Option<A> {
 }
 
 interface FromPredicate {
-  <A, B extends A>(typePredicate: Refinement<A, B>): (value: A) => Option<B>;
+  <A, B extends A>(refinement: Refinement<A, B>): (value: A) => Option<B>;
   <A>(predicate: Predicate<A>): (value: A) => Option<A>;
-  <A, B extends A>(value: A, typePredicate: Refinement<A, B>): Option<B>;
+  <A, B extends A>(value: A, refinement: Refinement<A, B>): Option<B>;
   <A>(value: A, predicate: Predicate<A>): Option<A>;
 }
 
@@ -189,22 +191,33 @@ export const fromPredicate: FromPredicate = dual(
 );
 
 /**
- * Transforms an `Either` into an `Option` discarding the error.
+ * Transforms an `Result` into an `Option` discarding the error.
  *
  * @example
  * ```ts
- * import { O, E } from 'funkcia';
+ * import { O, R } from 'funkcia';
  *
- * const someOption = O.fromEither(E.right(10));
+ * const someOption = O.fromResult(R.ok(10));
  *             //^?  Some<number>
  *
- * const emptyOption = O.fromEither(E.left('Computation failure'));
+ * const emptyOption = O.fromResult(R.error('Computation failure'));
  *              //^?  None
  * ```
  */
-export function fromEither<A>(either: Either<unknown, A>): Option<A> {
-  return isRight(either) ? _.some(either.right) : _.none();
+export function fromResult<E, O>(either: Result<E, O>): Option<O> {
+  return isOk(either) ? _.some(either.data) : _.none();
 }
+
+interface ToResult {
+  <E>(onNone: LazyValue<E>): <O>(option: Option<O>) => Result<E, O>;
+  <E, O>(option: Option<O>, onNone: LazyValue<E>): Result<E, O>;
+}
+
+export const toResult: ToResult = dual(
+  2,
+  (option: any, onNone: LazyValue<any>) =>
+    isSome(option) ? ok(option.value) : error(onNone()),
+);
 
 // -------------------------------------
 // lifting
@@ -385,7 +398,7 @@ export const flatten: <A>(self: Option<Option<A>>) => Option<A> =
  * ); // None
  */
 export function filter<A, B extends A>(
-  typePredicate: Refinement<A, B>,
+  refinement: Refinement<A, B>,
 ): (self: Option<A>) => Option<B>;
 /**
  * Filters an `Option` using a predicate.
@@ -488,7 +501,7 @@ export function getOrElse<B>(
  *             //^?  Uncaught exception: 'Failed to unwrap Option value'
  * ```
  */
-export const unwrap = getOrElse(() => {
+export const unwrap: <A>(self: Option<A>) => A = getOrElse(() => {
   throw new Error('Failed to unwrap Option value');
 });
 
@@ -506,7 +519,9 @@ export const unwrap = getOrElse(() => {
  *       //^?  Uncaught exception: 'Team not found: "team_01"'
  * ```
  */
-export function expect<B extends Error>(onNone: LazyValue<B>) {
+export function expect<B extends globalThis.Error>(
+  onNone: LazyValue<B>,
+): <A>(self: Option<A>) => A {
   return getOrElse(() => {
     throw onNone();
   });
@@ -523,7 +538,8 @@ export function expect<B extends Error>(onNone: LazyValue<B>) {
  *       //^?  User | null
  * ```
  */
-export const toNullable = getOrElse(constNull);
+export const toNullable: <A>(self: Option<A>) => A | null =
+  getOrElse(constNull);
 
 /**
  * Unwraps the `Option` value. If `Option` is a `None`, returns `undefined`.
@@ -536,28 +552,8 @@ export const toNullable = getOrElse(constNull);
  *       //^?  User | undefined
  * ```
  */
-export const toUndefined = getOrElse(constUndefined);
-
-/**
- * Transforms an `Option` into an `Array`.
- *
- * If the input is `Some`, the value is wrapped in an array.
- * If the input is `None`, an empty array is returned.
- *
- * @example
- * ```ts
- * import { O } from 'funkcia';
- *
- * const collection = O.some('john doe').pipe(O.toArray);
- *             //^?  ['john doe']
- *
- * const emptyCollection = O.none().pipe(O.toArray);
- *                  //^?  []
- * ```
- */
-export function toArray<A>(self: Option<A>): A[] {
-  return _.isSome(self) ? [self.value] : [];
-}
+export const toUndefined: <A>(self: Option<A>) => A | undefined =
+  getOrElse(constUndefined);
 
 /**
  * Returns `true` if the predicate is satisfied by the wrapped value.
@@ -568,7 +564,7 @@ export function toArray<A>(self: Option<A>): A[] {
  * ```ts
  * import { O } from 'funkcia';
  *
- * const isPositive = O.some(18).pipe(O.satisfies(value => value > 0));
+ * const isPositive = O.some(10).pipe(O.satisfies(value => value > 0));
  *             //^?  true
  * ```
  */

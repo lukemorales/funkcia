@@ -1,4 +1,4 @@
-import { compose } from './functions';
+import { flow } from './functions';
 import { greaterThanOrEqualTo } from './number';
 import {
   fromNullable as optionFromNullable,
@@ -9,11 +9,11 @@ import { not } from './predicate';
 
 export const empty = '' as const;
 
-export const isBlank = compose(trim, isEmpty);
+export const isBlank = flow(trim, isEmpty);
 
 export const isNonBlank = not(isBlank);
 
-export function isEmpty(self: string): boolean {
+export function isEmpty(self: string): self is '' {
   return self === empty;
 }
 

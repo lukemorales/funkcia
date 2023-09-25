@@ -22,32 +22,32 @@ export function identity<A>(value: A): A {
 
 export const coerce: <A>(value: any) => A = identity;
 
-export function compose<A extends readonly unknown[], B>(
+export function flow<A extends readonly unknown[], B>(
   ab: (...a: A) => B,
 ): (...a: A) => B;
-export function compose<A extends readonly unknown[], B, C>(
+export function flow<A extends readonly unknown[], B, C>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
 ): (...a: A) => C;
-export function compose<A extends readonly unknown[], B, C, D>(
+export function flow<A extends readonly unknown[], B, C, D>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
 ): (...a: A) => D;
-export function compose<A extends readonly unknown[], B, C, D, E>(
+export function flow<A extends readonly unknown[], B, C, D, E>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
   de: (d: D) => E,
 ): (...a: A) => E;
-export function compose<A extends readonly unknown[], B, C, D, E, F>(
+export function flow<A extends readonly unknown[], B, C, D, E, F>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
   de: (d: D) => E,
   ef: (e: E) => F,
 ): (...a: A) => F;
-export function compose<A extends readonly unknown[], B, C, D, E, F, G>(
+export function flow<A extends readonly unknown[], B, C, D, E, F, G>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -55,7 +55,7 @@ export function compose<A extends readonly unknown[], B, C, D, E, F, G>(
   ef: (e: E) => F,
   fg: (f: F) => G,
 ): (...a: A) => G;
-export function compose<A extends readonly unknown[], B, C, D, E, F, G, H>(
+export function flow<A extends readonly unknown[], B, C, D, E, F, G, H>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -64,7 +64,7 @@ export function compose<A extends readonly unknown[], B, C, D, E, F, G, H>(
   fg: (f: F) => G,
   gh: (g: G) => H,
 ): (...a: A) => H;
-export function compose<A extends readonly unknown[], B, C, D, E, F, G, H, I>(
+export function flow<A extends readonly unknown[], B, C, D, E, F, G, H, I>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -74,18 +74,7 @@ export function compose<A extends readonly unknown[], B, C, D, E, F, G, H, I>(
   gh: (g: G) => H,
   hi: (h: H) => I,
 ): (...a: A) => I;
-export function compose<
-  A extends readonly unknown[],
-  B,
-  C,
-  D,
-  E,
-  F,
-  G,
-  H,
-  I,
-  J,
->(
+export function flow<A extends readonly unknown[], B, C, D, E, F, G, H, I, J>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -96,10 +85,7 @@ export function compose<
   hi: (h: H) => I,
   ij: (i: I) => J,
 ): (...a: A) => J;
-export function compose(
-  firstOperation: LazyFn,
-  ...operations: LazyFn[]
-): unknown {
+export function flow(firstOperation: LazyFn, ...operations: LazyFn[]): unknown {
   return function composed(this: unknown) {
     // eslint-disable-next-line prefer-rest-params
     let result = firstOperation.apply(this, arguments as any);
