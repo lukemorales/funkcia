@@ -80,7 +80,7 @@ export const fromFalsy: FromFalsy = dual(
 interface FromPredicate {
   <E, O, U extends O>(
     refinement: Refinement<O, U>,
-    onDissatisfied: (failure: O) => E,
+    onDissatisfied: (failure: Exclude<O, U>) => E,
   ): (value: O) => Result<E, U>;
   <E, O>(
     predicate: Predicate<O>,
@@ -89,7 +89,7 @@ interface FromPredicate {
   <E, O, U extends O>(
     value: O,
     refinement: Refinement<O, U>,
-    onDissatisfied: (failure: O) => E,
+    onDissatisfied: (failure: Exclude<O, U>) => E,
   ): Result<E, U>;
   <E, O>(
     value: O,
@@ -208,19 +208,20 @@ export const flatten: <E, E2, O>(
 // filtering
 // -------------------------------------
 
+// @ts-expect-error the compiler complains about the implementation, but the overloading works when invoking the function
 export function filter<O, O2 extends O, E2>(
   refinement: Refinement<O, O2>,
-  onDissatisfied: (value: O) => E2,
+  onDissatisfied: (value: Exclude<O, O2>) => E2,
 ): <E>(self: Result<E, O>) => Result<E | E2, O2>;
 export function filter<O, E2>(
   predicate: Predicate<O>,
   onDissatisfied: (value: O) => E2,
 ): <E>(self: Result<E, O>) => Result<E | E2, O>;
 export function filter(
-  predicate: Predicate<unknown>,
-  onDissatisfied: (value: unknown) => unknown,
-): (self: Result<unknown, unknown>) => Result<unknown, unknown> {
-  return (self) => {
+  predicate: (value: any) => boolean,
+  onDissatisfied: (value: any) => void,
+) {
+  return (self: Result<any, any>) => {
     if (_.isError(self)) {
       return self;
     }
