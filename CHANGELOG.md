@@ -1,5 +1,13 @@
 # funkcia
 
+## 0.3.0
+
+### Minor Changes
+
+- [`99c04bc`](https://github.com/lukemorales/funkcia/commit/99c04bc77d38197694ac0bc52d97b2ba029af8d1) Thanks [@lukemorales](https://github.com/lukemorales)! - Add missing array methods
+
+- [`1e7c71b`](https://github.com/lukemorales/funkcia/commit/1e7c71b6708327f12797088530f9c906de925950) Thanks [@lukemorales](https://github.com/lukemorales)! - Improve predicates refinement on dissatisfied paths in `Result`
+
 ## 0.2.0
 
 ### Minor Changes
