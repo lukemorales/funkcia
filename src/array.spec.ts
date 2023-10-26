@@ -70,41 +70,6 @@ describe('Array', () => {
   });
 
   describe('getters', () => {
-    describe('take', () => {
-      describe('data-first', () => {
-        it('returns a new array with only the amount to be taken', () => {
-          expect(A.take([1, 2, 3], 2)).toEqual([1, 2]);
-        });
-      });
-
-      describe('data-last', () => {
-        it('returns a new array with only the amount to be taken', () => {
-          expect(pipe([1, 2, 3], A.take(2))).toEqual([1, 2]);
-        });
-      });
-    });
-
-    describe('takeWhile', () => {
-      describe('data-first', () => {
-        it('returns a new array with all elements until the first index that does not satisfy the predicate', () => {
-          expect(A.takeWhile([1, 2, 3, 2, 1], (number) => number < 3)).toEqual([
-            1, 2,
-          ]);
-        });
-      });
-
-      describe('data-last', () => {
-        it('returns a new array with all elements until the first index that does not satisfy the predicate', () => {
-          expect(
-            pipe(
-              [1, 2, 3, 2, 1],
-              A.takeWhile((number) => number < 3),
-            ),
-          ).toEqual([1, 2]);
-        });
-      });
-    });
-
     describe('head', () => {
       it('returns a Some with the first element if the array is not empty', () => {
         expect(A.head([1, 2, 3, 4, 5])).toMatchOption(O.some(1));
@@ -223,6 +188,41 @@ describe('Array', () => {
             A.flatMap((item) => (item % 2 === 0 ? item : [item])),
           ),
         ).toEqual([0, 1, 2, 3, 4]);
+      });
+    });
+
+    describe('take', () => {
+      describe('data-first', () => {
+        it('returns a new array with only the amount to be taken', () => {
+          expect(A.take([1, 2, 3], 2)).toEqual([1, 2]);
+        });
+      });
+
+      describe('data-last', () => {
+        it('returns a new array with only the amount to be taken', () => {
+          expect(pipe([1, 2, 3], A.take(2))).toEqual([1, 2]);
+        });
+      });
+    });
+
+    describe('takeWhile', () => {
+      describe('data-first', () => {
+        it('returns a new array with all elements until the first index that does not satisfy the predicate', () => {
+          expect(A.takeWhile([1, 2, 3, 2, 1], (number) => number < 3)).toEqual([
+            1, 2,
+          ]);
+        });
+      });
+
+      describe('data-last', () => {
+        it('returns a new array with all elements until the first index that does not satisfy the predicate', () => {
+          expect(
+            pipe(
+              [1, 2, 3, 2, 1],
+              A.takeWhile((number) => number < 3),
+            ),
+          ).toEqual([1, 2]);
+        });
       });
     });
 
@@ -449,9 +449,9 @@ describe('Array', () => {
           expect(A.difference([], [])).toEqual([]);
 
           expect(A.difference([1, 2, 3, 4], [])).toEqual([1, 2, 3, 4]);
-          expect(A.difference([], [3, 4, 5])).toEqual([3, 4, 5]);
+          expect(A.difference([], [3, 4, 5])).toEqual([]);
 
-          expect(A.difference([1, 2, 3, 4], [3, 4, 5])).toEqual([1, 2, 5]);
+          expect(A.difference([1, 2, 3, 4], [3, 4, 5])).toEqual([1, 2]);
         });
       });
 
@@ -462,11 +462,9 @@ describe('Array', () => {
           expect(pipe([1, 2, 3, 4], A.difference<number>([]))).toEqual([
             1, 2, 3, 4,
           ]);
-          expect(pipe([], A.difference([3, 4, 5]))).toEqual([3, 4, 5]);
+          expect(pipe([], A.difference([3, 4, 5]))).toEqual([]);
 
-          expect(pipe([1, 2, 3, 4], A.difference([3, 4, 5]))).toEqual([
-            1, 2, 5,
-          ]);
+          expect(pipe([1, 2, 3, 4], A.difference([3, 4, 5]))).toEqual([1, 2]);
         });
       });
     });
