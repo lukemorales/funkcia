@@ -5,7 +5,7 @@ import {
 } from './option';
 
 export function isNumber(value: unknown): value is number {
-  return !Number.isNaN(value);
+  return typeof value === 'number' && !Number.isNaN(value);
 }
 
 export function add(addend: number): (augend: number) => number {
