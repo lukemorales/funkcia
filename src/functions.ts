@@ -1,20 +1,18 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+export type Thunk<T> = () => T;
 
-export type LazyValue<T> = () => T;
-
-export function constant<A>(value: A): LazyValue<A> {
+export function constant<A>(value: A): Thunk<A> {
   return () => value;
 }
 
-export const constNull: LazyValue<null> = constant(null);
+export const constNull: Thunk<null> = constant(null);
 
-export const constUndefined: LazyValue<undefined> = constant(undefined);
+export const constUndefined: Thunk<undefined> = constant(undefined);
 
-export const constVoid: LazyValue<void> = constUndefined;
+export const constVoid: Thunk<void> = constUndefined;
 
-export const constTrue: LazyValue<true> = constant(true);
+export const constTrue: Thunk<true> = constant(true);
 
-export const constFalse: LazyValue<false> = constant(false);
+export const constFalse: Thunk<false> = constant(false);
 
 export function identity<A>(value: A): A {
   return value;
@@ -85,13 +83,13 @@ export function flow<A extends readonly unknown[], B, C, D, E, F, G, H, I, J>(
   hi: (h: H) => I,
   ij: (i: I) => J,
 ): (...a: A) => J;
-export function flow(firstOperation: LazyFn, ...operations: LazyFn[]): unknown {
+export function flow(firstFn: LazyFn, ...fns: LazyFn[]): unknown {
   return function composed(this: unknown) {
     // eslint-disable-next-line prefer-rest-params
-    let result = firstOperation.apply(this, arguments as any);
+    let result = firstFn.apply(this, arguments as any);
 
-    for (const op of operations) {
-      result = op(result);
+    for (const fn of fns) {
+      result = fn(result);
     }
 
     return result;
@@ -319,12 +317,12 @@ export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S>(
   qr: (q: Q) => R,
   rs: (r: R) => S,
 ): S;
-export function pipe(a: unknown, ...operations: LazyFn[]): unknown {
-  let value = a;
+export function pipe(value: unknown, ...fns: LazyFn[]): unknown {
+  let result = value;
 
-  for (const op of operations) {
-    value = op(value);
+  for (const fn of fns) {
+    result = fn(result);
   }
 
-  return value;
+  return result;
 }

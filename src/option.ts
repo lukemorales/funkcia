@@ -5,12 +5,7 @@ import * as _ from './_internals/option';
 import type { Pipeable } from './_internals/pipeable';
 import { error, isOk, ok } from './_internals/result';
 import type { Falsy, Mutable, Nullable } from './_internals/types';
-import {
-  constNull,
-  constUndefined,
-  identity,
-  type LazyValue,
-} from './functions';
+import { constNull, constUndefined, identity, type Thunk } from './functions';
 import type { Predicate, Refinement } from './predicate';
 import type { Result } from './result';
 
@@ -209,14 +204,12 @@ export function fromResult<E, O>(either: Result<E, O>): Option<O> {
 }
 
 interface ToResult {
-  <E>(onNone: LazyValue<E>): <O>(option: Option<O>) => Result<E, O>;
-  <E, O>(option: Option<O>, onNone: LazyValue<E>): Result<E, O>;
+  <E>(onNone: Thunk<E>): <O>(option: Option<O>) => Result<E, O>;
+  <E, O>(option: Option<O>, onNone: Thunk<E>): Result<E, O>;
 }
 
-export const toResult: ToResult = dual(
-  2,
-  (option: any, onNone: LazyValue<any>) =>
-    isSome(option) ? ok(option.value) : error(onNone()),
+export const toResult: ToResult = dual(2, (option: any, onNone: Thunk<any>) =>
+  isSome(option) ? ok(option.value) : error(onNone()),
 );
 
 // -------------------------------------
@@ -276,7 +269,7 @@ export function liftThrowable<A extends readonly unknown[], B>(
 // -------------------------------------
 
 export function fallback<B>(
-  spare: LazyValue<Option<B>>,
+  spare: Thunk<Option<B>>,
 ): <A>(self: Option<A>) => Option<A | B> {
   return (self) => (_.isNone(self) ? spare() : self);
 }
@@ -461,7 +454,7 @@ export function filter(
  *             //^?  'Greeting!'
  */
 export function match<A, B, C>(
-  onNone: LazyValue<C>,
+  onNone: Thunk<C>,
   onSome: (value: A) => B,
 ): (self: Option<A>) => B | C {
   return (option) => (_.isSome(option) ? onSome(option.value) : onNone());
@@ -481,9 +474,7 @@ export function match<A, B, C>(
  *             //^?  'John Doe'
  * ```
  */
-export function getOrElse<B>(
-  onNone: LazyValue<B>,
-): <A>(self: Option<A>) => A | B {
+export function getOrElse<B>(onNone: Thunk<B>): <A>(self: Option<A>) => A | B {
   return match(onNone, identity);
 }
 
@@ -520,7 +511,7 @@ export const unwrap: <A>(self: Option<A>) => A = getOrElse(() => {
  * ```
  */
 export function expect<B extends globalThis.Error>(
-  onNone: LazyValue<B>,
+  onNone: Thunk<B>,
 ): <A>(self: Option<A>) => A {
   return getOrElse(() => {
     throw onNone();

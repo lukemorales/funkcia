@@ -1,11 +1,11 @@
-/* eslint-disable no-param-reassign, prefer-destructuring */
+/* eslint-disable prefer-destructuring */
 
 import { dual } from './_internals/dual';
 import { isSome, none, some } from './_internals/option';
 import { type Pipeable } from './_internals/pipeable';
 import * as _ from './_internals/result';
 import { type Falsy, type Mutable, type Nullable } from './_internals/types';
-import { identity, type LazyValue } from './functions';
+import { identity, type Thunk } from './functions';
 import type { Option } from './option';
 import type { Predicate, Refinement } from './predicate';
 
@@ -47,33 +47,30 @@ export const isResult = _.isResult;
 
 interface FromNullable {
   <E>(
-    onNullable: LazyValue<E>,
+    onNullable: Thunk<E>,
   ): <O>(value: Nullable<O>) => Result<E, NonNullable<O>>;
-  <E, O>(
-    value: Nullable<O>,
-    onNullable: LazyValue<E>,
-  ): Result<E, NonNullable<O>>;
+  <E, O>(value: Nullable<O>, onNullable: Thunk<E>): Result<E, NonNullable<O>>;
 }
 
 export const fromNullable: FromNullable = dual(
   2,
-  (value: any, onNullable: LazyValue<any>) =>
+  (value: any, onNullable: Thunk<any>) =>
     value == null ? _.error(onNullable()) : _.ok(value),
 );
 
 interface FromFalsy {
   <E>(
-    onFalsy: LazyValue<E>,
+    onFalsy: Thunk<E>,
   ): <O>(value: O | Falsy) => Result<E, Exclude<NonNullable<O>, Falsy>>;
   <E, O>(
     value: O | Falsy,
-    onFalsy: LazyValue<E>,
+    onFalsy: Thunk<E>,
   ): Result<E, Exclude<NonNullable<O>, Falsy>>;
 }
 
 export const fromFalsy: FromFalsy = dual(
   2,
-  (value: any, onFalsy: LazyValue<any>) =>
+  (value: any, onFalsy: Thunk<any>) =>
     value ? _.ok(value) : _.error(onFalsy()),
 );
 
@@ -116,13 +113,13 @@ export function fromThrowable<E, O>(
 }
 
 interface FromOption {
-  <E>(onNone: LazyValue<E>): <O>(option: Option<O>) => Result<E, O>;
-  <E, O>(option: Option<O>, onNone: LazyValue<E>): Result<E, O>;
+  <E>(onNone: Thunk<E>): <O>(option: Option<O>) => Result<E, O>;
+  <E, O>(option: Option<O>, onNone: Thunk<E>): Result<E, O>;
 }
 
 export const fromOption: FromOption = dual(
   2,
-  (option: any, onNone: LazyValue<any>) =>
+  (option: any, onNone: Thunk<any>) =>
     isSome(option) ? _.ok(option.value) : _.error(onNone()),
 );
 
@@ -153,7 +150,7 @@ export function liftThrowable<A extends readonly unknown[], E, O>(
 // -------------------------------------
 
 export function fallback<E2, O2>(
-  spare: LazyValue<Result<E2, O2>>,
+  spare: Thunk<Result<E2, O2>>,
 ): <E, O>(self: Result<E, O>) => Result<E2, O | O2> {
   return (self) => (_.isOk(self) ? self : spare());
 }
@@ -208,7 +205,7 @@ export const flatten: <E, E2, O>(
 // filtering
 // -------------------------------------
 
-// @ts-expect-error the compiler complains about the implementation, but the overloading works when invoking the function
+// @ts-expect-error the compiler complains about the implementation, but the overloading works fine
 export function filter<O, O2 extends O, E2>(
   refinement: Refinement<O, O2>,
   onDissatisfied: (value: Exclude<O, O2>) => E2,
