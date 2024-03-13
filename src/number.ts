@@ -5,7 +5,7 @@ import {
 } from './option';
 
 export function isNumber(value: unknown): value is number {
-  return typeof value === 'number';
+  return !Number.isNaN(value);
 }
 
 export function add(addend: number): (augend: number) => number {
@@ -20,7 +20,13 @@ export function multiply(multiplier: number): (multiplicand: number) => number {
   return (multiplicand) => multiplicand * multiplier;
 }
 
-export function divide(divisor: number): (dividend: number) => Option<number> {
+export function divide(divisor: number): (dividend: number) => number {
+  return (dividend) => dividend / divisor;
+}
+
+export function safeDivide(
+  divisor: number,
+): (dividend: number) => Option<number> {
   return (dividend) =>
     optionFromPredicate(divisor, greaterThan(0)).pipe(
       mapOption((safeDivisor) => dividend / safeDivisor),
@@ -31,9 +37,9 @@ export function reminder(divisor: number): (dividend: number) => number {
   return (dividend) => dividend % divisor;
 }
 
-export const increment = add(1);
+export const increment: (value: number) => number = add(1);
 
-export const decrement = subtract(1);
+export const decrement: (value: number) => number = subtract(1);
 
 export const negate: (value: number) => number = multiply(-1);
 
