@@ -253,10 +253,10 @@ export const unwrap: <E, O>(self: Result<E, O>) => O = getOrElse(() => {
   throw new Error('Failed to unwrap Result value');
 });
 
-export function expect<B extends globalThis.Error>(
-  onError: LazyValue<B>,
-): <E, O>(self: Result<E, O>) => O {
-  return getOrElse(() => {
-    throw onError();
+export function expect<E, B extends globalThis.Error>(
+  onError: (error: E) => B,
+): <O>(self: Result<E, O>) => O {
+  return getOrElse((e) => {
+    throw onError(e);
   });
 }
