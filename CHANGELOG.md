@@ -1,5 +1,13 @@
 # funkcia
 
+## 0.3.1
+
+### Patch Changes
+
+- [`775231b`](https://github.com/lukemorales/funkcia/commit/775231b4fa030d7c2054cf34f5b8db98ec5cdf03) Thanks [@lukemorales](https://github.com/lukemorales)! - Add JSDoc data and examples for Array and Predicate methods
+
+- [`65066ae`](https://github.com/lukemorales/funkcia/commit/65066aec4d05114fa4f698e428173cb4a10d2eb8) Thanks [@lukemorales](https://github.com/lukemorales)! - Pass `error` to `Result.expect`
+
 ## 0.3.0
 
 ### Minor Changes
