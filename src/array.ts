@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-
 import { dual } from './_internals/dual';
 import {
   isNone,
@@ -194,8 +192,8 @@ export function last<A>(self: readonly A[]): Option<A> {
 export function init<A>(self: readonly A[]): Option<NonEmptyArray<A>> {
   const offset = 1;
 
-  return isNonEmpty(self)
-    ? someOption(self.slice(0, self.length - offset) as any)
+  return isNonEmpty(self) ?
+      someOption(self.slice(0, self.length - offset) as any)
     : noneOption();
 }
 
@@ -1042,6 +1040,7 @@ export const difference: Difference = dual(2, (first: any[], second: any[]) => {
   }
 
   const secondSet = new Set(second);
+
   return first.filter((value) => !secondSet.has(value));
 });
 
@@ -1103,6 +1102,7 @@ export const intersection: Intersection = dual(
       firstSize < secondSize ? [first, second] : [second, first];
 
     const largerSet = new Set(larger);
+
     return shorter.filter((value) => largerSet.has(value));
   },
 );
