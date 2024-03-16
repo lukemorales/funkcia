@@ -1,5 +1,11 @@
 # funkcia
 
+## 0.4.0
+
+### Minor Changes
+
+- [`61b3ce3`](https://github.com/lukemorales/funkcia/commit/61b3ce3afbbb18e0bef6019d07954910c7b30b42) Thanks [@lukemorales](https://github.com/lukemorales)! - Fix `default` export on `package.json` and add `Result.swap` function
+
 ## 0.3.1
 
 ### Patch Changes
