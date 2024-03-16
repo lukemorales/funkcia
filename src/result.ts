@@ -155,6 +155,10 @@ export function fallback<E2, O2>(
   return (self) => (_.isOk(self) ? self : spare());
 }
 
+export function swap<E, O>(self: Result<E, O>): Result<O, E> {
+  return _.isOk(self) ? _.error(self.data) : _.ok(self.error);
+}
+
 // -------------------------------------
 // mappers
 // -------------------------------------
