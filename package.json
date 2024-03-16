@@ -21,11 +21,11 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "default": "./dist/index.mjs",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts",
-      "module": "./dist/index.mjs"
+      "module": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
     },
     "./package.json": "./package.json"
   },
