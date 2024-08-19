@@ -1,5 +1,11 @@
 # funkcia
 
+## 0.1.0
+
+### Minor Changes
+
+- [`0d3c217`](https://github.com/lukemorales/funkcia/commit/0d3c217279a166353004c4d90d54531d183d1a7d) Thanks [@lukemorales](https://github.com/lukemorales)! - Create `Option` and `Result` types
+
 ## 0.3.1
 
 ### Patch Changes
