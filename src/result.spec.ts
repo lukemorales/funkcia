@@ -123,7 +123,7 @@ describe('Result', () => {
           null,
           undefined,
           false,
-        ] as const satisfies Falsy[];
+        ] satisfies Falsy[];
 
         for (const value of testValues) {
           const result = Result.fromFalsy(value);

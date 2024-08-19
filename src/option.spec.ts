@@ -76,7 +76,7 @@ describe('Option', () => {
           null,
           undefined,
           false,
-        ] as const satisfies Falsy[];
+        ] satisfies Falsy[];
 
         for (const value of testValues) {
           const option = Option.fromFalsy(value);

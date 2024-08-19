@@ -15,15 +15,17 @@ export class UnwrapError extends TaggedError {
   readonly _tag = 'UnwrapError';
 
   constructor(type: 'Option' | 'Result' | 'ResultError') {
+    super();
+
     switch (type) {
       case 'Option':
-        super('called "Option.unwrap()" on a "None" value');
+        this.message = 'called "Option.unwrap()" on a "None" value';
         break;
       case 'Result':
-        super('called "Result.unwrap()" on an "Error" value');
+        this.message = 'called "Result.unwrap()" on an "Error" value';
         break;
       case 'ResultError':
-        super('called "Result.unwrapError()" on an "Ok" value');
+        this.message = 'called "Result.unwrapError()" on an "Ok" value';
         break;
       default: {
         const _: never = type;
