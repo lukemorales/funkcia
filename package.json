@@ -15,73 +15,70 @@
   "files": [
     "dist"
   ],
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "typings": "dist/index.d.ts",
   "sideEffects": false,
   "exports": {
     ".": {
-      "default": "./dist/index.mjs",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts",
-      "module": "./dist/index.mjs"
+      "module": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
     },
     "./exceptions": {
-      "default": "./dist/exceptions.mjs",
       "import": "./dist/exceptions.mjs",
       "require": "./dist/exceptions.js",
       "types": "./dist/exceptions.d.ts",
-      "module": "./dist/exceptions.mjs"
+      "module": "./dist/exceptions.mjs",
+      "default": "./dist/exceptions.mjs"
     },
     "./functions": {
-      "default": "./dist/functions.mjs",
       "import": "./dist/functions.mjs",
       "require": "./dist/functions.js",
       "types": "./dist/functions.d.ts",
-      "module": "./dist/functions.mjs"
+      "module": "./dist/functions.mjs",
+      "default": "./dist/functions.mjs"
     },
     "./json": {
-      "default": "./dist/json.mjs",
       "import": "./dist/json.mjs",
       "require": "./dist/json.js",
       "types": "./dist/json.d.ts",
-      "module": "./dist/json.mjs"
+      "module": "./dist/json.mjs",
+      "default": "./dist/json.mjs"
     },
     "./option": {
-      "default": "./dist/option.mjs",
       "import": "./dist/option.mjs",
       "require": "./dist/option.js",
       "types": "./dist/option.d.ts",
-      "module": "./dist/option.mjs"
+      "module": "./dist/option.mjs",
+      "default": "./dist/option.mjs"
     },
     "./predicate": {
-      "default": "./dist/predicate.mjs",
       "import": "./dist/predicate.mjs",
       "require": "./dist/predicate.js",
       "types": "./dist/predicate.d.ts",
-      "module": "./dist/predicate.mjs"
+      "module": "./dist/predicate.mjs",
+      "default": "./dist/predicate.mjs"
     },
     "./result": {
-      "default": "./dist/result.mjs",
       "import": "./dist/result.mjs",
       "require": "./dist/result.js",
       "types": "./dist/result.d.ts",
-      "module": "./dist/result.mjs"
+      "module": "./dist/result.mjs",
+      "default": "./dist/result.mjs"
     },
     "./url": {
-      "default": "./dist/url.mjs",
       "import": "./dist/url.mjs",
       "require": "./dist/url.js",
       "types": "./dist/url.d.ts",
-      "module": "./dist/url.mjs"
+      "module": "./dist/url.mjs",
+      "default": "./dist/url.mjs"
     },
     "./uri": {
-      "default": "./dist/uri.mjs",
       "import": "./dist/uri.mjs",
       "require": "./dist/uri.js",
       "types": "./dist/uri.d.ts",
-      "module": "./dist/uri.mjs"
+      "module": "./dist/uri.mjs",
+      "default": "./dist/uri.mjs"
     }
   },
   "prettier": "@lukemorales/prettier-config",
