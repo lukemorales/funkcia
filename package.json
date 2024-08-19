@@ -27,6 +27,20 @@
       "types": "./dist/index.d.ts",
       "module": "./dist/index.mjs"
     },
+    "./exceptions": {
+      "default": "./dist/exceptions.mjs",
+      "import": "./dist/exceptions.mjs",
+      "require": "./dist/exceptions.js",
+      "types": "./dist/exceptions.d.ts",
+      "module": "./dist/exceptions.mjs"
+    },
+    "./functions": {
+      "default": "./dist/functions.mjs",
+      "import": "./dist/functions.mjs",
+      "require": "./dist/functions.js",
+      "types": "./dist/functions.d.ts",
+      "module": "./dist/functions.mjs"
+    },
     "./json": {
       "default": "./dist/json.mjs",
       "import": "./dist/json.mjs",
@@ -40,6 +54,13 @@
       "require": "./dist/option.js",
       "types": "./dist/option.d.ts",
       "module": "./dist/option.mjs"
+    },
+    "./predicate": {
+      "default": "./dist/predicate.mjs",
+      "import": "./dist/predicate.mjs",
+      "require": "./dist/predicate.js",
+      "types": "./dist/predicate.d.ts",
+      "module": "./dist/predicate.mjs"
     },
     "./result": {
       "default": "./dist/result.mjs",
@@ -71,7 +92,8 @@
     ],
     "rules": {
       "@typescript-eslint/no-non-null-assertion": "off",
-      "@typescript-eslint/member-ordering": "off"
+      "@typescript-eslint/member-ordering": "off",
+      "@typescript-eslint/strict-boolean-expressions": "off"
     }
   },
   "scripts": {

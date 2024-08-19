@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  `Result` and `Option` types inspired by the best parts of Rust, OCaml, Nim, Scala, and Haskell
+  <code>Result</code> and <code>Option</code> types inspired by the best parts of Rust, OCaml, Nim, Scala, and Haskell
   <br> providing a type-safe way to build your applications with better DX
 </p>
 

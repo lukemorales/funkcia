@@ -1,516 +1,769 @@
-/* eslint-disable max-classes-per-file */
-
-import { flow, pipe } from './functions';
-import * as N from './number';
-import * as O from './option';
-import * as R from './result';
-import * as S from './string';
+import {
+  FailedPredicateError,
+  MissingValueError,
+  TaggedError,
+  UnexpectedResultError,
+  UnwrapError,
+  type UnknownError,
+} from './exceptions';
+import type { Falsy } from './internals/types';
+import { Option } from './option';
+import { Result } from './result';
 
 describe('Result', () => {
-  describe('conversions', () => {
+  describe('constructors', () => {
+    describe('ok', () => {
+      it('creates a Result with the given value', () => {
+        const result = Result.ok('hello world');
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, never>>();
+
+        expect(result.isOk()).toBe(true);
+        expect(result.isError()).toBe(false);
+        expect(result.unwrap()).toBe('hello world');
+      });
+    });
+
+    describe('of', () => {
+      it('creates a Result with the given value', () => {
+        const result = Result.of('hello world');
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, never>>();
+
+        expect(result.isOk()).toBe(true);
+        expect(result.isError()).toBe(false);
+        expect(result.unwrap()).toBe('hello world');
+      });
+    });
+
+    describe('error', () => {
+      it('creates a Result with the given error', () => {
+        const result = Result.error('failed');
+
+        expectTypeOf(result).toEqualTypeOf<Result<never, 'failed'>>();
+
+        expect(result.isOk()).toBe(false);
+        expect(result.isError()).toBe(true);
+        expect(result.unwrapError()).toBe('failed');
+      });
+    });
+
     describe('fromNullable', () => {
-      describe('data-first', () => {
-        it('creates an Ok when value is not nullable', () => {
-          expect(
-            R.fromNullable('hello world', () => new Error('Nullable value')),
-          ).toMatchResult(R.ok('hello world'));
-        });
+      it('creates an Ok Result when the value is not nullable', () => {
+        const result = Result.fromNullable('hello world');
 
-        const eachCase = it.each([undefined, null]);
+        expectTypeOf(result).toEqualTypeOf<Result<string, MissingValueError>>();
 
-        eachCase('creates an Error when value is %s', (nullable) => {
-          expect(
-            R.fromNullable(nullable, () => new Error('Nullable value')),
-          ).toMatchResult(R.error(new Error('Nullable value')));
-        });
+        expect(result.isOk()).toBe(true);
+        expect(result.isError()).toBe(false);
+        expect(result.unwrap()).toBe('hello world');
       });
 
-      describe('data-last', () => {
-        it('creates an Ok when value is not nullable', () => {
-          expect(
-            pipe(
-              'hello world',
-              R.fromNullable(() => new Error('Nullable value')),
-            ),
-          ).toMatchResult(R.ok('hello world'));
-        });
+      it('creates an Error Result when the value is nullable', () => {
+        const value = null as string | null | undefined;
 
-        const eachCase = it.each([undefined, null]);
+        {
+          const result = Result.fromNullable(value);
 
-        eachCase('creates an Error when value is %s', (nullable) => {
-          expect(
-            pipe(
-              nullable,
-              R.fromNullable(() => new Error('Nullable value')),
-            ),
-          ).toMatchResult(R.error(new Error('Nullable value')));
-        });
+          expectTypeOf(result).toEqualTypeOf<
+            Result<string, MissingValueError>
+          >();
+
+          expect(result.isOk()).toBe(false);
+          expect(result.isError()).toBe(true);
+          expect(result.unwrapError()).toEqual(new MissingValueError());
+        }
+
+        {
+          const result = Result.fromNullable(
+            value,
+            () => new Error('missing value'),
+          );
+
+          expectTypeOf(result).toEqualTypeOf<Result<string, Error>>();
+
+          expect(result.isOk()).toBe(false);
+          expect(result.isError()).toBe(true);
+          expect(result.unwrapError()).toEqual(new Error('missing value'));
+        }
+
+        {
+          const result = Result.fromNullable(
+            value,
+            () => new Error('null value'),
+          );
+
+          expectTypeOf(result).toEqualTypeOf<Result<string, Error>>();
+
+          expect(result.isOk()).toBe(false);
+          expect(result.isError()).toBe(true);
+          expect(result.unwrapError()).toEqual(new Error('null value'));
+        }
       });
     });
 
     describe('fromFalsy', () => {
-      describe('data-first', () => {
-        it('creates an Ok when value is not nullable', () => {
-          expect(
-            R.fromFalsy('hello world', () => new Error('Nullable value')),
-          ).toMatchResult(R.ok('hello world'));
-        });
+      it('creates an Ok Result when the value is not falsy', () => {
+        const value = 'hello world' as string | Falsy;
 
-        const eachCase = it.each([null, undefined, 0, 0n, NaN, false, '']);
+        const result = Result.fromFalsy(value);
 
-        eachCase('creates an Error when value is %s', (falsy) => {
-          expect(
-            R.fromFalsy(falsy, () => new Error('Nullable value')),
-          ).toMatchResult(R.error(new Error('Nullable value')));
-        });
+        expectTypeOf(result).toEqualTypeOf<Result<string, MissingValueError>>();
+
+        expect(result.isOk()).toBe(true);
+        expect(result.isError()).toBe(false);
+        expect(result.unwrap()).toBe('hello world');
       });
 
-      describe('data-last', () => {
-        it('creates an Ok when value is not nullable', () => {
-          expect(
-            pipe(
-              'hello world',
-              R.fromFalsy(() => new Error('Nullable value')),
-            ),
-          ).toMatchResult(R.ok('hello world'));
-        });
+      it('creates an Error Result when the value is falsy', () => {
+        const testValues = [
+          '',
+          0,
+          0n,
+          null,
+          undefined,
+          false,
+        ] as const satisfies Falsy[];
 
-        const eachCase = it.each([null, undefined, 0, 0n, NaN, false, '']);
+        for (const value of testValues) {
+          const result = Result.fromFalsy(value);
 
-        eachCase('creates an Error when value is %s', (falsy) => {
-          expect(
-            pipe(
-              falsy,
-              R.fromFalsy(() => new Error('Nullable value')),
-            ),
-          ).toMatchResult(R.error(new Error('Nullable value')));
-        });
-      });
-    });
+          expectTypeOf(result).toEqualTypeOf<
+            Result<never, MissingValueError>
+          >();
 
-    describe('fromPredicate', () => {
-      type Greeting = string & { greeting: true };
-
-      describe('data-first', () => {
-        it('creates an Ok when predicate is satisfied', () => {
-          expect(
-            R.fromPredicate(
-              'hello world',
-              (value): value is Greeting => value.includes('hello'),
-              () => new Error('Empty option'),
-            ),
-          ).toMatchResult(R.ok('hello world'));
-        });
-
-        it('creates an Error when predicate is not satisfied', () => {
-          expect(
-            R.fromPredicate(
-              'the world',
-              (value): value is Greeting => value.includes('hello'),
-              () => new Error('Empty option'),
-            ),
-          ).toMatchResult(R.error(new Error('Empty option')));
-        });
-      });
-
-      describe('data-last', () => {
-        it('creates an Ok when predicate is satisfied', () => {
-          expect(
-            pipe(
-              'hello world',
-              R.fromPredicate(
-                (value): value is Greeting => value.includes('hello'),
-                () => new Error('Empty option'),
-              ),
-            ),
-          ).toMatchResult(R.ok('hello world'));
-        });
-
-        it('creates an Error when predicate is not satisfied', () => {
-          expect(
-            pipe(
-              'the world',
-              R.fromPredicate(
-                (value): value is Greeting => value.includes('hello'),
-                () => new Error('Empty option'),
-              ),
-            ),
-          ).toMatchResult(R.error(new Error('Empty option')));
-        });
-      });
-    });
-
-    describe('fromThrowable', () => {
-      it('creates an Ok when function succeeds', () => {
-        expect(
-          R.fromThrowable(
-            () => JSON.parse('{ "enabled": true }'),
-            () => new Error('Failed to parse JSON'),
-          ),
-        ).toMatchResult(R.ok({ enabled: true }));
-      });
-
-      it('creates an Error function throws an exception', () => {
-        expect(
-          R.fromThrowable(
-            () => JSON.parse('{{ }} '),
-            () => new Error('Failed to parse JSON'),
-          ),
-        ).toMatchResult(R.error(new Error('Failed to parse JSON')));
+          expect(result.isOk()).toBe(false);
+          expect(result.isError()).toBe(true);
+          expect(result.unwrapError()).toEqual(new MissingValueError());
+        }
       });
     });
 
     describe('fromOption', () => {
-      describe('data-first', () => {
-        it('creates an Ok when Option is Some', () => {
-          expect(
-            R.fromOption(
-              O.some('hello world'),
-              () => new Error('Empty option'),
-            ),
-          ).toMatchResult(R.ok('hello world'));
-        });
+      it('returns Ok when Option is Some', () => {
+        const result = Result.fromOption(Option.some('hello world'));
 
-        it('creates an Error when Option is None', () => {
-          expect(
-            R.fromOption(O.none(), () => new Error('Empty option')),
-          ).toMatchResult(R.error(new Error('Empty option')));
-        });
+        expectTypeOf(result).toEqualTypeOf<Result<string, MissingValueError>>();
+
+        expect(result.isOk()).toBe(true);
+        expect(result.unwrap()).toBe('hello world');
       });
 
-      describe('data-last', () => {
-        it('creates an Ok when Option is Some', () => {
-          expect(
-            pipe(
-              O.some('hello world'),
-              R.fromOption(() => new Error('Empty option')),
-            ),
-          ).toMatchResult(R.ok('hello world'));
-        });
+      it('returns Error when Option is None', () => {
+        const result = Result.fromOption(Option.none<string>());
 
-        it('creates an Error when Option is None', () => {
-          expect(
-            pipe(
-              O.none(),
-              R.fromOption(() => new Error('Empty option')),
-            ),
-          ).toMatchResult(R.error(new Error('Empty option')));
+        expectTypeOf(result).toEqualTypeOf<Result<string, MissingValueError>>();
+
+        expect(result.isError()).toBe(true);
+        expect(() => result.unwrap()).toThrow(UnwrapError);
+      });
+    });
+
+    describe('try', () => {
+      it('creates an Ok Result when the function does not throw', () => {
+        const result = Result.try(() => 'hello world');
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, UnknownError>>();
+
+        expect(result.isOk()).toBe(true);
+        expect(result.isError()).toBe(false);
+        expect(result.unwrap()).toBe('hello world');
+      });
+
+      it('creates an Error Result when the function throws', () => {
+        {
+          const result = Result.try(() => {
+            throw new Error('computation failed');
+          });
+
+          expectTypeOf(result).toEqualTypeOf<Result<never, UnknownError>>();
+
+          expect(result.isOk()).toBe(false);
+          expect(result.isError()).toBe(true);
+          expect(result.unwrapError()).toEqual(new Error('computation failed'));
+        }
+
+        {
+          const result = Result.try(
+            () => {
+              throw new Error('computation failed');
+            },
+            () => new TypeError('custom error'),
+          );
+
+          expectTypeOf(result).toEqualTypeOf<Result<never, TypeError>>();
+
+          expect(result.isOk()).toBe(false);
+          expect(result.isError()).toBe(true);
+          expect(result.unwrapError()).toEqual(new TypeError('custom error'));
+        }
+      });
+    });
+
+    describe('wrap', () => {
+      describe('wrap', () => {
+        class UnsetSetting extends TaggedError {
+          readonly _tag = 'UnsetSetting';
+        }
+
+        class DisabledSetting extends TaggedError {
+          readonly _tag = 'DisabledSetting';
+        }
+
+        function hasEnabledSetting(enabled: boolean | null) {
+          switch (enabled) {
+            case true:
+              return Result.ok(true as const);
+            case false:
+              return Result.error(new DisabledSetting());
+            default:
+              return Result.error(new UnsetSetting());
+          }
+        }
+
+        it('returns a function with improved inference without changing behavior', () => {
+          const output = hasEnabledSetting(true);
+
+          expectTypeOf(output).toEqualTypeOf<
+            | Result<true, never>
+            | Result<never, DisabledSetting>
+            | Result<never, UnsetSetting>
+          >();
+
+          expect(output.isOk()).toBe(true);
+          expect(output.isError()).toBe(false);
+          expect(output.unwrap()).toBe(true);
+
+          const wrapped = Result.wrap(hasEnabledSetting);
+
+          const result = wrapped(true);
+
+          expectTypeOf(result).toEqualTypeOf<
+            Result<true, UnsetSetting | DisabledSetting>
+          >();
+
+          expect(result.isOk()).toBe(true);
+          expect(result.isError()).toBe(false);
+          expect(result.unwrap()).toBe(true);
         });
       });
     });
-  });
 
-  describe('lifting', () => {
-    describe('liftNullable', () => {
-      class InvalidDivisor extends Error {}
-
-      function divide(dividend: number, divisor: number): number | null {
-        return divisor === 0 ? null : dividend / divisor;
+    describe('produce', () => {
+      class InvalidDivisor extends TaggedError {
+        readonly _tag = 'InvalidDivisor';
       }
 
-      const safeDivide = R.liftNullable(
-        divide,
-        () => new InvalidDivisor('Divisor can’t be zero'),
-      );
+      function divide(dividend: number, divisor: number): number {
+        if (divisor === 0) {
+          throw new InvalidDivisor('Divisor can’t be zero');
+        }
 
-      it('creates an Ok when the lifted function returns a non-nullable value', () => {
-        expect(safeDivide(10, 2)).toMatchResult(R.ok(5));
+        return dividend / divisor;
+      }
+
+      const safeDivide = Result.produce<
+        Parameters<typeof divide>,
+        number,
+        InvalidDivisor
+      >(divide, (e) => e as InvalidDivisor);
+
+      it('creates an Ok Result when the lifted function does not throw', () => {
+        const result = safeDivide(10, 2);
+
+        expectTypeOf(result).toEqualTypeOf<Result<number, InvalidDivisor>>();
+
+        expect(result.isOk()).toBe(true);
+        expect(result.isError()).toBe(false);
+        expect(result.unwrap()).toBe(5);
       });
 
-      it('creates an Error when the lifted function returns null or undefined', () => {
-        expect(safeDivide(2, 0)).toMatchResult(
-          R.error(new InvalidDivisor('Divisor can’t be zero')),
+      it('creates an Error Result when the lifted function throws', () => {
+        const result = safeDivide(2, 0);
+
+        expectTypeOf(result).toEqualTypeOf<Result<number, InvalidDivisor>>();
+
+        expect(result.isOk()).toBe(false);
+        expect(result.isError()).toBe(true);
+        expect(result.unwrapError()).toEqual(
+          new InvalidDivisor('Divisor can’t be zero'),
         );
       });
     });
 
-    describe('liftThrowable', () => {
-      class ParsingFailure extends Error {}
+    describe('definePredicate', () => {
+      it('creates a function that can be used to refine the type of a value', () => {
+        interface Circle {
+          kind: 'circle';
+        }
 
-      const safeJsonParse = R.liftThrowable(
-        JSON.parse,
-        () => new ParsingFailure('Failed to parse JSON'),
-      );
+        interface Square {
+          kind: 'square';
+        }
 
-      it('creates an Ok when the lifted function succeeds', () => {
-        expect(safeJsonParse('{ "enabled": true }')).toMatchResult(
-          R.ok({ enabled: true }),
-        );
-      });
+        type Shape = Circle | Square;
 
-      it('creates an Error when the lifted function throws an exception', () => {
-        expect(safeJsonParse('{{ }}')).toMatchResult(
-          R.error(new ParsingFailure('Failed to parse JSON')),
-        );
-      });
-    });
-  });
-
-  describe('replacements', () => {
-    describe('fallback', () => {
-      it('does not replace the original Result when it’s an Ok', () => {
-        expect(R.ok('a').pipe(R.fallback(() => R.ok('b')))).toMatchResult(
-          R.ok('a'),
+        const isCircle = Result.definePredicate(
+          (shape: Shape): shape is Circle => shape.kind === 'circle',
         );
 
-        expect(R.ok('a').pipe(R.fallback(() => R.error('b')))).toMatchResult(
-          R.ok('a'),
-        );
-      });
+        const circleResult = isCircle({ kind: 'circle' });
 
-      it('replaces the original Result with the provided fallback when it’s an Error', () => {
-        expect(R.error('a').pipe(R.fallback(() => R.ok('b')))).toMatchResult(
-          R.ok('b'),
-        );
-
-        expect(R.error('a').pipe(R.fallback(() => R.error('b')))).toMatchResult(
-          R.error('b'),
-        );
-      });
-    });
-  });
-
-  describe('transforming', () => {
-    describe('map', () => {
-      it('maps the value to another value if Result is an Ok', () => {
-        expect(
-          R.ok('hello').pipe(R.map((greeting) => `${greeting} world`)),
-        ).toMatchResult(R.ok('hello world'));
-      });
-
-      it('is a no-op if Result is an Error', () => {
-        expect(
-          R.error('no one to greet').pipe(
-            R.map((greeting: string) => `${greeting} world`),
-          ),
-        ).toMatchResult(R.error('no one to greet'));
-      });
-    });
-
-    describe('mapError', () => {
-      it('is a no-op if Result is an Ok', () => {
-        const result = R.fromPredicate(
-          'hello',
-          (greeting) => greeting.length > 0,
-          () => 'invalid input',
-        ).pipe(R.mapError((message) => new SyntaxError(message)));
-
-        expect(result).toMatchResult(R.ok('hello'));
-        expectTypeOf(result).toMatchTypeOf<R.Result<SyntaxError, string>>();
-      });
-
-      it('maps the value to another value if Result is an Error', () => {
-        const result = R.fromPredicate(
-          'hello',
-          (greeting) => greeting.length > 5,
-          () => 'invalid input',
-        ).pipe(R.mapError((message) => new SyntaxError(message)));
-
-        expect(result).toMatchResult(R.error(new SyntaxError('invalid input')));
-        expectTypeOf(result).toMatchTypeOf<R.Result<SyntaxError, string>>();
-      });
-    });
-
-    describe('flatMap', () => {
-      const transformToAnotherOption = flow(
-        S.length,
-        R.fromPredicate(
-          (length) => length >= 5,
-          () => new Error('too small'),
-        ),
-      );
-
-      it('maps the value if Result is an Ok and flattens the result to a single Result', () => {
-        expect(
-          R.ok('hello').pipe(R.flatMap(transformToAnotherOption)),
-        ).toMatchResult(R.ok(5));
-      });
-
-      it('is a no-op if Result is an Error', () => {
-        const result = R.error(new SyntaxError('invalid input')).pipe(
-          R.flatMap(transformToAnotherOption),
-        );
-
-        expect(result).toMatchResult(R.error(new SyntaxError('invalid input')));
-        expectTypeOf(result).toMatchTypeOf<
-          R.Result<SyntaxError | Error, number>
+        expectTypeOf(circleResult).toEqualTypeOf<
+          Result<Circle, FailedPredicateError<Square>>
         >();
-      });
-    });
 
-    describe('flatMapNullable', () => {
-      interface Profile {
-        address?: {
-          home: string | null;
-          work: string | null;
-        };
-      }
-
-      const profile: Profile = {
-        address: {
-          home: '21st street',
-          work: null,
-        },
-      };
-
-      it('flat maps into an Ok if returning value is not nullable', () => {
-        expect(
-          R.fromNullable(
-            profile.address,
-            () => new Error('Missing profile address'),
-          ).pipe(
-            R.flatMapNullable(
-              (address) => address.home,
-              () => new Error('Missing home address'),
-            ),
-          ),
-        ).toMatchResult(R.ok('21st street'));
+        expect(circleResult.isOk()).toBe(true);
+        expect(circleResult.isError()).toBe(false);
+        expect(circleResult.unwrap()).toEqual({ kind: 'circle' });
       });
 
-      it('flat maps into an Error if returning value is nullable', () => {
-        expect(
-          R.fromNullable(
-            profile.address,
-            () => new Error('Missing profile address'),
-          ).pipe(
-            R.flatMapNullable(
-              (address) => address.work,
-              () => new Error('Missing work address'),
-            ),
-          ),
-        ).toMatchResult(R.error(new Error('Missing work address')));
+      it('creates a function that can be used to assert the type of a value', () => {
+        const isPositive = Result.definePredicate((value: number) => value > 0);
+
+        const positiveResult = isPositive(10);
+
+        expectTypeOf(positiveResult).toEqualTypeOf<
+          Result<number, FailedPredicateError<number>>
+        >();
+
+        expect(positiveResult.isOk()).toBe(true);
+        expect(positiveResult.isError()).toBe(false);
+        expect(positiveResult.unwrap()).toBe(10);
       });
-    });
 
-    describe('flatten', () => {
-      const transformToAnotherOption = flow(
-        S.length,
-        R.fromPredicate(
-          (length) => length >= 5,
-          () => new Error('too small'),
-        ),
-      );
+      it('creates a function that can be used to refine the type of a value and accepts a custom error', () => {
+        class InvalidShapeError extends TaggedError {
+          readonly _tag = 'InvalidShapeError';
+        }
 
-      it('flattens an Result of an Result into a single Result', () => {
-        expect(
-          R.ok('hello').pipe(R.map(transformToAnotherOption), R.flatten),
-        ).toMatchResult(R.ok(5));
+        interface Circle {
+          kind: 'circle';
+        }
+
+        interface Square {
+          kind: 'square';
+        }
+
+        type Shape = Circle | Square;
+
+        const isCircle = Result.definePredicate(
+          (shape: Shape): shape is Circle => shape.kind === 'circle',
+          (shape) => {
+            expectTypeOf(shape).toEqualTypeOf<Square>();
+
+            return new InvalidShapeError(shape.kind);
+          },
+        );
+
+        const circleResult = isCircle({ kind: 'circle' });
+
+        expectTypeOf(circleResult).toEqualTypeOf<
+          Result<Circle, InvalidShapeError>
+        >();
+
+        expect(circleResult.isOk()).toBe(true);
+        expect(circleResult.isError()).toBe(false);
+        expect(circleResult.unwrap()).toEqual({ kind: 'circle' });
+      });
+
+      it('creates a function that can be used to assert the type of a value and accepts a custom error', () => {
+        class InvalidNumberError extends TaggedError {
+          readonly _tag = 'InvalidNumberError';
+        }
+
+        const isPositive = Result.definePredicate(
+          (value: number) => value > 0,
+          () => new InvalidNumberError(),
+        );
+
+        const positiveResult = isPositive(10);
+
+        expectTypeOf(positiveResult).toEqualTypeOf<
+          Result<number, InvalidNumberError>
+        >();
+
+        expect(positiveResult.isOk()).toBe(true);
+        expect(positiveResult.isError()).toBe(false);
+        expect(positiveResult.unwrap()).toBe(10);
       });
     });
   });
 
-  describe('filtering', () => {
-    describe('filter', () => {
-      it('keeps the Ok value if it matches the predicate', () => {
-        expect(
-          R.ok('hello').pipe(
-            R.filter(S.isString, () => new Error('value is not string')),
-          ),
-        ).toMatchResult(R.ok('hello'));
-      });
-
-      it('filters the Ok value out if it doesn’t match the predicate returning an Error instead', () => {
-        const result = R.ok('hello').pipe(
-          R.filter(N.isNumber, () => new Error('value is not a number')),
-        );
-
-        expect(result).toMatchResult(
-          R.error(new Error('value is not a number')),
-        );
-        expectTypeOf(result).toMatchTypeOf<R.Result<Error, number>>();
-      });
-
-      it('is a no-op if Result is an Error', () => {
-        const result = R.error('no input').pipe(
-          R.filter(S.isString, () => new Error('value is not a string')),
-        );
-
-        expect(result).toMatchResult(R.error('no input'));
-        expectTypeOf(result).toMatchTypeOf<R.Result<string | Error, string>>();
-      });
-    });
-  });
-
-  describe('getters', () => {
+  describe('conversions', () => {
     describe('match', () => {
-      it('returns the result of the onErr function if Result is an Error', () => {
-        expect(
-          R.error('no input').pipe(
-            R.match(
-              (error) => `missing greeting: ${error}`,
-              (greeting: string) => `${greeting} world`,
-            ),
-          ),
-        ).toBe('missing greeting: no input');
+      it('executes the Ok callback when the Result is Ok', () => {
+        const result = Result.fromNullable('hello world').match({
+          Ok(value) {
+            return value.toUpperCase();
+          },
+          Error(error) {
+            return error.message.toLowerCase();
+          },
+        });
+
+        expectTypeOf(result).toEqualTypeOf<string>();
+
+        expect(result).toBe('HELLO WORLD');
       });
 
-      it('passes the Result value if it’s an Ok into the onOk function and returns its result', () => {
-        expect(
-          R.ok('hello').pipe(
-            R.match(
-              (error) => `missing greeting: ${error}`,
-              (greeting) => `${greeting} world`,
-            ),
-          ),
-        ).toBe('hello world');
-      });
-    });
+      it('executes the Error callback when the Result is Error', () => {
+        const result = Result.fromFalsy<string, Error>(
+          '',
+          () => new Error('computation failed'),
+        ).match({
+          Ok(value) {
+            return value.toLowerCase();
+          },
+          Error(error) {
+            return error.message.toUpperCase();
+          },
+        });
 
-    describe('merge', () => {
-      it('consolidates both paths into a single output', () => {
-        const result = R.ok('hello').pipe(
-          R.filter(S.isString, () => new Error('not a string')),
-          R.merge,
-        );
+        expectTypeOf(result).toEqualTypeOf<string>();
 
-        expect(result).toBe('hello');
-        expectTypeOf(result).toMatchTypeOf<string | Error>();
-      });
-    });
-
-    describe('getOrElse', () => {
-      it('unwraps the Result value if it’s an Ok', () => {
-        expect(R.ok('hello').pipe(R.getOrElse(() => 'no one to greet'))).toBe(
-          'hello',
-        );
-      });
-
-      it('returns the result of the onErr function if Result is an Error', () => {
-        expect(
-          R.error('no input').pipe(R.getOrElse(() => 'no one to greet')),
-        ).toBe('no one to greet');
+        expect(result).toBe('COMPUTATION FAILED');
       });
     });
 
     describe('unwrap', () => {
-      it('unwraps the Result value if it’s an Ok', () => {
-        expect(R.ok('hello').pipe(R.unwrap)).toBe('hello');
+      it('unwraps the Ok value when Result is an Ok', () => {
+        const result = Result.ok('hello world').unwrap();
+
+        expectTypeOf(result).toEqualTypeOf<string>();
+
+        expect(result).toBe('hello world');
       });
 
-      it('throws an exception if Result is an Error', () => {
-        expect(() => R.error('no input').pipe(R.unwrap)).toThrow(
-          new Error('Failed to unwrap Result value'),
-        );
+      it('throws an Error when Result is an Error', () => {
+        const result = Result.error(new Error('computation failed'));
+
+        expect(() => result.unwrap()).toThrow(UnwrapError);
+      });
+    });
+
+    describe('unwrapOr', () => {
+      it('returns the Ok value when the Result is Ok', () => {
+        const result = Result.ok('hello world').unwrapOr(() => 'fallback');
+
+        expectTypeOf(result).toEqualTypeOf<string>();
+
+        expect(result).toBe('hello world');
+      });
+
+      it('executes and returns the onError callback value when the Result is Error', () => {
+        const result = Result.fromFalsy<string, Error>(
+          '',
+          () => new Error('computation failed'),
+        ).unwrapOr(() => 'fallback');
+
+        expectTypeOf(result).toEqualTypeOf<string>();
+
+        expect(result).toBe('fallback');
+      });
+    });
+
+    describe('unwrapError', () => {
+      it('unwraps the Error value when Result is an Error', () => {
+        const result = Result.fromFalsy<string, Error>(
+          '',
+          () => new Error('computation failed'),
+        ).unwrapError();
+
+        expectTypeOf(result).toEqualTypeOf<Error>();
+
+        expect(result).toEqual(new Error('computation failed'));
+      });
+
+      it('throws an Error when Result is an Ok', () => {
+        const result = Result.ok('hello world');
+
+        expect(() => result.unwrapError()).toThrow(UnwrapError);
       });
     });
 
     describe('expect', () => {
-      class NotFoundException extends Error {}
+      class NotFoundError extends Error {
+        readonly _tag = 'NotFoundError';
+      }
 
-      it('unwraps the Result value if it’s an Ok', () => {
-        expect(
-          R.ok('hello').pipe(
-            R.expect(() => new NotFoundException('Greeting not found')),
-          ),
-        ).toBe('hello');
+      it('returns the Ok value when Result is an Ok', () => {
+        const result = Result.ok('hello world').expect(
+          () => new NotFoundError(),
+        );
+
+        expectTypeOf(result).toEqualTypeOf<string>();
+
+        expect(result).toBe('hello world');
       });
 
-      it('throws an exception if Result is an Error', () => {
-        expect(() =>
-          R.error('no input').pipe(
-            R.expect(() => new NotFoundException('Greeting not found')),
+      it('throws a custom Error when Result is an Error', () => {
+        const result = Result.fromFalsy<string, Error>(
+          '',
+          () => new Error('computation failed'),
+        );
+
+        expect(() => result.expect(() => new NotFoundError())).toThrow(
+          new NotFoundError(),
+        );
+      });
+
+      it('throws an UnexpectedResultError when Result is an Error and the onError callback returns a string', () => {
+        const result = Result.fromFalsy<string, Error>(
+          '',
+          () => new Error('computation failed'),
+        );
+
+        expect(() => result.expect('custom error message')).toThrow(
+          new UnexpectedResultError(
+            'custom error message',
+            new Error('computation failed'),
           ),
-        ).toThrow(new NotFoundException('Greeting not found'));
+        );
+      });
+    });
+
+    describe('toNullable', () => {
+      it('returns the Ok value when Result is an Ok', () => {
+        const result = Result.ok('hello world').toNullable();
+
+        expectTypeOf(result).toEqualTypeOf<string | null>();
+
+        expect(result).toBe('hello world');
+      });
+
+      it('returns null when Result is an Error', () => {
+        const result = Result.error(
+          new Error('computation failed'),
+        ).toNullable();
+
+        expectTypeOf(result).toEqualTypeOf<null>();
+
+        expect(result).toBe(null);
+      });
+    });
+
+    describe('toUndefined', () => {
+      it('returns the Ok value when Result is an Ok', () => {
+        const result = Result.ok('hello world').toUndefined();
+
+        expectTypeOf(result).toEqualTypeOf<string | undefined>();
+
+        expect(result).toBe('hello world');
+      });
+
+      it('returns undefined when Result is an Error', () => {
+        const result = Result.fromFalsy<string, Error>(
+          '',
+          () => new Error('computation failed'),
+        ).toUndefined();
+
+        expectTypeOf(result).toEqualTypeOf<string | undefined>();
+
+        expect(result).toBe(undefined);
+      });
+    });
+
+    describe('contains', () => {
+      it('returns true when Result is an Ok and the predicate is fulfilled', () => {
+        const result = Result.ok('hello world').contains(
+          (value) => value.length > 0,
+        );
+
+        expectTypeOf(result).toEqualTypeOf<boolean>();
+
+        expect(result).toBe(true);
+      });
+
+      it('returns false when Result is an Ok and the predicate is not fulfilled', () => {
+        const result = Result.ok('hello world').contains(
+          (value) => value.length === 0,
+        );
+
+        expectTypeOf(result).toEqualTypeOf<boolean>();
+
+        expect(result).toBe(false);
+      });
+
+      it('returns false when Result is an Error', () => {
+        const result = Result.fromFalsy<string, Error>(
+          '',
+          () => new Error('computation failed'),
+        ).contains((value) => value.length > 0);
+
+        expectTypeOf(result).toEqualTypeOf<boolean>();
+
+        expect(result).toBe(false);
+      });
+    });
+  });
+
+  describe('transformations', () => {
+    describe('map', () => {
+      it('transforms the Ok value', () => {
+        const result = Result.ok('hello world').map((value) =>
+          value.toUpperCase(),
+        );
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, never>>();
+
+        expect(result.isOk()).toBe(true);
+        expect(result.isError()).toBe(false);
+        expect(result.unwrap()).toBe('HELLO WORLD');
+      });
+
+      it('has no effect if Result is an Error', () => {
+        const result = Result.fromFalsy<string, Error>(
+          '',
+          () => new Error('computation failed'),
+        ).map((value) => value.toUpperCase());
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, Error>>();
+
+        expect(result.isOk()).toBe(false);
+        expect(result.isError()).toBe(true);
+        expect(result.unwrapError()).toEqual(new Error('computation failed'));
+      });
+    });
+
+    describe('mapError', () => {
+      it('transforms the Error value', () => {
+        const result = Result.fromFalsy<string, Error>(
+          '',
+          () => new Error('computation failed'),
+        ).mapError((error) => error.message.toUpperCase());
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, string>>();
+
+        expect(result.isOk()).toBe(false);
+        expect(result.isError()).toBe(true);
+        expect(result.unwrapError()).toBe('COMPUTATION FAILED');
+      });
+
+      it('has no effect if Result is an Ok', () => {
+        const result = Result.ok('hello world').mapError((error) =>
+          (error as string).toUpperCase(),
+        );
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, string>>();
+
+        expect(result.isOk()).toBe(true);
+        expect(result.isError()).toBe(false);
+        expect(result.unwrap()).toBe('hello world');
+      });
+    });
+
+    describe('mapBoth', () => {
+      it('executes the Ok callback when the Result is Ok', () => {
+        const result = Result.fromFalsy('hello world').mapBoth({
+          Ok(value) {
+            return value.toUpperCase();
+          },
+          Error(error) {
+            return error.message.toLowerCase();
+          },
+        });
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, string>>();
+
+        expect(result.isOk()).toBe(true);
+        expect(result.isError()).toBe(false);
+        expect(result.unwrap()).toBe('HELLO WORLD');
+      });
+
+      describe('executes the Error callback when the Result is Error', () => {
+        const result = Result.fromFalsy<string, Error>(
+          '',
+          () => new Error('computation failed'),
+        ).mapBoth({
+          Ok(value) {
+            return value.toLowerCase();
+          },
+          Error(error) {
+            return error.message.toUpperCase();
+          },
+        });
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, string>>();
+
+        expect(result.isOk()).toBe(false);
+        expect(result.isError()).toBe(true);
+        expect(result.unwrapError()).toBe('COMPUTATION FAILED');
+      });
+    });
+
+    describe('andThen', () => {
+      it('transforms the Ok value while flattening the Result', () => {
+        const result = Result.ok('hello world').andThen((value) =>
+          Result.fromFalsy(value.toUpperCase()),
+        );
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, MissingValueError>>();
+
+        expect(result.isOk()).toBe(true);
+        expect(result.isError()).toBe(false);
+        expect(result.unwrap()).toBe('HELLO WORLD');
+      });
+
+      it('does not transform the Error value and flattens the Result', () => {
+        const result = Result.error(new Error('computation failed')).andThen(
+          () => Result.fromNullable(null as string | null | undefined),
+        );
+
+        expectTypeOf(result).toEqualTypeOf<
+          Result<string, Error | MissingValueError>
+        >();
+
+        expect(result.isOk()).toBe(false);
+        expect(result.isError()).toBe(true);
+        expect(result.unwrapError()).toEqual(new Error('computation failed'));
+      });
+    });
+
+    describe('filter', () => {
+      it('keeps the Ok Result if the predicate is fulfilled', () => {
+        const result = Result.ok('hello world').filter(
+          (value) => value.length > 0,
+        );
+
+        expectTypeOf(result).toEqualTypeOf<
+          Result<string, FailedPredicateError<string>>
+        >();
+
+        expect(result.isOk()).toBe(true);
+        expect(result.isError()).toBe(false);
+        expect(result.unwrap()).toBe('hello world');
+      });
+
+      it('transforms the Ok Result into an Error Result if the predicate is not fulfilled', () => {
+        const result = Result.ok('hello world').filter(
+          (value) => value.length === 0,
+        );
+
+        expectTypeOf(result).toEqualTypeOf<
+          Result<string, FailedPredicateError<string>>
+        >();
+
+        expect(result.isOk()).toBe(false);
+        expect(result.isError()).toBe(true);
+        expect(result.unwrapError()).toEqual(
+          new FailedPredicateError('hello world'),
+        );
+      });
+
+      it('has no effect if the Result is an Error', () => {
+        const result = Result.fromFalsy<string, Error>(
+          '',
+          () => new Error('computation failed'),
+        ).filter((value) => value.length > 0);
+
+        expectTypeOf(result).toEqualTypeOf<
+          Result<string, Error | FailedPredicateError<string>>
+        >();
+
+        expect(result.isOk()).toBe(false);
+        expect(result.isError()).toBe(true);
+        expect(result.unwrapError()).toEqual(new Error('computation failed'));
       });
     });
   });

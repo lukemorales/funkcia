@@ -1,376 +1,543 @@
-import { flow, pipe } from './functions';
-import * as N from './number';
-import * as O from './option';
-import * as R from './result';
-import * as S from './string';
+import { UnexpectedOptionException, UnwrapError } from './exceptions';
+import { type Falsy } from './internals/types';
+import { Option } from './option';
+import type { Nullable } from './types';
 
 describe('Option', () => {
-  describe('conversions', () => {
+  describe('constructors', () => {
+    describe('some', () => {
+      it('creates a Some Option with the given value', () => {
+        const option = Option.some('hello world');
+
+        expectTypeOf(option).toEqualTypeOf<Option<string>>();
+
+        expect(option.isSome()).toBe(true);
+        expect(option.isNone()).toBe(false);
+        expect(option.unwrap()).toBe('hello world');
+      });
+    });
+
+    describe('none', () => {
+      it('creates a None Option', () => {
+        const option = Option.none();
+
+        expectTypeOf(option).toEqualTypeOf<Option<never>>();
+
+        expect(option.isSome()).toBe(false);
+        expect(option.isNone()).toBe(true);
+        expect(() => option.unwrap()).toThrow(UnwrapError);
+      });
+    });
+
     describe('fromNullable', () => {
-      it('creates a Some when value is not nullable', () => {
-        expect(O.fromNullable('hello world')).toMatchOption(
-          O.some('hello world'),
-        );
+      function nullable(value: Nullable<string>): Nullable<string> {
+        return value;
+      }
+
+      it('creates a Some Option when the value is not nullable', () => {
+        const option = Option.fromNullable(nullable('hello world'));
+
+        expectTypeOf(option).toEqualTypeOf<Option<string>>();
+
+        expect(option.isSome()).toBe(true);
+        expect(option.isNone()).toBe(false);
+        expect(option.unwrap()).toBe('hello world');
       });
 
-      const eachCase = it.each([undefined, null]);
+      it('creates a None Option when the value is nullable', () => {
+        const option = Option.fromNullable(nullable(null));
 
-      eachCase('creates a None when value is %s', (nullable) => {
-        expect(O.fromNullable(nullable)).toBeNone();
+        expectTypeOf(option).toEqualTypeOf<Option<string>>();
+
+        expect(option.isSome()).toBe(false);
+        expect(option.isNone()).toBe(true);
+        expect(() => option.unwrap()).toThrow(UnwrapError);
       });
     });
 
     describe('fromFalsy', () => {
-      it('creates a Some when value is not falsy', () => {
-        expect(O.fromFalsy('hello world')).toMatchOption(O.some('hello world'));
-        expect(O.fromFalsy(true)).toMatchOption(O.some(true));
-        expect(O.fromFalsy(1)).toMatchOption(O.some(1));
+      it('creates a Some Option when the value is not falsy', () => {
+        const value = 'hello world' as string | Falsy;
+
+        const option = Option.fromFalsy(value);
+
+        expectTypeOf(option).toEqualTypeOf<Option<string>>();
+
+        expect(option.isSome()).toBe(true);
+        expect(option.isNone()).toBe(false);
+        expect(option.unwrap()).toBe('hello world');
       });
 
-      const eachCase = it.each([null, undefined, 0, 0n, NaN, false, '']);
+      it('creates a None Option when the value is falsy', () => {
+        const testValues = [
+          '',
+          0,
+          0n,
+          null,
+          undefined,
+          false,
+        ] as const satisfies Falsy[];
 
-      eachCase('creates a None when value is %s', (falsy) => {
-        expect(O.fromFalsy(falsy)).toBeNone();
+        for (const value of testValues) {
+          const option = Option.fromFalsy(value);
+
+          expectTypeOf(option).toEqualTypeOf<Option<never>>();
+
+          expect(option.isSome()).toBe(false);
+          expect(option.isNone()).toBe(true);
+          expect(() => option.unwrap()).toThrow(UnwrapError);
+        }
       });
     });
 
-    describe('fromThrowable', () => {
-      it('creates a Some when the throwable function succeeds', () => {
-        expect(
-          O.fromThrowable(() => JSON.parse('{ "enabled": true }')),
-        ).toMatchOption(O.some({ enabled: true }));
+    describe('try', () => {
+      it('creates a Some Option when the function does not throw', () => {
+        const option = Option.try(() => 'hello world');
+
+        expectTypeOf(option).toEqualTypeOf<Option<string>>();
+
+        expect(option.isSome()).toBe(true);
+        expect(option.isNone()).toBe(false);
+        expect(option.unwrap()).toBe('hello world');
       });
 
-      it('creates a None when the throwable function fails', () => {
-        expect(O.fromThrowable(() => JSON.parse('{{ }}'))).toBeNone();
+      it('creates a None Option when the function does not throw but returns null', () => {
+        const option = Option.try(() => null as string | null);
+
+        expectTypeOf(option).toEqualTypeOf<Option<string>>();
+
+        expect(option.isSome()).toBe(false);
+        expect(option.isNone()).toBe(true);
+        expect(() => option.unwrap()).toThrow(UnwrapError);
       });
-    });
 
-    describe('fromPredicate', () => {
-      interface Square {
-        kind: 'square';
-        size: number;
-      }
-
-      interface Circle {
-        kind: 'circle';
-        radius: number;
-      }
-
-      type Shape = Square | Circle;
-
-      const shape = { kind: 'square', size: 2 } as Shape;
-
-      describe('data-first', () => {
-        it('creates a Some when the predicate is satisfied', () => {
-          expect(
-            O.fromPredicate(
-              shape,
-              (body): body is Square => body.kind === 'square',
-            ),
-          ).toMatchOption(O.some({ kind: 'square', size: 2 }));
+      it('creates a None Option when the function throws', () => {
+        const option = Option.try<string>(() => {
+          throw new Error('calculation failed');
         });
 
-        it('creates a None when the predicate is not satisfied', () => {
-          expect(
-            O.fromPredicate(
-              shape,
-              (body): body is Circle => body.kind === 'circle',
-            ),
-          ).toBeNone();
-        });
-      });
+        expectTypeOf(option).toEqualTypeOf<Option<string>>();
 
-      describe('data-last', () => {
-        it('creates a Some when the predicate is satisfied', () => {
-          expect(
-            pipe(
-              shape,
-              O.fromPredicate((body): body is Square => body.kind === 'square'),
-            ),
-          ).toMatchOption(O.some({ kind: 'square', size: 2 }));
-        });
-
-        it('creates a None when the predicate is not satisfied', () => {
-          expect(
-            pipe(
-              shape,
-              O.fromPredicate((body): body is Circle => body.kind === 'circle'),
-            ),
-          ).toBeNone();
-        });
+        expect(option.isSome()).toBe(false);
+        expect(option.isNone()).toBe(true);
+        expect(() => option.unwrap()).toThrow(UnwrapError);
       });
     });
 
-    describe('fromResult', () => {
-      it('creates a Some when Result is a Right', () => {
-        expect(O.fromResult(R.ok('hello world'))).toMatchOption(
-          O.some('hello world'),
-        );
-      });
-
-      it('creates a None when Result is a Left', () => {
-        expect(O.fromResult(R.error('Computation failure'))).toBeNone();
-      });
-    });
-  });
-
-  describe('lifting', () => {
-    describe('liftNullable', () => {
-      function divide(dividend: number, divisor: number): number | null {
-        return divisor === 0 ? null : dividend / divisor;
+    describe('wrap', () => {
+      function hasEnabledSetting(enabled: boolean | null) {
+        switch (enabled) {
+          case true:
+            return Option.some('YES' as const);
+          case false:
+            return Option.some('NO' as const);
+          default:
+            return Option.none();
+        }
       }
 
-      const safeDivide = O.liftNullable(divide);
+      it('returns a function with improved inference without changing behavior', () => {
+        const output = hasEnabledSetting(true);
 
-      it('creates a Some when the lifted function returns a non-nullable value', () => {
-        expect(safeDivide(10, 2)).toMatchOption(O.some(5));
-      });
+        expectTypeOf(output).toEqualTypeOf<
+          Option<'YES'> | Option<'NO'> | Option<never>
+        >();
 
-      it('creates a None when the lifted function returns null or undefined', () => {
-        expect(safeDivide(2, 0)).toBeNone();
+        expect(output.isSome()).toBe(true);
+        expect(output.isNone()).toBe(false);
+        expect(output.unwrap()).toBe('YES');
+
+        const wrapped = Option.wrap(hasEnabledSetting);
+
+        const result = wrapped(true);
+
+        expectTypeOf(result).toEqualTypeOf<Option<'YES' | 'NO'>>();
+
+        expect(result.isSome()).toBe(true);
+        expect(result.isNone()).toBe(false);
+        expect(result.unwrap()).toBe('YES');
       });
     });
 
-    describe('liftThrowable', () => {
-      const safeJsonParse = O.liftThrowable(JSON.parse);
+    describe('produce', () => {
+      it('wraps a function that might throw exceptions into a function that returns an Option', () => {
+        function divide(dividend: number, divisor: number): number {
+          if (divisor === 0) {
+            throw new Error('division by zero');
+          }
 
-      it('creates a Some when the lifted function succeeds', () => {
-        expect(safeJsonParse('{ "enabled": true }')).toMatchOption(
-          O.some({ enabled: true }),
+          return dividend / divisor;
+        }
+
+        const safeDivide = Option.produce(divide);
+
+        const someOption = safeDivide(10, 2);
+        expectTypeOf(someOption).toEqualTypeOf<Option<number>>();
+
+        expect(someOption.isSome()).toBe(true);
+        expect(someOption.isNone()).toBe(false);
+        expect(someOption.unwrap()).toBe(5);
+
+        const noneOption = safeDivide(2, 0);
+        expectTypeOf(noneOption).toEqualTypeOf<Option<number>>();
+
+        expect(noneOption.isSome()).toBe(false);
+        expect(noneOption.isNone()).toBe(true);
+        expect(() => noneOption.unwrap()).toThrow(UnwrapError);
+      });
+    });
+
+    describe('definePredicate', () => {
+      it('creates a function that can be used to refine the type of a value', () => {
+        interface Circle {
+          kind: 'circle';
+        }
+
+        interface Square {
+          kind: 'square';
+        }
+
+        type Shape = Circle | Square;
+
+        const isCircle = Option.definePredicate(
+          (shape: Shape): shape is Circle => shape.kind === 'circle',
         );
+
+        const circleOption = isCircle({ kind: 'circle' });
+
+        expectTypeOf(circleOption).toEqualTypeOf<Option<Circle>>();
+
+        expect(circleOption.isSome()).toBe(true);
+        expect(circleOption.isNone()).toBe(false);
+        expect(circleOption.unwrap()).toEqual({ kind: 'circle' });
       });
 
-      it('creates a None when the lifted function throws an exception', () => {
-        expect(safeJsonParse('{{ }}')).toBeNone();
+      it('creates a function that can be used to assert the type of a value', () => {
+        const isPositive = Option.definePredicate((value: number) => value > 0);
+
+        const positiveOption = isPositive(10);
+
+        expectTypeOf(positiveOption).toEqualTypeOf<Option<number>>();
+
+        expect(positiveOption.isSome()).toBe(true);
+        expect(positiveOption.isNone()).toBe(false);
+        expect(positiveOption.unwrap()).toBe(10);
       });
     });
   });
 
-  describe('replacements', () => {
-    describe('fallback', () => {
-      it('does not replace the original Option when it’s a Some', () => {
-        expect(O.some('a').pipe(O.fallback(() => O.some('b')))).toMatchOption(
-          O.some('a'),
-        );
-      });
-
-      it('replaces the original Option with the provided fallback when it’s a None', () => {
-        expect(O.none().pipe(O.fallback(() => O.some('b')))).toMatchOption(
-          O.some('b'),
-        );
-      });
-    });
-  });
-
-  describe('transforming', () => {
-    describe('map', () => {
-      it('maps the value to another value if Option is a Some', () => {
-        expect(
-          O.some('hello').pipe(O.map((greeting) => `${greeting} world`)),
-        ).toMatchOption(O.some('hello world'));
-      });
-
-      it('is a no-op if Option is a None', () => {
-        expect(
-          O.none().pipe(O.map((greeting: string) => `${greeting} world`)),
-        ).toBeNone();
-      });
-    });
-
-    describe('flatMap', () => {
-      const transformToAnotherOption = flow(
-        S.length,
-        O.fromPredicate((length) => length >= 5),
-      );
-
-      it('maps the value if Option is a Some and flattens the result to a single Option', () => {
-        expect(
-          O.some('hello').pipe(O.flatMap(transformToAnotherOption)),
-        ).toMatchOption(O.some(5));
-      });
-
-      it('is a no-op if Option is a None', () => {
-        expect(O.none().pipe(O.flatMap(transformToAnotherOption))).toBeNone();
-      });
-    });
-
-    describe('flatMapNullable', () => {
-      interface Profile {
-        address?: {
-          home: string | null;
-          work: string | null;
-        };
-      }
-
-      const profile: Profile = {
-        address: {
-          home: '21st street',
-          work: null,
-        },
-      };
-
-      it('flat maps into a Some if returning value is not nullable', () => {
-        expect(
-          O.fromNullable(profile.address).pipe(
-            O.flatMapNullable((address) => address.home),
-          ),
-        ).toMatchOption(O.some('21st street'));
-      });
-
-      it('flat maps into a None if returning value is nullable', () => {
-        expect(
-          O.fromNullable(profile.address).pipe(
-            O.flatMapNullable((address) => address.work),
-          ),
-        ).toBeNone();
-      });
-    });
-
-    describe('flatten', () => {
-      const transformToAnotherOption = flow(
-        S.length,
-        O.fromPredicate((length) => length >= 5),
-      );
-
-      it('flattens an Option of an Option into a single Option', () => {
-        expect(
-          O.some('hello').pipe(O.map(transformToAnotherOption), O.flatten),
-        ).toMatchOption(O.some(5));
-      });
-    });
-  });
-
-  describe('filtering', () => {
-    describe('filter', () => {
-      it('keeps the Option value if it matches the predicate', () => {
-        expect(O.some('hello').pipe(O.filter(S.isString))).toMatchOption(
-          O.some('hello'),
-        );
-      });
-
-      it('filters the Option value out if it doesn’t match the predicate', () => {
-        expect(O.some('hello').pipe(O.filter(N.isNumber))).toBeNone();
-      });
-
-      it('is a no-op if Option is a None', () => {
-        expect(O.none().pipe(O.filter(S.isString))).toBeNone();
-      });
-    });
-  });
-
-  describe('getters', () => {
+  describe('conversions', () => {
     describe('match', () => {
-      it('returns the result of the onNone function if Option is a None', () => {
-        expect(
-          O.none().pipe(
-            O.match(
-              () => 'no one to greet',
-              (greeting: string) => `${greeting} world`,
-            ),
-          ),
-        ).toBe('no one to greet');
+      it('executes the Some case if the Option is a Some', () => {
+        const result = Option.some(5).match({
+          Some(value) {
+            return value * 2;
+          },
+          None() {
+            return 0;
+          },
+        });
+
+        expect(result).toBe(10);
       });
 
-      it('passes the Option value if it’s a Some into the onSome function and returns its result', () => {
-        expect(
-          O.some('hello').pipe(
-            O.match(
-              () => 'no one to greet',
-              (greeting) => `${greeting} world`,
-            ),
-          ),
-        ).toBe('hello world');
-      });
-    });
+      it('executes the None case if the Option is a None', () => {
+        const result = Option.none<number>().match({
+          Some(value) {
+            return value * 2;
+          },
+          None() {
+            return 0;
+          },
+        });
 
-    describe('getOrElse', () => {
-      it('unwraps the Option value if it’s a Some', () => {
-        expect(O.some('hello').pipe(O.getOrElse(() => 'no one to greet'))).toBe(
-          'hello',
-        );
-      });
-
-      it('returns the result of the onNone function if Option is a None', () => {
-        expect(O.none().pipe(O.getOrElse(() => 'no one to greet'))).toBe(
-          'no one to greet',
-        );
+        expect(result).toBe(0);
       });
     });
 
     describe('unwrap', () => {
-      it('unwraps the Option value if it’s a Some', () => {
-        expect(O.some('hello').pipe(O.unwrap)).toBe('hello');
+      it('returns the value of the Option if it is a Some', () => {
+        const result = Option.some(10).unwrap();
+
+        expect(result).toBe(10);
       });
 
-      it('throws an exception if Option is a None', () => {
-        expect(() => O.none().pipe(O.unwrap)).toThrow(
-          new Error('Failed to unwrap Option value'),
-        );
+      it('throws an Error if the Option is a None', () => {
+        const option = Option.none();
+
+        expect(() => option.unwrap()).toThrow(UnwrapError);
+      });
+    });
+
+    describe('unwrapOr', () => {
+      it('returns the value of the Option if it is a Some', () => {
+        const result = Option.some(10).unwrapOr(() => 0);
+
+        expect(result).toBe(10);
+      });
+
+      it('returns the fallback value if the Option is a None', () => {
+        const result = Option.none<number>().unwrapOr(() => 0);
+
+        expect(result).toBe(0);
       });
     });
 
     describe('expect', () => {
-      class NotFoundException extends Error {}
+      it('returns the value of the Option if it is a Some', () => {
+        const result = Option.some(10).expect('Missing value');
 
-      it('unwraps the Option value if it’s a Some', () => {
-        expect(
-          O.some('hello').pipe(
-            O.expect(() => new NotFoundException('Greeting not found')),
-          ),
-        ).toBe('hello');
+        expect(result).toBe(10);
       });
 
-      it('throws an exception if Option is a None', () => {
-        expect(() =>
-          O.none().pipe(
-            O.expect(() => new NotFoundException('Greeting not found')),
-          ),
-        ).toThrow(new NotFoundException('Greeting not found'));
+      it('throws a custom Error if the Option is a None', () => {
+        class MissingValue extends Error {
+          readonly _tag = 'MissingValue';
+        }
+
+        const option = Option.none();
+
+        expect(() => option.expect(() => new MissingValue())).toThrow(
+          MissingValue,
+        );
+      });
+
+      it('throws an UnexpectedOptionError if the Option is a None and a string is provided', () => {
+        const option = Option.none();
+
+        expect(() => option.expect('Value must be provided')).toThrow(
+          new UnexpectedOptionException('Value must be provided'),
+        );
       });
     });
 
     describe('toNullable', () => {
-      it('unwraps the Option value if it’s a Some', () => {
-        expect(O.some('hello').pipe(O.toNullable)).toBe('hello');
+      it('returns the value if the Option is a Some', () => {
+        const result = Option.some(10).toNullable();
+
+        expectTypeOf(result).toEqualTypeOf<number | null>();
+
+        expect(result).toBe(10);
       });
 
-      it('returns null if Option is a None', () => {
-        expect(O.none().pipe(O.toNullable)).toBe(null);
+      it('returns null if the Option is a None', () => {
+        const result = Option.none<number>().toNullable();
+
+        expectTypeOf(result).toEqualTypeOf<number | null>();
+
+        expect(result).toBe(null);
       });
     });
 
     describe('toUndefined', () => {
-      it('unwraps the Option value if it’s a Some', () => {
-        expect(O.some('hello').pipe(O.toUndefined)).toBe('hello');
+      it('returns the value if the Option is a Some', () => {
+        const result = Option.some(10).toUndefined();
+
+        expectTypeOf(result).toEqualTypeOf<number | undefined>();
+
+        expect(result).toBe(10);
       });
 
-      it('returns undefined if Option is a None', () => {
-        expect(O.none().pipe(O.toUndefined)).toBe(undefined);
+      it('returns undefined if the Option is a None', () => {
+        const result = Option.none<number>().toUndefined();
+
+        expectTypeOf(result).toEqualTypeOf<number | undefined>();
+
+        expect(result).toBe(undefined);
       });
     });
 
-    describe('satisfies', () => {
-      it('returns true if Option is a Some and value satisfies the predicate', () => {
-        expect(
-          O.some('hello').pipe(
-            O.satisfies((greeting) => greeting.length === 5),
-          ),
-        ).toBe(true);
+    describe('contains', () => {
+      it('returns true if the Option is a Some and the predicate is fulfilled', () => {
+        const result = Option.some(10).contains((value) => value > 0);
+
+        expect(result).toBe(true);
       });
 
-      it('returns false if Option is a Some and value does’t satisfy the predicate', () => {
-        expect(
-          O.some('hello').pipe(O.satisfies((greeting) => greeting.length > 5)),
-        ).toBe(false);
+      it('returns false if the Option is a Some and the predicate is not fulfilled', () => {
+        const result = Option.some(10).contains((value) => value === 0);
+
+        expect(result).toBe(false);
       });
 
-      it('returns false if Option is a None', () => {
-        expect(
-          O.none().pipe(
-            O.satisfies((greeting: string) => greeting.length === 5),
-          ),
-        ).toBe(false);
+      it('returns false if the Option is a None', () => {
+        const result = Option.none<number>().contains((value) => value > 0);
+
+        expect(result).toBe(false);
+      });
+    });
+  });
+
+  describe('transformations', () => {
+    describe('map', () => {
+      it('transforms the Some value', () => {
+        const result = Option.some('hello world').map((value) =>
+          value.toUpperCase(),
+        );
+
+        expectTypeOf(result).toEqualTypeOf<Option<string>>();
+
+        expect(result.isSome()).toBe(true);
+        expect(result.isNone()).toBe(false);
+        expect(result.unwrap()).toBe('HELLO WORLD');
+      });
+
+      it('has no effect if the Option is a None', () => {
+        const result = Option.none<string>().map((value) =>
+          value.toUpperCase(),
+        );
+
+        expectTypeOf(result).toEqualTypeOf<Option<string>>();
+
+        expect(result.isSome()).toBe(false);
+        expect(result.isNone()).toBe(true);
+        expect(() => result.unwrap()).toThrow(UnwrapError);
+      });
+
+      it('tells the developer to use andThen when returning an Option', () => {
+        const result = Option.some('hello world').map((value) =>
+          // @ts-expect-error this is testing the error message
+          Option.fromFalsy(value.toUpperCase()),
+        );
+
+        expectTypeOf(result).toEqualTypeOf<Option<{}>>();
+      });
+    });
+
+    describe('andThen', () => {
+      it('transforms the Some value while flattening the Option', () => {
+        const result = Option.some('hello world').andThen((value) =>
+          Option.some(value.length),
+        );
+
+        expectTypeOf(result).toEqualTypeOf<Option<number>>();
+
+        expect(result.isSome()).toBe(true);
+        expect(result.isNone()).toBe(false);
+        expect(result.unwrap()).toBe(11);
+      });
+
+      it('has no effect when Option is a None and flattens the Option', () => {
+        const result = Option.none<string>().andThen(() => Option.some(10));
+
+        expectTypeOf(result).toEqualTypeOf<Option<number>>();
+
+        expect(result.isSome()).toBe(false);
+        expect(result.isNone()).toBe(true);
+        expect(() => result.unwrap()).toThrow(UnwrapError);
+      });
+    });
+
+    describe('filter', () => {
+      it('keeps the Some Option if the predicate is fulfilled', () => {
+        const result = Option.some(10).filter((value) => value > 0);
+
+        expectTypeOf(result).toEqualTypeOf<Option<number>>();
+
+        expect(result.isSome()).toBe(true);
+        expect(result.isNone()).toBe(false);
+        expect(result.unwrap()).toBe(10);
+      });
+
+      it('transforms the Some Option into a None Option if the predicate is not fulfilled', () => {
+        const result = Option.some(10).filter((value) => value <= 0);
+
+        expectTypeOf(result).toEqualTypeOf<Option<number>>();
+
+        expect(result.isSome()).toBe(false);
+        expect(result.isNone()).toBe(true);
+        expect(() => result.unwrap()).toThrow(UnwrapError);
+      });
+
+      it('has no effect if the Option is a None', () => {
+        const result = Option.none<number>().filter((value) => value > 0);
+
+        expectTypeOf(result).toEqualTypeOf<Option<number>>();
+
+        expect(result.isSome()).toBe(false);
+        expect(result.isNone()).toBe(true);
+        expect(() => result.unwrap()).toThrow(UnwrapError);
+      });
+    });
+  });
+
+  describe('fallbacks', () => {
+    describe('or', () => {
+      it('returns the Some value if the Option is a Some', () => {
+        const result = Option.some(10).or(() => Option.some(20));
+
+        expectTypeOf(result).toEqualTypeOf<Option<number>>();
+
+        expect(result.isSome()).toBe(true);
+        expect(result.isNone()).toBe(false);
+        expect(result.unwrap()).toBe(10);
+      });
+
+      it('returns the fallback value if the Option is a None', () => {
+        const result = Option.none<number>().or(() => Option.some(20));
+
+        expectTypeOf(result).toEqualTypeOf<Option<number>>();
+
+        expect(result.isSome()).toBe(true);
+        expect(result.isNone()).toBe(false);
+        expect(result.unwrap()).toBe(20);
+      });
+    });
+  });
+
+  describe('comparisons', () => {
+    describe('equals', () => {
+      it('returns true if the Option is a Some and the other Option is a Some and the values are equal', () => {
+        const result = Option.some(10).equals(Option.some(10));
+
+        expect(result).toBe(true);
+      });
+
+      it('returns the output of the equality function if the Option is a Some and the other Option is a Some', () => {
+        const isSameObject = vi.fn((a, b) => a.value === b.value);
+
+        const result = Option.some({ value: 10 }).equals(
+          Option.some({ value: 20 }),
+          isSameObject,
+        );
+
+        expect(result).toBe(false);
+        expect(isSameObject).toHaveBeenCalledExactlyOnceWith(
+          { value: 10 },
+          { value: 20 },
+        );
+      });
+
+      it('does not call the equality function if one of the Options is a None', () => {
+        const isSameObject = vi.fn((a, b) => a.value === b.value);
+
+        Option.some({ value: 10 }).equals(Option.none(), isSameObject);
+
+        expect(isSameObject).not.toHaveBeenCalled();
+      });
+
+      it('returns false if the Option is a Some and the other Option is a Some and the values are not equal', () => {
+        const result = Option.some(10).equals(Option.some(20));
+
+        expect(result).toBe(false);
+      });
+
+      it('returns false if the Option is a Some and the other Option is a None', () => {
+        const result = Option.some(10).equals(Option.none());
+
+        expect(result).toBe(false);
+      });
+
+      it('returns false if the Option is a None and the other Option is a Some', () => {
+        const result = Option.none<number>().equals(Option.some(20));
+
+        expect(result).toBe(false);
+      });
+
+      it('returns true if the Option is a None and the other Option is a None', () => {
+        const result = Option.none().equals(Option.none());
+
+        expect(result).toBe(true);
       });
     });
   });
