@@ -14,70 +14,100 @@
   "files": [
     "dist"
   ],
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "module": "./dist/index.mjs",
-      "default": "./dist/index.mjs"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     },
     "./exceptions": {
-      "types": "./dist/exceptions.d.ts",
-      "import": "./dist/exceptions.mjs",
-      "require": "./dist/exceptions.js",
-      "module": "./dist/exceptions.mjs",
-      "default": "./dist/exceptions.mjs"
+      "import": {
+        "types": "./dist/exceptions.d.mts",
+        "default": "./dist/exceptions.mjs"
+      },
+      "require": {
+        "types": "./dist/exceptions.d.ts",
+        "default": "./dist/exceptions.js"
+      }
     },
     "./functions": {
-      "types": "./dist/functions.d.ts",
-      "import": "./dist/functions.mjs",
-      "require": "./dist/functions.js",
-      "module": "./dist/functions.mjs",
-      "default": "./dist/functions.mjs"
+      "import": {
+        "types": "./dist/functions.d.mts",
+        "default": "./dist/functions.mjs"
+      },
+      "require": {
+        "types": "./dist/functions.d.ts",
+        "default": "./dist/functions.js"
+      }
     },
     "./json": {
-      "types": "./dist/json.d.ts",
-      "import": "./dist/json.mjs",
-      "require": "./dist/json.js",
-      "module": "./dist/json.mjs",
-      "default": "./dist/json.mjs"
+      "import": {
+        "types": "./dist/json.d.mts",
+        "default": "./dist/json.mjs"
+      },
+      "require": {
+        "types": "./dist/json.d.ts",
+        "default": "./dist/json.js"
+      }
     },
     "./option": {
-      "types": "./dist/option.d.ts",
-      "import": "./dist/option.mjs",
-      "require": "./dist/option.js",
-      "module": "./dist/option.mjs",
-      "default": "./dist/option.mjs"
+      "import": {
+        "types": "./dist/option.d.mts",
+        "default": "./dist/option.mjs"
+      },
+      "require": {
+        "types": "./dist/option.d.ts",
+        "default": "./dist/option.js"
+      }
     },
     "./predicate": {
-      "types": "./dist/predicate.d.ts",
-      "import": "./dist/predicate.mjs",
-      "require": "./dist/predicate.js",
-      "module": "./dist/predicate.mjs",
-      "default": "./dist/predicate.mjs"
+      "import": {
+        "types": "./dist/predicate.d.mts",
+        "default": "./dist/predicate.mjs"
+      },
+      "require": {
+        "types": "./dist/predicate.d.ts",
+        "default": "./dist/predicate.js"
+      }
     },
     "./result": {
-      "types": "./dist/result.d.ts",
-      "import": "./dist/result.mjs",
-      "require": "./dist/result.js",
-      "module": "./dist/result.mjs",
-      "default": "./dist/result.mjs"
+      "import": {
+        "types": "./dist/result.d.mts",
+        "default": "./dist/result.mjs"
+      },
+      "require": {
+        "types": "./dist/result.d.ts",
+        "default": "./dist/result.js"
+      }
     },
     "./url": {
-      "types": "./dist/url.d.ts",
-      "import": "./dist/url.mjs",
-      "require": "./dist/url.js",
-      "module": "./dist/url.mjs",
-      "default": "./dist/url.mjs"
+      "import": {
+        "types": "./dist/url.d.mts",
+        "default": "./dist/url.mjs"
+      },
+      "require": {
+        "types": "./dist/url.d.ts",
+        "default": "./dist/url.js"
+      }
     },
     "./uri": {
-      "types": "./dist/uri.d.ts",
-      "import": "./dist/uri.mjs",
-      "require": "./dist/uri.js",
-      "module": "./dist/uri.mjs",
-      "default": "./dist/uri.mjs"
+      "import": {
+        "types": "./dist/uri.d.mts",
+        "default": "./dist/uri.mjs"
+      },
+      "require": {
+        "types": "./dist/uri.d.ts",
+        "default": "./dist/uri.js"
+      }
     }
   },
   "prettier": "@lukemorales/prettier-config",
