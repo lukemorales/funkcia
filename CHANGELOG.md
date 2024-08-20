@@ -1,5 +1,11 @@
 # funkcia
 
+## 0.1.8
+
+### Patch Changes
+
+- [`0d3a342`](https://github.com/lukemorales/funkcia/commit/0d3a34295d488b4b4cb06d46daf0997c96285d04) Thanks [@lukemorales](https://github.com/lukemorales)! - Fix `package.json` exports
+
 ## 0.1.0
 
 ### Minor Changes
