@@ -117,9 +117,27 @@
       "lukemorales/oss"
     ],
     "rules": {
-      "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/member-ordering": "off",
-      "@typescript-eslint/strict-boolean-expressions": "off"
+      "@typescript-eslint/strict-boolean-expressions": "off",
+      "func-names": [
+        "error",
+        "as-needed",
+        {
+          "generators": "as-needed"
+        }
+      ],
+      "@typescript-eslint/consistent-type-imports": [
+        "warn",
+        {
+          "fixStyle": "separate-type-imports"
+        }
+      ],
+      "@typescript-eslint/no-namespace": [
+        "error",
+        {
+          "allowDeclarations": true
+        }
+      ]
     }
   },
   "scripts": {

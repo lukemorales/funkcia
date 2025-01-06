@@ -8,8 +8,8 @@ export class SafeURL {
    *
    * @see https://developer.mozilla.org/en-US/docs/Web/API/URL/URL
    */
-  static of = Result.produce<ConstructorParameters<typeof URL>, URL, TypeError>(
-    (...args: ConstructorParameters<typeof URL>) => new URL(args[0], args[1]),
+  static of = Result.wrap<ConstructorParameters<typeof URL>, URL, TypeError>(
+    (...args: ConstructorParameters<typeof URL>): URL => new URL(...args),
     (e) => e as TypeError,
   );
 }

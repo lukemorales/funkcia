@@ -1,44 +1,33 @@
-export abstract class TaggedError extends TypeError {
+export abstract class TaggedError extends Error {
   abstract readonly _tag: string;
-
-  constructor(message?: string) {
-    super(message);
-    this.name = this.constructor.name;
-  }
 }
 
 // -----------------------------
 // ---MARK: COMMON EXCEPTIONS---
 // -----------------------------
 
-export class UnwrapError extends TaggedError {
-  readonly _tag = 'UnwrapError';
-
+export class UnwrapError extends TypeError {
   constructor(type: 'Option' | 'Result' | 'ResultError') {
-    super();
+    let message: string;
 
     switch (type) {
       case 'Option':
-        this.message = 'called "Option.unwrap()" on a "None" value';
+        message = 'called "Option.unwrap()" on a "None" value';
         break;
       case 'Result':
-        this.message = 'called "Result.unwrap()" on an "Error" value';
+        message = 'called "Result.unwrap()" on an "Error" value';
         break;
       case 'ResultError':
-        this.message = 'called "Result.unwrapError()" on an "Ok" value';
+        message = 'called "Result.unwrapError()" on an "Ok" value';
         break;
       default: {
         const _: never = type;
         throw new Error(`invalid value passed to UnwrapError: "${_}"`);
       }
     }
+
+    super(message);
   }
-}
-
-// ---MARK: OPTION EXCEPTIONS---
-
-export class UnexpectedOptionException extends TaggedError {
-  readonly _tag = 'UnexpectedOption';
 }
 
 // ---MARK: RESULT EXCEPTIONS---
@@ -46,31 +35,16 @@ export class UnexpectedOptionException extends TaggedError {
 export class UnknownError extends TaggedError {
   readonly _tag = 'UnknownError';
 
-  readonly thrownError: unknown;
-
-  constructor(error: unknown) {
+  constructor(override readonly cause: unknown) {
     let message: string | undefined;
-    let stack: string | undefined;
-    let cause: unknown;
 
-    if (error instanceof Error) {
-      message = error.message;
-      stack = error.stack;
-      cause = error.cause;
+    if (cause instanceof Error) {
+      message = cause.message;
     } else {
-      message = typeof error === 'string' ? error : JSON.stringify(error);
+      message = typeof cause === 'string' ? cause : JSON.stringify(cause);
     }
 
     super(message);
-    this.thrownError = error;
-
-    if (stack != null) {
-      this.stack = stack;
-    }
-
-    if (cause != null) {
-      this.cause = cause;
-    }
   }
 }
 
@@ -86,9 +60,7 @@ export class FailedPredicateError<T> extends TaggedError {
   }
 }
 
-export class UnexpectedResultError extends TaggedError {
-  readonly _tag = 'UnexpectedResultError';
-
+export class UnexpectedResultError extends TypeError {
   constructor(
     override readonly cause: string,
     readonly value: unknown,

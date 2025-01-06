@@ -1,73 +1,51 @@
-/* eslint-disable @typescript-eslint/ban-types */
-/**
- * @template {T}
- * Returns the provided value.
- *
- * @returns {T}
- *
- * @example
- * ```ts
- * import { identity } from 'funkcia/functions';
- *
- * // Output: 10
- * const result = identity(10);
- * ```
- */
-export function identity<T>(value: T): T {
+export type Thunk<T> = () => T;
+
+export function constant<A>(value: A): Thunk<A> {
+  return () => value;
+}
+
+export const constNull: Thunk<null> = constant(null);
+
+export const constUndefined: Thunk<undefined> = constant(undefined);
+
+export const constVoid: Thunk<void> = constUndefined;
+
+export const constTrue: Thunk<true> = constant(true);
+
+export const constFalse: Thunk<false> = constant(false);
+
+export function identity<A>(value: A): A {
   return value;
 }
 
-/**
- * Returns null
- *
- * @returns null
- */
-export function stubNull(): null {
-  return null;
-}
+export const coerce: <A>(value: any) => A = identity;
 
-/**
- * Returns undefined
- *
- * @returns undefined
- */
-export function stubUndefined(): undefined {
-  return undefined;
-}
-
-/**
- * Returns void
- *
- * @returns void
- */
-export const stubVoid: () => void = stubUndefined;
-
-export function compose<A extends readonly unknown[], B>(
+export function flow<A extends readonly unknown[], B>(
   ab: (...a: A) => B,
 ): (...a: A) => B;
-export function compose<A extends readonly unknown[], B, C>(
+export function flow<A extends readonly unknown[], B, C>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
 ): (...a: A) => C;
-export function compose<A extends readonly unknown[], B, C, D>(
+export function flow<A extends readonly unknown[], B, C, D>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
 ): (...a: A) => D;
-export function compose<A extends readonly unknown[], B, C, D, E>(
+export function flow<A extends readonly unknown[], B, C, D, E>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
   de: (d: D) => E,
 ): (...a: A) => E;
-export function compose<A extends readonly unknown[], B, C, D, E, F>(
+export function flow<A extends readonly unknown[], B, C, D, E, F>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
   de: (d: D) => E,
   ef: (e: E) => F,
 ): (...a: A) => F;
-export function compose<A extends readonly unknown[], B, C, D, E, F, G>(
+export function flow<A extends readonly unknown[], B, C, D, E, F, G>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -75,7 +53,7 @@ export function compose<A extends readonly unknown[], B, C, D, E, F, G>(
   ef: (e: E) => F,
   fg: (f: F) => G,
 ): (...a: A) => G;
-export function compose<A extends readonly unknown[], B, C, D, E, F, G, H>(
+export function flow<A extends readonly unknown[], B, C, D, E, F, G, H>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -84,7 +62,7 @@ export function compose<A extends readonly unknown[], B, C, D, E, F, G, H>(
   fg: (f: F) => G,
   gh: (g: G) => H,
 ): (...a: A) => H;
-export function compose<A extends readonly unknown[], B, C, D, E, F, G, H, I>(
+export function flow<A extends readonly unknown[], B, C, D, E, F, G, H, I>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -94,18 +72,7 @@ export function compose<A extends readonly unknown[], B, C, D, E, F, G, H, I>(
   gh: (g: G) => H,
   hi: (h: H) => I,
 ): (...a: A) => I;
-export function compose<
-  A extends readonly unknown[],
-  B,
-  C,
-  D,
-  E,
-  F,
-  G,
-  H,
-  I,
-  J,
->(
+export function flow<A extends readonly unknown[], B, C, D, E, F, G, H, I, J>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -116,15 +83,20 @@ export function compose<
   hi: (h: H) => I,
   ij: (i: I) => J,
 ): (...a: A) => J;
-export function compose(firstFn: Function, ...fns: Function[]): unknown {
+export function flow(firstFn: LazyFn, ...fns: LazyFn[]): unknown {
   return function composed(this: unknown) {
-    return fns.reduce(
-      (result, fn) => fn(result),
-      // eslint-disable-next-line prefer-rest-params
-      firstFn.apply(this, arguments as any),
-    );
+    // eslint-disable-next-line prefer-rest-params
+    let result = firstFn.apply(this, arguments as any);
+
+    for (const fn of fns) {
+      result = fn(result);
+    }
+
+    return result;
   };
 }
+
+type LazyFn<I = any, O = any> = (arg: I) => O;
 
 export function pipe<A>(a: A): A;
 export function pipe<A, B>(a: A, ab: (a: A) => B): B;
@@ -345,6 +317,12 @@ export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S>(
   qr: (q: Q) => R,
   rs: (r: R) => S,
 ): S;
-export function pipe(value: unknown, ...fns: Function[]): unknown {
-  return fns.reduce((result, fn) => fn(result), value);
+export function pipe(value: unknown, ...fns: LazyFn[]): unknown {
+  let result = value;
+
+  for (const fn of fns) {
+    result = fn(result);
+  }
+
+  return result;
 }

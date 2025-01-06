@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-namespace */
+import type { FunkciaMode } from './do-notation';
+import { DoNotation, FUNKCIA_MODE } from './do-notation';
 import {
   FailedPredicateError,
   MissingValueError,
@@ -7,14 +9,15 @@ import {
   UnwrapError,
 } from './exceptions';
 import { identity } from './functions';
-import { INSPECT_SYMBOL } from './internals/inspect';
+import { FunkciaStore } from './funkcia-store';
 import type { Falsy } from './internals/types';
+import { logiffy } from './internals/utils';
 import type { Option } from './option';
-import type { Predicate, RefinedValue, Refinement } from './predicate';
-import type { Nullable } from './types';
+import type { Predicate } from './predicate';
+import type { Nullish } from './types';
 
-const $ok = Symbol('Result::Ok');
-const $error = Symbol('Result::Error');
+export const $ok = Symbol('Result::Ok');
+export const $error = Symbol('Result::Error');
 
 declare namespace Type {
   type Ok = typeof $ok;
@@ -37,9 +40,6 @@ type InferResultValue<Output> =
     Value extends never ? never
     : /* removes `any` from union */
     unknown extends Value ? never
-    : /* removes `undefined` from union */
-    undefined extends Value ?
-      void // eslint-disable-line @typescript-eslint/no-invalid-void-type
     : Value
   : never;
 
@@ -59,21 +59,35 @@ type InferResultError<Output> =
  *
  * `Result` is commonly used to represent the result of a function that can fail, such as a network request, a file read, or a database query.
  */
-export class Result<Value, Error> {
+export class Result<Value, Error> extends DoNotation<Value> {
   readonly #tag: Type.Ok | Type.Error;
 
   readonly #value: Value;
 
   readonly #error: Error;
 
-  private constructor(kind: Type.Ok, value: Value);
+  private constructor(
+    kind: Type.Ok,
+    value: Value,
+    options?: FunkciaMode.Options,
+  );
 
-  private constructor(kind: Type.Error, value: Error);
+  private constructor(
+    kind: Type.Error,
+    value: Error,
+    options?: FunkciaMode.Options,
+  );
 
-  private constructor(kind: Type.Ok | Type.Error, value?: any) {
+  private constructor(
+    kind: Type.Ok | Type.Error,
+    value?: any,
+    options?: FunkciaMode.Options,
+  ) {
+    super(options?.mode);
+
     this.#tag = kind;
-    this.#value = kind === $ok ? value : null;
-    this.#error = kind === $error ? value : null;
+    this.#value = kind === $ok ? value : undefined;
+    this.#error = kind === $error ? value : undefined;
   }
 
   // ------------------------
@@ -115,7 +129,7 @@ export class Result<Value, Error> {
    *   .map((number) => 10 / number);
    * ```
    */
-  static of = Result.ok; // eslint-disable-line @typescript-eslint/member-ordering
+  static of: <Value>(value: Value) => Result<Value, never> = Result.ok; // eslint-disable-line @typescript-eslint/member-ordering, @typescript-eslint/no-shadow
 
   /**
    * Constructs an `Error` result with the provided error.
@@ -135,6 +149,12 @@ export class Result<Value, Error> {
    */
   static error<Error>(error: NonNullable<Error>): Result<never, Error> {
     return new Result($error, error);
+  }
+
+  static get Do(): Result<Readonly<{}>, never> {
+    return new Result($ok, Object.create(null), {
+      mode: FUNKCIA_MODE.DO_NOTATION,
+    });
   }
 
   /**
@@ -158,8 +178,8 @@ export class Result<Value, Error> {
    * const result = Result.fromNullable(user.lastName);
    * ```
    */
-  static fromNullable<Value>(
-    value: Nullable<Value>,
+  static fromNullish<Value>(
+    value: Nullish<Value>,
   ): Result<NonNullable<Value>, MissingValueError>;
 
   /**
@@ -186,15 +206,15 @@ export class Result<Value, Error> {
    * );
    * ```
    */
-  static fromNullable<Value, Error extends {}>(
-    value: Nullable<Value>,
+  static fromNullish<Value, Error extends {}>(
+    value: Nullish<Value>,
     onNullable: () => Error,
   ): Result<NonNullable<Value>, Error>;
 
-  static fromNullable(value: any, onNullable?: () => any): Result<any, any> {
-    return value == null ?
-        Result.error(onNullable?.() ?? new MissingValueError())
-      : Result.ok(value);
+  static fromNullish(value: any, onNullable?: () => any): Result<any, any> {
+    return value != null ?
+        (Result.ok(value) as any)
+      : Result.error(onNullable?.() ?? new MissingValueError());
   }
 
   /**
@@ -255,59 +275,59 @@ export class Result<Value, Error> {
   ): Result<any, any> {
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!value) {
-      return Result.error(onFalsy?.(value) ?? new MissingValueError());
+      return Result.error(onFalsy?.(value) ?? new MissingValueError()) as never;
     }
 
     return Result.ok(value);
   }
 
-  /**
-   * Constructs a `Result` from a `Option`.
-   *
-   * If the `Option` is `Some`, returns an `Ok` with the value.
-   * Otherwise, returns an `Error` with an `MissingValueError`.
-   *
-   * @example
-   * ```ts
-   * import { Option, Result } from 'funkcia';
-   *
-   * declare const option: Option<User>;
-   *
-   * // Output: Result<User, MissingValueError>
-   * const result = Result.fromOption(option);
-   * ```
-   */
-  static fromOption<Value extends {}>(
-    option: Option<Value>,
-  ): Result<Value, MissingValueError>;
+  // /**
+  //  * Constructs a `Result` from a `Option`.
+  //  *
+  //  * If the `Option` is `Some`, returns an `Ok` with the value.
+  //  * Otherwise, returns an `Error` with an `MissingValueError`.
+  //  *
+  //  * @example
+  //  * ```ts
+  //  * import { Option, Result } from 'funkcia';
+  //  *
+  //  * declare const option: Option<User>;
+  //  *
+  //  * // Output: Result<User, MissingValueError>
+  //  * const result = Result.fromOption(option);
+  //  * ```
+  //  */
+  // static fromOption<Value extends {}>(
+  //   option: Option<Value>,
+  // ): Result<Value, MissingValueError>;
 
-  /**
-   * Constructs a `Result` from a `Option`.
-   *
-   * If the `Option` is `Some`, returns an `Ok` with the value.
-   * Otherwise, returns an `Error` with the return of the provided `onNone` callback.
-   *
-   * @example
-   * ```ts
-   * import { Option, Result } from 'funkcia';
-   *
-   * declare const option: Option<User>;
-   *
-   * // Output: Result<User, UserNotFound>
-   * const result = Result.fromOption(option, () => new UserNotFound());
-   * ```
-   */
-  static fromOption<Value extends {}, Error extends {}>(
-    option: Option<Value>,
-    onNone: () => Error,
-  ): Result<Value, Error>;
+  // /**
+  //  * Constructs a `Result` from a `Option`.
+  //  *
+  //  * If the `Option` is `Some`, returns an `Ok` with the value.
+  //  * Otherwise, returns an `Error` with the return of the provided `onNone` callback.
+  //  *
+  //  * @example
+  //  * ```ts
+  //  * import { Option, Result } from 'funkcia';
+  //  *
+  //  * declare const option: Option<User>;
+  //  *
+  //  * // Output: Result<User, UserNotFound>
+  //  * const result = Result.fromOption(option, () => new UserNotFound());
+  //  * ```
+  //  */
+  // static fromOption<Value extends {}, Error extends {}>(
+  //   option: Option<Value>,
+  //   onNone: () => Error,
+  // ): Result<Value, Error>;
 
-  static fromOption(option: Option<any>, onNone?: () => any): Result<any, any> {
-    return option.match({
-      Some: (value) => Result.ok(value),
-      None: () => Result.error(onNone?.() ?? new MissingValueError()),
-    });
-  }
+  // static fromOption(option: Option<any>, onNone?: () => any): Result<any, any> {
+  //   return option.match({
+  //     Some: (value) => Result.ok(value),
+  //     None: () => Result.error(onNone?.() ?? new MissingValueError()),
+  //   }) as never;
+  // }
 
   /**
    * Constructs a `Result` from a function that may throw.
@@ -320,10 +340,10 @@ export class Result<Value, Error> {
    * import { Result } from 'funkcia';
    *
    * // Output: Result<URL, UnknownError>
-   * const url = Result.try(() => new URL('example.com'));
+   * const url = Result.fromThrowable(() => new URL('example.com'));
    * ```
    */
-  static try<Value>(fn: () => Value): Result<Value, UnknownError>;
+  static fromThrowable<Value>(fn: () => Value): Result<Value, UnknownError>;
 
   /**
    * Constructs a `Result` from a function that may throw.
@@ -336,25 +356,25 @@ export class Result<Value, Error> {
    * import { Result } from 'funkcia';
    *
    * // Output: Result<URL, Error>
-   * const url = Result.try(
+   * const url = Result.fromThrowable(
    *   () => new URL('example.com'),
    *   (error) => new Error('Invalid URL'),
    * );
    * ```
    */
-  static try<Value, Error extends {}>(
+  static fromThrowable<Value, Error extends {}>(
     fn: () => Value,
     onThrow: (error: unknown) => Error,
   ): Result<Value, Error>;
 
-  static try(
+  static fromThrowable(
     fn: () => any,
     onThrow?: (error: unknown) => any,
   ): Result<any, any> {
     try {
       return Result.ok(fn());
     } catch (e) {
-      return Result.error(onThrow?.(e) ?? new UnknownError(e));
+      return Result.error(onThrow?.(e) ?? new UnknownError(e)) as never;
     }
   }
 
@@ -408,7 +428,9 @@ export class Result<Value, Error> {
    * const result = parseAndValidate(req.body);
    * ```
    */
-  static wrap<Callback extends (...args: any[]) => Result<any, any>>(
+  static enhance<
+    Callback extends (...args: any[]) => Result<any, any> | Result<never, any>,
+  >(
     fn: Callback,
   ): (
     ...args: Parameters<Callback>
@@ -420,9 +442,10 @@ export class Result<Value, Error> {
   }
 
   /**
-   * Produces a function that returns a `Result` from a function that may throw.
+   * Decorates a function that may throw
+   * returning a modified function that returns a `Result`.
    *
-   * If the function does not throw, returns an `Ok`.
+   * If the function does not throw, returns an `Ok` with the returned value.
    * Otherwise, returns an `Error` with an `UnknownError` containing the exception thrown by the function.
    *
    * @example
@@ -430,20 +453,21 @@ export class Result<Value, Error> {
    * import { Result } from 'funkcia';
    *
    * // Output: (text: string, reviver?: Function) => Result<any, UnknownError>
-   * const safeJsonParse = Result.produce(JSON.parse);
+   * const safeJsonParse = Result.wrap(JSON.parse);
    *
    * // Output: Result<any, UnknownError>
    * const result = safeJsonParse('{ "name": "John Doe" }');
    * ```
    */
-  static produce<Args extends readonly unknown[], Value>(
+  static wrap<Args extends readonly unknown[], Value>(
     callback: (...args: Args) => Value,
   ): (...args: Args) => Result<Value, UnknownError>;
 
   /**
-   * Produces a function that returns a `Result` from a function that may throw.
+   * Decorates a function that may throw
+   * returning a modified function that returns a `Result`.
    *
-   * If the function does not throw, returns an `Ok`.
+   * If the function does not throw, returns an `Ok` with the returned value.
    * Otherwise, returns an `Error` with the return of the provided `onThrow` callback.
    *
    * @example
@@ -451,7 +475,7 @@ export class Result<Value, Error> {
    * import { Result } from 'funkcia';
    *
    * // Output: (text: string, reviver?: Function) => Result<any, TypeError>
-   * const safeJsonParse = Result.produce(
+   * const safeJsonParse = Result.decorate(
    *   JSON.parse,
    *   (error) => new TypeError('Invalid JSON'),
    * );
@@ -460,16 +484,17 @@ export class Result<Value, Error> {
    * const result = safeJsonParse('{ "name": "John Doe" }');
    * ```
    */
-  static produce<Args extends readonly unknown[], Value, Error extends {}>(
+  static wrap<Args extends readonly unknown[], Value, Error extends {}>(
     callback: (...args: Args) => Value,
     onThrow: (error: unknown) => Error,
   ): (...args: Args) => Result<Value, Error>;
 
-  static produce(
+  static wrap(
     callback: (...args: any[]) => any,
     onThrow?: (error: unknown) => any,
   ): (...args: any[]) => Result<any, any> {
-    return (...args) => Result.try(() => callback(...args), onThrow as never);
+    return (...args) =>
+      Result.fromThrowable(() => callback(...args), onThrow as never);
   }
 
   /**
@@ -490,11 +515,11 @@ export class Result<Value, Error> {
    * const result = isCircle(input);
    * ```
    */
-  static definePredicate<Value, Output extends Value>(
-    refinement: Refinement<Value, Output>,
+  static predicate<Value, Output extends Value>(
+    refinement: Predicate.Guard<Value, Output>,
   ): (
     input: Value,
-  ) => Result<Output, FailedPredicateError<RefinedValue<Value, Output>>>;
+  ) => Result<Output, FailedPredicateError<Predicate.Refine<Value, Output>>>;
 
   /**
    * Creates a function that can be used to assert the type of a value.
@@ -514,8 +539,8 @@ export class Result<Value, Error> {
    * const result = isPositive(10);
    * ```
    */
-  static definePredicate<Value>(
-    predicate: Predicate<Value>,
+  static predicate<Value>(
+    predicate: Predicate.Predicate<Value>,
   ): (input: Value) => Result<Value, FailedPredicateError<Value>>;
 
   /**
@@ -538,9 +563,9 @@ export class Result<Value, Error> {
    * const result = isPositive(input);
    * ```
    */
-  static definePredicate<Value, Output extends Value, Error extends {}>(
-    refinement: Refinement<Value, Output>,
-    onUnfulfilled: (input: RefinedValue<Value, Output>) => Error,
+  static predicate<Value, Output extends Value, Error extends {}>(
+    refinement: Predicate.Guard<Value, Output>,
+    onUnfulfilled: (input: Predicate.Refine<Value, Output>) => Error,
   ): (input: Value) => Result<Output, Error>;
 
   /**
@@ -562,17 +587,58 @@ export class Result<Value, Error> {
    * const result = isPositive(10);
    * ```
    */
-  static definePredicate<Value, Error extends {}>(
-    predicate: Predicate<Value>,
+  static predicate<Value, Error extends {}>(
+    predicate: Predicate.Predicate<Value>,
     onUnfulfilled: (input: Value) => Error,
   ): (input: Value) => Result<Value, Error>;
 
-  static definePredicate(
-    predicate: Predicate<any>,
+  static predicate(
+    predicate: Predicate.Predicate<any>,
     onUnfulfilled?: (input: any) => any,
   ): (value: any) => Result<any, any> {
     return (value) =>
       Result.of(value).filter(predicate, onUnfulfilled as never);
+  }
+
+  /**
+   * Evaluates a generator early returning when an error is propagated
+   * or returning the `Result` returned by the generator.
+   *
+   * `yield*` a `Result<Value, Error>` unwraps values and propagates errors.
+   *
+   * If the value is `Result.error<e>`,
+   * then it will return `Result.Error<typeof e>` from the enclosing function.
+   *
+   * If applied to `Result.ok<x>`, then it will unwrap the value to evaluate `x`.
+   *
+   * @example
+   * ```ts
+   * import { Result } from 'funkcia';
+   *
+   * declare function safeParseInt(value: string): Result<number, ParseIntError>;
+   *
+   * // Output: Result<number, ParseIntError>
+   * const result = Result.try(function* () {
+   *   const x: number = yield* safeParseInt('10');
+   *   const y: number = yield* safeParseInt('24a'); // returns Result.Error<ParseIntError> immediately
+   *
+   *   return Result.ok(x + y); // doesn't run
+   * });
+   * ```
+   */
+  static try<Value, Error extends {}>(
+    generator: () => Generator<
+      Error,
+      Result<Value, never> | Result<Value, any>
+    >,
+  ): Result<Value, Error> {
+    const iteration = generator().next();
+
+    if (!iteration.done) {
+      return Result.error(iteration.value) as never;
+    }
+
+    return iteration.value;
   }
 
   // -----------------------
@@ -741,6 +807,10 @@ export class Result<Value, Error> {
     });
   }
 
+  toOption(): Option<NonNullable<Value>> {
+    return FunkciaStore.Option.fromNullish(this.toNullable());
+  }
+
   /**
    * Unwraps the value of the `Result` if it is a `Ok`, otherwise returns `null`.
    *
@@ -791,7 +861,7 @@ export class Result<Value, Error> {
    * const isNegative = Result.error(10).contains(num => num > 0);
    * ```
    */
-  contains(predicate: Predicate<Value>): boolean {
+  contains(predicate: Predicate.Predicate<Value>): boolean {
     return this.isOk() && predicate(this.#value);
   }
 
@@ -932,8 +1002,11 @@ export class Result<Value, Error> {
    * ```
    */
   filter<Output extends Value>(
-    refinement: Refinement<Value, Output>,
-  ): Result<Output, Error | FailedPredicateError<RefinedValue<Value, Output>>>;
+    refinement: Predicate.Guard<Value, Output>,
+  ): Result<
+    Output,
+    Error | FailedPredicateError<Predicate.Refine<Value, Output>>
+  >;
 
   /**
    * Asserts that the `Result` value passes the test implemented by the provided function.
@@ -952,7 +1025,7 @@ export class Result<Value, Error> {
    * ```
    */
   filter(
-    predicate: Predicate<Value>,
+    predicate: Predicate.Predicate<Value>,
   ): Result<Value, Error | FailedPredicateError<Value>>;
 
   /**
@@ -975,8 +1048,8 @@ export class Result<Value, Error> {
    * ```
    */
   filter<Output extends Value, NewError extends {}>(
-    refinement: Refinement<Value, Output>,
-    onUnfulfilled: (value: RefinedValue<Value, Output>) => NewError,
+    refinement: Predicate.Guard<Value, Output>,
+    onUnfulfilled: (value: Predicate.Refine<Value, Output>) => NewError,
   ): Result<Output, Error | NewError>;
 
   /**
@@ -997,21 +1070,98 @@ export class Result<Value, Error> {
    * ```
    */
   filter<NewError extends {}>(
-    predicate: Predicate<Value>,
+    predicate: Predicate.Predicate<Value>,
     onUnfulfilled: (value: Value) => NewError,
   ): Result<Value, Error | NewError>;
 
   filter(
-    predicate: Predicate<any>,
+    predicate: Predicate.Predicate<any>,
     onUnfulfilled?: (value: any) => any,
   ): Result<any, any> {
     if (this.isOk() && !predicate(this.#value)) {
       return Result.error(
         onUnfulfilled?.(this.#value) ?? new FailedPredicateError(this.#value),
-      );
+      ) as never;
     }
 
     return this as never;
+  }
+
+  // -----------------------
+  // ---MARK: DO-NOTATION---
+  // -----------------------
+
+  bindTo<Key extends string>(
+    key: Key,
+  ): Result<Readonly<{ [K in Key]: Value }>, Error> {
+    return Result.Do.bind(key, () => this as never) as never;
+  }
+
+  bind<Key extends string, ValueToBind, NewError>(
+    key: Exclude<Key, keyof Value>,
+    cb: (scope: Value) => Result<ValueToBind, NewError>,
+  ): Result<
+    {
+      [K in Key | keyof Value]: K extends keyof Value ? Value[K] : ValueToBind;
+    },
+    Error | NewError
+  > {
+    return this.andThen((ctx) =>
+      cb(ctx).map(
+        (value) =>
+          // eslint-disable-next-line prefer-object-spread
+          Object.assign({ [key]: value }, ctx) as {},
+      ),
+    ).match({
+      Ok: (value) => new Result($ok, value, { mode: this.mode }) as never,
+      Error: (error) =>
+        this.isError() ?
+          (this as never)
+        : (new Result($error, error, { mode: this.mode }) as never),
+    });
+  }
+
+  let<Key extends string, ValueToBind>(
+    key: Exclude<Key, keyof Value>,
+    cb: (scope: Value) => ValueToBind,
+  ): Result<
+    {
+      [K in Key | keyof Value]: K extends keyof Value ? Value[K] : ValueToBind;
+    },
+    Error | UnknownError
+  > {
+    return this.bind(key, (ctx) => Result.fromThrowable(() => cb(ctx)));
+  }
+
+  // -----------------------
+  // ----MARK: FALLBACKS----
+  // -----------------------
+
+  /**
+   * Replaces the current `Result` with the provided fallback `Result`, when it is `Error`.
+   *
+   * If the current `Result` is `Ok`, it returns the current `Result`.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   *  // Output: 'Smith'
+   * const option = Option.some('Smith')
+   *   .or(() => Option.some('John'))
+   *   .unwrap();
+   *
+   *
+   * // Output: 'John'
+   * const greeting = Option.none()
+   *   .or(() => Option.some('John'))
+   *   .unwrap();
+   * ```
+   */
+  or<NewValue, NewError>(
+    onError: (error: Error) => Result<NewValue, NewError>,
+  ): Result<Value | NewValue, Error | NewError> {
+    return this.isError() ? (onError(this.#error) as never) : (this as never);
   }
 
   // -----------------------
@@ -1059,12 +1209,23 @@ export class Result<Value, Error> {
     return this.#tag === $error;
   }
 
-  protected [INSPECT_SYMBOL] = (): string =>
-    this.match({
-      Ok: (value) => `Ok(${JSON.stringify(value)})`,
-      Error: (e) => `Error(${JSON.stringify(e)})`,
+  *[Symbol.iterator](): Iterator<Error, Value> {
+    if (this.isError()) {
+      yield this.#error;
+    }
+
+    return this.#value;
+  }
+
+  [Symbol.for('nodejs.util.inspect.custom')](): string {
+    return this.match({
+      Ok: (value) => `Ok(${logiffy(value)})`,
+      Error: (error) => `Error(${logiffy(error)})`,
     });
+  }
 }
+
+FunkciaStore.register(Result);
 
 declare namespace Result {
   interface Ok<Value> {

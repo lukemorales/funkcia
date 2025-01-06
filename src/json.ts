@@ -6,7 +6,7 @@ export class SafeJSON {
    *
    * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse
    */
-  static parse = Result.produce<
+  static parse = Result.wrap<
     Parameters<typeof JSON.parse>,
     unknown,
     SyntaxError
@@ -17,7 +17,7 @@ export class SafeJSON {
    *
    * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
    */
-  static stringify = Result.produce<
+  static stringify = Result.wrap<
     Parameters<typeof JSON.stringify>,
     unknown,
     TypeError
