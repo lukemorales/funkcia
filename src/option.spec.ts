@@ -196,7 +196,7 @@ describe('Option', () => {
       });
     });
 
-    describe('fn', () => {
+    describe('fun', () => {
       function hasEnabledSetting(enabled: boolean | null) {
         switch (enabled) {
           case true:
@@ -211,14 +211,12 @@ describe('Option', () => {
       it('returns a function with improved inference without changing behavior', () => {
         const normal = hasEnabledSetting(true);
 
-        expectTypeOf(normal).toEqualTypeOf<
-          Option<'YES'> | Option<'NO'> | Option<never>
-        >();
+        expectTypeOf(normal).toEqualTypeOf<Option<'YES'> | Option<'NO'>>();
 
         expect(normal.isSome()).toBeTrue();
         expect(normal.unwrap()).toBe('YES');
 
-        const wrappedFn = Option.enhance(hasEnabledSetting);
+        const wrappedFn = Option.fun(hasEnabledSetting);
 
         const option = wrappedFn(true);
 
@@ -284,7 +282,7 @@ describe('Option', () => {
       });
     });
 
-    describe('predicate', () => {
+    describe('guard', () => {
       it('creates a function that will return an `Option` with the refined type of a value if the predicate is fulfilled', () => {
         interface Circle {
           kind: 'circle';
@@ -368,6 +366,35 @@ describe('Option', () => {
       });
     });
 
+    describe('firstSomeOf', () => {
+      it('returns the first `Some` value', () => {
+        const option = Option.firstSomeOf([
+          Option.some(1),
+          Option.none<number>(),
+          Option.some(3),
+        ]);
+
+        expectTypeOf(option).toEqualTypeOf<Option<number>>();
+
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toBe(1);
+      });
+
+      it('returns `None` if all values are `None`', () => {
+        const option = Option.firstSomeOf([
+          Option.none<number>(),
+          Option.none<number>(),
+          Option.none<number>(),
+        ]);
+
+        expectTypeOf(option).toEqualTypeOf<Option<number>>();
+
+        expect(option.isNone()).toBeTrue();
+      });
+    });
+  });
+
+  describe('combinations', () => {
     describe('values', () => {
       it('returns an array containing only the values inside `Some`', () => {
         const output = Option.values([
@@ -691,33 +718,6 @@ describe('Option', () => {
         expect(option.unwrap()).toBe(20);
       });
     });
-
-    describe('firstSomeOf', () => {
-      it('returns the first `Some` value', () => {
-        const option = Option.fromFirstSome([
-          Option.some(1),
-          Option.none<number>(),
-          Option.some(3),
-        ]);
-
-        expectTypeOf(option).toEqualTypeOf<Option<number>>();
-
-        expect(option.isSome()).toBeTrue();
-        expect(option.unwrap()).toBe(1);
-      });
-
-      it('returns `None` if all values are `None`', () => {
-        const option = Option.fromFirstSome([
-          Option.none<number>(),
-          Option.none<number>(),
-          Option.none<number>(),
-        ]);
-
-        expectTypeOf(option).toEqualTypeOf<Option<number>>();
-
-        expect(option.isNone()).toBeTrue();
-      });
-    });
   });
 
   describe('comparisons', () => {
@@ -726,12 +726,14 @@ describe('Option', () => {
         const option = Option.some(10);
 
         expect(option.isSome()).toBeTrue();
+        expect(option.isNone()).toBeFalse();
       });
 
       it('returns false if the Option is a None', () => {
         const option = Option.none<number>();
 
         expect(option.isSome()).toBeFalse();
+        expect(option.isNone()).toBeTrue();
       });
     });
 
@@ -740,12 +742,14 @@ describe('Option', () => {
         const option = Option.none<number>();
 
         expect(option.isNone()).toBeTrue();
+        expect(option.isSome()).toBeFalse();
       });
 
       it('returns false if the Option is a Some', () => {
         const option = Option.some(10);
 
         expect(option.isNone()).toBeFalse();
+        expect(option.isSome()).toBeTrue();
       });
     });
 

@@ -1,13 +1,12 @@
 export declare namespace Predicate {
-  export type Predicate<A> = (a: A) => boolean;
+  type Predicate<A> = (a: A) => boolean;
 
-  export type Guard<A, B extends A> = (a: A) => a is B;
+  type Guard<A, B extends A> = (a: A) => a is B;
 
-  export type $inferRefinedValue<$Guard extends Guard<any, any>> =
-    $Guard extends (arg: any) => arg is infer R ? R : never;
+  type $inferRefinedValue<$Guard extends Guard<any, any>> =
+    $Guard extends Guard<infer _, infer R> ? R : never;
 
-  export type Refine<A, B extends A> =
-    Exclude<A, B> extends never ? A : Exclude<A, B>;
+  type Refine<A, B extends A> = Exclude<A, B> extends never ? A : Exclude<A, B>;
 }
 
 /**

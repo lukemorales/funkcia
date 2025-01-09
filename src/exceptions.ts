@@ -22,7 +22,7 @@ export class UnwrapError extends TypeError {
         break;
       default: {
         const _: never = type;
-        throw new Error(`invalid value passed to UnwrapError: "${_}"`);
+        throw new TypeError(`Invalid value passed to UnwrapError: "${_}"`);
       }
     }
 
@@ -34,18 +34,6 @@ export class UnwrapError extends TypeError {
 
 export class UnknownError extends TaggedError {
   readonly _tag = 'UnknownError';
-
-  constructor(override readonly cause: unknown) {
-    let message: string | undefined;
-
-    if (cause instanceof Error) {
-      message = cause.message;
-    } else {
-      message = typeof cause === 'string' ? cause : JSON.stringify(cause);
-    }
-
-    super(message);
-  }
 }
 
 export class MissingValueError extends TaggedError {
@@ -57,14 +45,5 @@ export class FailedPredicateError<T> extends TaggedError {
 
   constructor(readonly value: T) {
     super('Predicate not fulfilled for Result value');
-  }
-}
-
-export class UnexpectedResultError extends TypeError {
-  constructor(
-    override readonly cause: string,
-    readonly value: unknown,
-  ) {
-    super('Expected Result to be "Ok", but it was "Error"');
   }
 }

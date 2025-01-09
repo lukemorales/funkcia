@@ -46,19 +46,3 @@ export abstract class DoNotation<Context> {
     [K in Key | keyof Context]: K extends keyof Context ? Context[K] : any;
   }>;
 }
-
-// export interface DoNotation<Context> {
-//   bind: <Key extends string>(
-//     key: Exclude<Key, keyof Context>,
-//     cb: (ctx: Context) => any,
-//   ) => DoNotation<{
-//     [K in Key | keyof Context]: K extends keyof Context ? Context[K] : any;
-//   }>;
-
-//   let: <Key extends string>(
-//     key: Exclude<Key, keyof Context>,
-//     cb: (ctx: Context) => any,
-//   ) => DoNotation<{
-//     [K in Key | keyof Context]: K extends keyof Context ? Context[K] : any;
-//   }>;
-// }

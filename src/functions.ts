@@ -1,4 +1,23 @@
 /* eslint-disable @typescript-eslint/ban-types */
+
+/**
+ * @template {T}
+ * Returns a function that will always return the provided value.
+ *
+ * @returns {() => T}
+ *
+ * @example
+ * ```ts
+ * import { identity } from 'funkcia/functions';
+ *
+ * // Output: 10
+ * const result = identity(10);
+ * ```
+ */
+export function constant<T>(value: T): () => T {
+  return () => value;
+}
+
 /**
  * @template {T}
  * Returns the provided value.
@@ -22,25 +41,21 @@ export function identity<T>(value: T): T {
  *
  * @returns null
  */
-export function stubNull(): null {
-  return null;
-}
+export const constNull: () => null = constant(null);
 
 /**
  * Returns undefined
  *
  * @returns undefined
  */
-export function stubUndefined(): undefined {
-  return undefined;
-}
+export const constUndefined: () => undefined = constant(undefined);
 
 /**
  * Returns void
  *
  * @returns void
  */
-export const stubVoid: () => void = stubUndefined;
+export const constVoid: () => void = constUndefined;
 
 export function compose<A extends readonly unknown[], B>(
   ab: (...a: A) => B,
@@ -116,12 +131,12 @@ export function compose<
   hi: (h: H) => I,
   ij: (i: I) => J,
 ): (...a: A) => J;
-export function compose(firstFn: Function, ...fns: Function[]): unknown {
+export function compose(fn: Function, ...fns: Function[]): unknown {
   return function composed(this: unknown) {
     return fns.reduce(
-      (result, fn) => fn(result),
+      (result, f) => f(result),
       // eslint-disable-next-line prefer-rest-params
-      firstFn.apply(this, arguments as any),
+      fn.apply(this, arguments as never),
     );
   };
 }

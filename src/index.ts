@@ -1,2 +1,3 @@
-export * from './option.bak';
+export * from './result';
+export * from './option';
 export * from './types';
