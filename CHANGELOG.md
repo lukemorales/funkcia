@@ -1,5 +1,15 @@
 # funkcia
 
+## 0.2.0
+
+### Minor Changes
+
+- [#16](https://github.com/lukemorales/funkcia/pull/16) [`cf92f59`](https://github.com/lukemorales/funkcia/commit/cf92f59d40bd9699456cf1a86386f0cf9840de62) Thanks [@lukemorales](https://github.com/lukemorales)! - Rewrite API to class objects.
+
+  Funkcia now exposes `Option`, `Result`, `AsyncOption`, and `AsyncResult` as class objects.
+
+  Check the full documentation at [funkcia.lukemorales.io](https://funkcia.lukemorales.io).
+
 ## 0.1.8
 
 ### Patch Changes

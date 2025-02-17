@@ -1,8 +1,8 @@
 {
   "name": "funkcia",
-  "version": "0.1.8",
-  "description": "",
-  "author": "Luke Morales <lukemorales@live.com>",
+  "version": "0.5.0",
+  "description": "Encode failure and absence of value in TypeScript",
+  "author": "Luke Morales <oss@lukemorales.io>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/lukemorales/funkcia.git"
@@ -59,16 +59,6 @@
         "default": "./dist/json.js"
       }
     },
-    "./option": {
-      "import": {
-        "types": "./dist/option.d.mts",
-        "default": "./dist/option.mjs"
-      },
-      "require": {
-        "types": "./dist/option.d.ts",
-        "default": "./dist/option.js"
-      }
-    },
     "./predicate": {
       "import": {
         "types": "./dist/predicate.d.mts",
@@ -77,16 +67,6 @@
       "require": {
         "types": "./dist/predicate.d.ts",
         "default": "./dist/predicate.js"
-      }
-    },
-    "./result": {
-      "import": {
-        "types": "./dist/result.d.mts",
-        "default": "./dist/result.mjs"
-      },
-      "require": {
-        "types": "./dist/result.d.ts",
-        "default": "./dist/result.js"
       }
     },
     "./url": {
