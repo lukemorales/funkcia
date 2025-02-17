@@ -853,7 +853,7 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
     onSome: (
       value: DoNotation.Unsign<Value>,
     ) => Option.NoOptionGuard<Output, 'andThen'>,
-  ): Option<NonNullable<Output>> {
+  ): unknown extends Output ? Option<Output> : Option<NonNullable<Output>> {
     if (this.isNone()) return this as never;
 
     // @ts-expect-error the compiler is complaining because of NoOptionInMapGuard
@@ -1244,7 +1244,7 @@ declare namespace Option {
     AnotherMethod extends string,
   > = Value extends Option<infer _> ? NoOptionInReturn<AnotherMethod> : Value;
 
-  type Unwrap<Output> = [Output] extends [Option<infer Value>] ? Value : never;
+  type Unwrap<Output> = Output extends Option<infer Value> ? Value : never;
 
   interface Some<Value> {
     /**  @override this method will not throw the expected error on a `Some` Option, use `unwrap` instead */

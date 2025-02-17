@@ -1660,11 +1660,11 @@ declare namespace Result {
     ? NoResultInReturn<CorrectMethod>
     : Output;
 
-  type Unwrap<Output> = [Output] extends [Result<infer Value, infer _>]
+  type Unwrap<Output> = Output extends Result<infer Value, infer _>
     ? Value
     : never;
 
-  type UnwrapError<Output> = [Output] extends [Result<infer _, infer Error>]
+  type UnwrapError<Output> = Output extends Result<infer _, infer Error>
     ? Error
     : never;
 
