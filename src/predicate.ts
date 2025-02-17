@@ -1,12 +1,30 @@
 export declare namespace Predicate {
+  /**
+   * Represents a function that tests a value and returns a boolean.
+   */
   type Predicate<A> = (a: A) => boolean;
 
+  /**
+   * Represents a type guard function that refines a type `A` to a more specific type `B`.
+   */
   type Guard<A, B extends A> = (a: A) => a is B;
 
-  type $inferRefinedValue<$Guard extends Guard<any, any>> =
-    $Guard extends Guard<infer _, infer R> ? R : never;
+  /**
+   * Utility type that extracts the refined type `B` from a `Guard<A, B>`.
+   */
+  type Guarded<$Guard extends Guard<any, any>> = $Guard extends Guard<
+    infer _,
+    infer R
+  >
+    ? R
+    : never;
 
-  type Refine<A, B extends A> = Exclude<A, B> extends never ? A : Exclude<A, B>;
+  /**
+   * Utility type that computes the type that was excluded by the type guard refinement.
+   */
+  type Unguarded<A, B extends A> = Exclude<A, B> extends never
+    ? A
+    : Exclude<A, B>;
 }
 
 /**

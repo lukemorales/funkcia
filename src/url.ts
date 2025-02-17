@@ -1,6 +1,6 @@
 import { Result } from './result';
 
-export class SafeURL {
+export interface SafeURL {
   /**
    * The URL() constructor returns a newly created URL object representing the URL defined by the parameters.
    *
@@ -8,8 +8,13 @@ export class SafeURL {
    *
    * @see https://developer.mozilla.org/en-US/docs/Web/API/URL/URL
    */
-  static of = Result.wrap<ConstructorParameters<typeof URL>, URL, TypeError>(
-    (...args: ConstructorParameters<typeof URL>): URL => new URL(...args),
-    (e) => e as TypeError,
-  );
+  of: ReturnType<
+    typeof Result.liftFun<ConstructorParameters<typeof URL>, URL, TypeError>
+  >;
 }
+
+export const SafeURL: SafeURL = Object.freeze({
+  of: Result.liftFun(
+    (...args: ConstructorParameters<typeof URL>): URL => new URL(...args),
+  ),
+});

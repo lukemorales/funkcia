@@ -1,13 +1,13 @@
 /* eslint-disable no-param-reassign,, prefer-destructuring */
 
+import { constNull, constUndefined, identity, type Thunk } from './functions';
+import type { Predicate, Refinement } from './predicate';
+import type { Result } from './result.bak';
 import { dual } from './_internals/dual';
 import * as _ from './_internals/option';
 import type { Pipeable } from './_internals/pipeable';
 import { error, isOk, ok } from './_internals/result';
 import type { Falsy, Mutable, Nullable } from './_internals/types';
-import { constNull, constUndefined, identity, type Thunk } from './functions';
-import type { Predicate, Refinement } from './predicate';
-import type { Result } from './result.bak';
 
 // -------------------------------------
 // constructors
@@ -195,7 +195,7 @@ export const fromPredicate: FromPredicate = dual(
  * const someOption = O.fromResult(R.ok(10));
  *             //^?  Some<number>
  *
- * const emptyOption = O.fromResult(R.error('Computation failure'));
+ * const emptyOption = O.fromResult(R.error('computation failure'));
  *              //^?  None
  * ```
  */
@@ -503,7 +503,7 @@ export const unwrap: <A>(self: Option<A>) => A = getOrElse(() => {
  * ```ts
  * import { O } from 'funkcia';
  *
- * const user = O.some<User>({ id: 'user_01' }).pipe(O.expect(() => UserNotFound('user_01')));
+ * const user = O.some<User>({ id: 'user_123' }).pipe(O.expect(() => UserNotFound('user_123')));
  *       //^?  User
  *
  * const team = O.none().pipe(O.expect(() => TeamNotFound('team_01')));
@@ -525,7 +525,7 @@ export function expect<B extends globalThis.Error>(
  * ```ts
  * import { O } from 'funkcia';
  *
- * const user = O.some<User>({ id: 'user_01' }).pipe(O.toNullable);
+ * const user = O.some<User>({ id: 'user_123' }).pipe(O.toNullable);
  *       //^?  User | null
  * ```
  */
@@ -539,7 +539,7 @@ export const toNullable: <A>(self: Option<A>) => A | null =
  * ```ts
  * import { O } from 'funkcia';
  *
- * const user = O.some<User>({ id: 'user_01' }).pipe(O.toUndefined);
+ * const user = O.some<User>({ id: 'user_123' }).pipe(O.toUndefined);
  *       //^?  User | undefined
  * ```
  */

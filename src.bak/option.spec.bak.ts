@@ -110,7 +110,7 @@ describe('Option', () => {
       });
 
       it('creates a None when Result is a Left', () => {
-        expect(O.fromResult(R.error('Computation failure'))).toBeNone();
+        expect(O.fromResult(R.error('computation failure'))).toBeNone();
       });
     });
   });

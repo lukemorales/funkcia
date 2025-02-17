@@ -1,9 +1,11 @@
-import { MissingValueError, TaggedError, UnwrapError } from './exceptions';
+import type { DoNotation } from './do-notation';
+import { NoValueError, TaggedError, UnwrapError } from './exceptions';
 import { FunkciaStore } from './funkcia-store';
-import type { Falsy } from './internals/types';
+import type { Falsy, Nullable } from './internals/types';
 import { Option } from './option';
+import { AsyncOption } from './option.async';
 import { Result } from './result';
-import type { Nullish } from './types';
+import { AsyncResult } from './result.async';
 
 describe('Option', () => {
   describe('constructors', () => {
@@ -34,91 +36,13 @@ describe('Option', () => {
       });
     });
 
-    describe('Do', () => {
-      it('accumulates multiple `bind` calls into an object and is a `Some` Option if all values are `Some`', () => {
-        const option = Option.Do.bind('a', () => Option.some(2))
-          .bind('b', (ctx) => {
-            expectTypeOf(ctx).toEqualTypeOf<Readonly<{ a: number }>>();
-            expect(ctx).toEqual({ a: 2 });
-
-            return Option.some(2);
-          })
-          .bind('c', (ctx) => {
-            expectTypeOf(ctx).toEqualTypeOf<
-              Readonly<{ a: number; b: number }>
-            >();
-            expect(ctx).toEqual({ a: 2, b: 2 });
-
-            return Option.some(6);
-          })
-          .map((ctx) => {
-            expectTypeOf(ctx).toEqualTypeOf<
-              Readonly<{
-                a: number;
-                b: number;
-                c: number;
-              }>
-            >();
-            expect(ctx).toEqual({ a: 2, b: 2, c: 6 });
-
-            return ctx.a + ctx.b + ctx.c;
-          });
-
-        expectTypeOf(option).toEqualTypeOf<Option<number>>();
-
-        expect(option.isSome()).toBeTrue();
-        expect(option.unwrap()).toBe(10);
-      });
-
-      it('accumulates multiple `bind` calls into an object and is a `None` Option if any value is `None`', () => {
-        const bindC = vi.fn(() => Option.some(6));
-        const sum = vi.fn(
-          (ctx: Record<'a' | 'b' | 'c', number>) => ctx.a + ctx.b + ctx.c,
-        );
-
-        const option = Option.Do.bind('a', () => Option.some(2))
-          .bind('b', () => Option.none<number>())
-          .bind('c', bindC)
-          .map(sum);
-
-        expectTypeOf(option).toEqualTypeOf<Option<number>>();
-
-        expect(option.isNone()).toBeTrue();
-
-        expect(bindC).not.toHaveBeenCalled();
-        expect(sum).not.toHaveBeenCalled();
-      });
-
-      it('accumulates multiple `let` calls into an object', () => {
-        const option = Option.Do.let('a', () => 4)
-          .let('b', () => 6)
-          .let('c', (ctx) => ctx.a + ctx.b)
-          .map((ctx) => {
-            expectTypeOf(ctx).toEqualTypeOf<
-              Readonly<{
-                a: number;
-                b: number;
-                c: number;
-              }>
-            >();
-
-            return ctx.c;
-          });
-
-        expectTypeOf(option).toEqualTypeOf<Option<number>>();
-
-        expect(option.isSome()).toBeTrue();
-        expect(option.unwrap()).toBe(10);
-      });
-    });
-
-    describe('fromNullish', () => {
-      function nullify(value: Nullish<string>): Nullish<string> {
+    describe('fromNullable', () => {
+      function nullify(value: Nullable<string>): Nullable<string> {
         return value;
       }
 
       it('creates a Some Option when the value is not nullable', () => {
-        const option = Option.fromNullish(nullify('hello world'));
+        const option = Option.fromNullable(nullify('hello world'));
 
         expectTypeOf(option).toEqualTypeOf<Option<string>>();
 
@@ -127,7 +51,7 @@ describe('Option', () => {
       });
 
       it('creates a None Option when the value is nullable', () => {
-        const option = Option.fromNullish(nullify(null));
+        const option = Option.fromNullable(nullify(null));
 
         expectTypeOf(option).toEqualTypeOf<Option<string>>();
 
@@ -137,9 +61,7 @@ describe('Option', () => {
 
     describe('fromFalsy', () => {
       it('creates a Some Option when the value is not falsy', () => {
-        const value = 'hello world' as string | Falsy;
-
-        const option = Option.fromFalsy(value);
+        const option = Option.fromFalsy('hello world' as string | Falsy);
 
         expectTypeOf(option).toEqualTypeOf<Option<string>>();
 
@@ -148,7 +70,7 @@ describe('Option', () => {
       });
 
       it('creates a None Option when the value is falsy', () => {
-        const testValues = [
+        const falsyValues = [
           '',
           0,
           0n,
@@ -157,7 +79,7 @@ describe('Option', () => {
           false,
         ] satisfies Falsy[];
 
-        for (const value of testValues) {
+        for (const value of falsyValues) {
           const option = Option.fromFalsy(value);
 
           expectTypeOf(option).toEqualTypeOf<Option<never>>();
@@ -167,9 +89,9 @@ describe('Option', () => {
       });
     });
 
-    describe('fromThrowable', () => {
+    describe('try', () => {
       it('creates a Some Option when the function does not throw', () => {
-        const option = Option.fromThrowable(() => 'hello world');
+        const option = Option.try(() => 'hello world');
 
         expectTypeOf(option).toEqualTypeOf<Option<string>>();
 
@@ -178,7 +100,7 @@ describe('Option', () => {
       });
 
       it('creates a None Option when the function does not throw but returns null', () => {
-        const option = Option.fromThrowable(() => null as string | null);
+        const option = Option.try(() => null as string | null);
 
         expectTypeOf(option).toEqualTypeOf<Option<string>>();
 
@@ -186,8 +108,8 @@ describe('Option', () => {
       });
 
       it('creates a None Option when the function throws', () => {
-        const option = Option.fromThrowable<string>(() => {
-          throw new Error('calculation failed');
+        const option = Option.try<string>(() => {
+          throw new Error('computation failed');
         });
 
         expectTypeOf(option).toEqualTypeOf<Option<string>>();
@@ -197,18 +119,15 @@ describe('Option', () => {
     });
 
     describe('fun', () => {
-      function hasEnabledSetting(enabled: boolean | null) {
-        switch (enabled) {
-          case true:
-            return Option.some('YES' as const);
-          case false:
-            return Option.some('NO' as const);
-          default:
-            return Option.none();
-        }
-      }
-
       it('returns a function with improved inference without changing behavior', () => {
+        function hasEnabledSetting(enabled: boolean | null) {
+          if (typeof enabled !== 'boolean') return Option.none();
+
+          return enabled
+            ? Option.some('YES' as const)
+            : Option.some('NO' as const);
+        }
+
         const normal = hasEnabledSetting(true);
 
         expectTypeOf(normal).toEqualTypeOf<Option<'YES'> | Option<'NO'>>();
@@ -225,19 +144,39 @@ describe('Option', () => {
         // @ts-expect-error `output` has same values but improved type inference
         expect(normal.equals(option)).toBeTrue();
       });
-    });
 
-    describe('wrap', () => {
-      function divide(dividend: number, divisor: number): number {
-        if (divisor === 0) {
-          throw new Error('division by zero');
+      it('returns an async function with improved inference without changing behavior', async () => {
+        async function hasEnabledSetting(enabled: boolean | null) {
+          if (typeof enabled !== 'boolean') return Option.none();
+
+          return enabled
+            ? Option.some('YES' as const)
+            : Option.some('NO' as const);
         }
 
-        return dividend / divisor;
-      }
+        expectTypeOf(hasEnabledSetting).toEqualTypeOf<
+          (enabled: boolean | null) => Promise<Option<'YES'> | Option<'NO'>>
+        >();
 
+        const wrappedFn = Option.fun(hasEnabledSetting);
+
+        expectTypeOf(wrappedFn).toEqualTypeOf<
+          (enabled: boolean | null) => Promise<Option<'YES' | 'NO'>>
+        >();
+      });
+    });
+
+    describe('liftFun', () => {
       it('wraps a function that might throw exceptions returning a function that returns an Option', () => {
-        const safeDivide = Option.wrap(divide);
+        const safeDivide = Option.liftFun(
+          (dividend: number, divisor: number): number => {
+            if (divisor === 0) {
+              throw new Error('division by zero');
+            }
+
+            return dividend / divisor;
+          },
+        );
 
         expectTypeOf(safeDivide).toEqualTypeOf<
           (dividend: number, divisor: number) => Option<number>
@@ -256,14 +195,16 @@ describe('Option', () => {
         expect(() => noneOption.unwrap()).toThrow(UnwrapError);
       });
 
-      it('wraps a function that might return a nullish value returning a function that returns an Option', () => {
-        const safeDivide = Option.wrap((dividend: number, divisor: number) => {
-          try {
-            return divide(dividend, divisor);
-          } catch {
-            return null;
-          }
-        });
+      it('wraps a function that might return a nullable value returning a function that returns an Option', () => {
+        const safeDivide = Option.liftFun(
+          (dividend: number, divisor: number) => {
+            if (divisor === 0) {
+              return null;
+            }
+
+            return dividend / divisor;
+          },
+        );
         expectTypeOf(safeDivide).toEqualTypeOf<
           (dividend: number, divisor: number) => Option<number>
         >();
@@ -282,7 +223,7 @@ describe('Option', () => {
       });
     });
 
-    describe('guard', () => {
+    describe('predicate', () => {
       it('creates a function that will return an `Option` with the refined type of a value if the predicate is fulfilled', () => {
         interface Circle {
           kind: 'circle';
@@ -294,7 +235,7 @@ describe('Option', () => {
 
         type Shape = Circle | Square;
 
-        const ensureCircle = Option.guard(
+        const ensureCircle = Option.predicate(
           (shape: Shape): shape is Circle => shape.kind === 'circle',
         );
 
@@ -311,7 +252,7 @@ describe('Option', () => {
       });
 
       it('creates a function that will return an `Option` if the predicate is fullfiled', () => {
-        const ensurePositive = Option.guard((value: number) => value > 0);
+        const ensurePositive = Option.predicate((value: number) => value > 0);
 
         expectTypeOf(ensurePositive).toEqualTypeOf<
           (value: number) => Option<number>
@@ -326,12 +267,12 @@ describe('Option', () => {
       });
     });
 
-    describe('try', () => {
+    describe('relay', () => {
       it('safely evaluates the generator, returning the returned Option when all yields are `Some`', () => {
         const greeting = Option.some('hello');
         const subject = Option.some('world');
 
-        const option = Option.try(function* exec() {
+        const option = Option.relay(function* exec() {
           const a = yield* greeting;
           expect(a).toBe('hello');
 
@@ -351,7 +292,7 @@ describe('Option', () => {
         const greeting = Option.none<string>();
         const getSubject = vi.fn(() => Option.some('world'));
 
-        const option = Option.try(function* exec() {
+        const option = Option.relay(function* exec() {
           const a = yield* greeting;
           const b = yield* getSubject();
 
@@ -381,10 +322,10 @@ describe('Option', () => {
       });
 
       it('returns `None` if all values are `None`', () => {
-        const option = Option.firstSomeOf([
-          Option.none<number>(),
-          Option.none<number>(),
-          Option.none<number>(),
+        const option = Option.firstSomeOf<number>([
+          Option.none(),
+          Option.none(),
+          Option.none(),
         ]);
 
         expectTypeOf(option).toEqualTypeOf<Option<number>>();
@@ -394,7 +335,7 @@ describe('Option', () => {
     });
   });
 
-  describe('combinations', () => {
+  describe('combinators', () => {
     describe('values', () => {
       it('returns an array containing only the values inside `Some`', () => {
         const output = Option.values([
@@ -404,6 +345,169 @@ describe('Option', () => {
         ]);
 
         expect(output).toEqual([1, 3]);
+      });
+
+      it('returns an empty array if all values are `None`', () => {
+        const output = Option.values<number>([
+          Option.none(),
+          Option.none(),
+          Option.none(),
+        ]);
+
+        expect(output).toEqual([]);
+      });
+    });
+
+    describe('zip', () => {
+      it('combines two `Options` into a single `Option` containing a tuple of their values, if both `Options` are `Some`', () => {
+        const first = Option.some('hello');
+        const second = Option.some('world');
+
+        const option = first.zip(second);
+
+        expectTypeOf(option).toEqualTypeOf<Option<[string, string]>>();
+
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toEqual(['hello', 'world']);
+      });
+
+      it('returns `None` if one of the `Options` is `None`', () => {
+        const first = Option.some('hello');
+        const second = Option.none<string>();
+
+        const option = first.zip(second);
+
+        expectTypeOf(option).toEqualTypeOf<Option<[string, string]>>();
+
+        expect(option.isNone()).toBeTrue();
+      });
+    });
+
+    describe('zipWith', () => {
+      it('combines two `Options` into a single `Option` producing a new value by applying the given function to both values, if both `Options` are `Some`', () => {
+        const first = Option.some('hello');
+        const second = Option.some('world');
+
+        const option = first.zipWith(second, (a, b) => `${a} ${b}`);
+
+        expectTypeOf(option).toEqualTypeOf<Option<string>>();
+
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toBe('hello world');
+      });
+
+      it('returns `None` if one of the `Options` is `None`', () => {
+        const first = Option.some('hello');
+        const second = Option.none<string>();
+
+        const option = first.zipWith(second, (a, b) => `${a} ${b}`);
+
+        expectTypeOf(option).toEqualTypeOf<Option<string>>();
+
+        expect(option.isNone()).toBeTrue();
+      });
+    });
+  });
+
+  describe('do-notation', () => {
+    describe('Do', () => {
+      it('creates an `Option` with an empty object branded with the DoNotation type', () => {
+        const option = Option.Do;
+
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
+        expectTypeOf(option).toEqualTypeOf<Option<DoNotation.Sign<object>>>();
+
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toEqual({});
+      });
+    });
+
+    describe('bindTo', () => {
+      it('binds the current `Option` to a `do-notation`', () => {
+        const option = Option.some(10).bindTo('a');
+
+        expectTypeOf(option).toEqualTypeOf<
+          Option<DoNotation.Sign<{ a: number }>>
+        >();
+
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toEqual({ a: 10 });
+      });
+    });
+
+    describe('bind', () => {
+      it('accumulates multiple `bind` calls into an object and is a `Some` Option if all values are `Some`', () => {
+        const option = Option.Do.bind('a', () => Option.some(2))
+          .bind('b', (ctx) => {
+            expectTypeOf(ctx).toEqualTypeOf<Readonly<{ a: number }>>();
+            expect(ctx).toEqual({ a: 2 });
+
+            return Option.some(2);
+          })
+          .bind('c', (ctx) => {
+            expectTypeOf(ctx).toEqualTypeOf<
+              Readonly<{ a: number; b: number }>
+            >();
+            expect(ctx).toEqual({ a: 2, b: 2 });
+
+            return Option.some(6);
+          });
+
+        expectTypeOf(option).toEqualTypeOf<
+          Option<
+            DoNotation.Sign<{
+              a: number;
+              b: number;
+              c: number;
+            }>
+          >
+        >();
+
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toEqual({ a: 2, b: 2, c: 6 });
+      });
+
+      it('accumulates multiple `bind` calls into an object and is a `None` Option if any value is `None`', () => {
+        const bindC = vi.fn(() => Option.some(6));
+
+        const option = Option.Do.bind('a', () => Option.some(2))
+          .bind('b', () => Option.none<number>())
+          .bind('c', bindC);
+
+        expectTypeOf(option).toEqualTypeOf<
+          Option<
+            DoNotation.Sign<{
+              a: number;
+              b: number;
+              c: number;
+            }>
+          >
+        >();
+
+        expect(option.isNone()).toBeTrue();
+
+        expect(bindC).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('let', () => {
+      it('accumulates multiple `let` calls into an object', () => {
+        const option = Option.Do.let('a', () => 4)
+          .let('b', () => 6)
+          .let('c', (ctx) => ctx.a + ctx.b);
+
+        expectTypeOf(option).toEqualTypeOf<
+          Option<
+            DoNotation.Sign<{
+              a: number;
+              b: number;
+              c: number;
+            }>
+          >
+        >();
+
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toEqual({ a: 4, b: 6, c: 10 });
       });
     });
   });
@@ -467,6 +571,12 @@ describe('Option', () => {
 
         expect(option.unwrapOr(() => 0)).toBe(0);
       });
+
+      it('improves the inferred type if the fallback value is an empty array', () => {
+        const option = Option.none<number[]>();
+
+        expectTypeOf(option.unwrapOr(() => [])).toEqualTypeOf<number[]>();
+      });
     });
 
     describe('unwrapOrNull', () => {
@@ -525,54 +635,6 @@ describe('Option', () => {
       });
     });
 
-    describe('toResult', () => {
-      let unregister: () => void;
-
-      beforeAll(() => {
-        unregister = FunkciaStore.register(Result);
-      });
-
-      afterAll(() => {
-        unregister();
-      });
-
-      it('returns `Ok` when Option is Some', () => {
-        const result = Option.some('hello world').toResult();
-
-        expectTypeOf(result).toEqualTypeOf<Result<string, MissingValueError>>();
-
-        expect(result.isOk()).toBeTrue();
-        expect(result.unwrap()).toBe('hello world');
-      });
-
-      it('returns `Error` when Option is None', () => {
-        const result = Option.none<string>().toResult();
-
-        expectTypeOf(result).toEqualTypeOf<Result<string, MissingValueError>>();
-
-        expect(result.isError()).toBeTrue();
-        expect(result.unwrapError()).toBeInstanceOf(MissingValueError);
-      });
-    });
-
-    describe('toArray', () => {
-      it('returns an array with the value if Option is Some', () => {
-        const output = Option.some(10).toArray();
-
-        expectTypeOf(output).toEqualTypeOf<number[]>();
-
-        expect(output).toEqual([10]);
-      });
-
-      it('returns an empty array if Option is None', () => {
-        const output = Option.none<number>().toArray();
-
-        expectTypeOf(output).toEqualTypeOf<number[]>();
-
-        expect(output).toEqual([]);
-      });
-    });
-
     describe('contains', () => {
       it('returns true if the Option is a Some and the predicate is fulfilled', () => {
         const option = Option.some(10);
@@ -593,14 +655,119 @@ describe('Option', () => {
       });
     });
 
-    describe('bindTo', () => {
-      it('binds the current `Option` to a `do-notation`', () => {
-        const option = Option.some(10).bindTo('a');
+    describe('toResult', () => {
+      let unregister: () => void;
 
-        expectTypeOf(option).toEqualTypeOf<Option<Readonly<{ a: number }>>>();
+      beforeAll(() => {
+        unregister = FunkciaStore.register(Result);
+      });
 
-        expect(option.isSome()).toBeTrue();
-        expect(option.unwrap()).toEqual({ a: 10 });
+      afterAll(() => {
+        unregister();
+      });
+
+      it('returns `Ok` when Option is Some', () => {
+        const result = Option.some('hello world').toResult();
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, NoValueError>>();
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toBe('hello world');
+      });
+
+      it('returns `Error` when Option is None', () => {
+        const result = Option.none<string>().toResult();
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, NoValueError>>();
+
+        expect(result.isError()).toBeTrue();
+        expect(result.unwrapError()).toBeInstanceOf(NoValueError);
+      });
+
+      it('returns the custom error when Option is None', () => {
+        const result = Option.none<string>().toResult(
+          () => new Error('computation failed'),
+        );
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, Error>>();
+
+        expect(result.isError()).toBeTrue();
+        expect(result.unwrapError()).toEqual(new Error('computation failed'));
+      });
+    });
+
+    describe('toAsyncOption', () => {
+      let unregister: () => void;
+
+      beforeAll(() => {
+        unregister = FunkciaStore.register(AsyncOption);
+      });
+
+      afterAll(() => {
+        unregister();
+      });
+
+      it('returns a `AsyncOption` from the original `Option`', async () => {
+        const option = Option.some('hello world');
+        const taskOption = option.toAsyncOption();
+
+        expectTypeOf(taskOption).toEqualTypeOf<AsyncOption<string>>();
+        expect(await taskOption).toEqual(option);
+      });
+    });
+
+    describe('toAsyncResult', () => {
+      let unregisterResult: () => void;
+      let unregisterAsyncResult: () => void;
+
+      beforeAll(() => {
+        unregisterResult = FunkciaStore.register(Result);
+        unregisterAsyncResult = FunkciaStore.register(AsyncResult);
+      });
+
+      afterAll(() => {
+        unregisterResult();
+        unregisterAsyncResult();
+      });
+
+      it('returns a `AsyncResult` from the original `Option`', async () => {
+        const option = Option.some('hello world');
+        const taskResult = option.toAsyncResult();
+
+        expectTypeOf(taskResult).toEqualTypeOf<
+          AsyncResult<string, NoValueError>
+        >();
+        expect(await taskResult.unwrap()).toEqual(option.unwrap());
+      });
+
+      it('returns a `AsyncResult` from the original `Option` with a custom error', async () => {
+        const option = Option.none<string>();
+        const taskResult = option.toAsyncResult(
+          () => new Error('computation failed'),
+        );
+
+        expectTypeOf(taskResult).toEqualTypeOf<AsyncResult<string, Error>>();
+        expect(await taskResult.unwrapError()).toEqual(
+          new Error('computation failed'),
+        );
+      });
+    });
+
+    describe('toArray', () => {
+      it('returns an array with the value if Option is Some', () => {
+        const output = Option.some(10).toArray();
+
+        expectTypeOf(output).toEqualTypeOf<number[]>();
+
+        expect(output).toEqual([10]);
+      });
+
+      it('returns an empty array if Option is None', () => {
+        const output = Option.none<number>().toArray();
+
+        expectTypeOf(output).toEqualTypeOf<number[]>();
+
+        expect(output).toEqual([]);
       });
     });
   });
@@ -616,6 +783,37 @@ describe('Option', () => {
 
         expect(option.isSome()).toBeTrue();
         expect(option.unwrap()).toBe('HELLO WORLD');
+      });
+
+      it('transforms the Some value and removes nullable type from the output', () => {
+        interface Profile {
+          lastName?: string;
+        }
+
+        const option = Option.some<Profile>({ lastName: 'Doe' })
+          .map((value) => value.lastName)
+          .map((value) => {
+            expectTypeOf(value).toEqualTypeOf<string>();
+
+            return value.toUpperCase();
+          });
+
+        expectTypeOf(option).toEqualTypeOf<Option<string>>();
+
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toBe('DOE');
+      });
+
+      it('returns a None Option if the callback returns null', () => {
+        interface Profile {
+          lastName?: string;
+        }
+
+        const option = Option.some<Profile>({}).map((value) => value.lastName);
+
+        expectTypeOf(option).toEqualTypeOf<Option<string>>();
+
+        expect(option.isNone()).toBeTrue();
       });
 
       it('has no effect if the Option is a None', () => {

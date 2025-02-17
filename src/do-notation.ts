@@ -1,48 +1,42 @@
-export const FUNKCIA_MODE = {
-  NORMAL: Symbol.for('FunkciaMode::Normal'),
-  DO_NOTATION: Symbol.for('FunkciaMode::DoNotation'),
-} as const;
+declare const DoNotationSymbol: unique symbol;
 
-export declare namespace FunkciaMode {
-  export type Normal = typeof FUNKCIA_MODE.NORMAL;
-  export type DoNotation = typeof FUNKCIA_MODE.DO_NOTATION;
+type Container = `${'' | 'Async'}${'Option' | 'Result'}`;
 
-  export type Mode = DoNotation | Normal;
+export declare namespace DoNotation {
+  type $doNotationSymbol = typeof DoNotationSymbol;
 
-  export interface Options {
-    mode: Mode;
-  }
-}
-
-export abstract class DoNotation<Context> {
-  readonly #mode: FunkciaMode.Mode;
-
-  constructor(mode?: FunkciaMode.Mode) {
-    this.#mode = mode ?? FUNKCIA_MODE.NORMAL;
+  interface $Brand {
+    readonly [DoNotationSymbol]: true;
   }
 
-  protected assertDoNotation(property: keyof DoNotation<{}>): asserts this {
-    if (this.#mode !== FUNKCIA_MODE.DO_NOTATION)
-      throw new TypeError(
-        `Cannot call ${property} because Do Notation has not been initialized`,
-      );
+  export type is<T> = T extends $Brand ? true : false;
+
+  export type Sign<T extends {} = object> = Readonly<T> & $Brand;
+
+  export type Unsign<T> = T extends $Brand
+    ? {
+        [K in keyof T as K extends keyof $Brand ? never : K]: T[K];
+      } & {}
+    : T;
+
+  export type Forbid<
+    Class extends string,
+    Key extends 'bind' | 'let',
+  > = `ERROR: "${Key}" can only be used when "${Class}" is initialized with "${Class}.Do"`;
+
+  export interface Signed<$Container extends Container, Context> {
+    bindTo: <Key extends string>(key: Key) => any;
+
+    bind: <Key extends string>(
+      this: is<Context> extends true ? this : Forbid<$Container, 'bind'>,
+      key: Exclude<Key, keyof Context>,
+      cb: (ctx: Unsign<Context>) => any,
+    ) => any;
+
+    let: <Key extends string>(
+      this: is<Context> extends true ? this : Forbid<$Container, 'let'>,
+      key: Exclude<Key, keyof Context>,
+      cb: (ctx: Unsign<Context>) => any,
+    ) => any;
   }
-
-  protected get mode(): FunkciaMode.Mode {
-    return this.#mode;
-  }
-
-  abstract bind<Key extends string>(
-    key: Exclude<Key, keyof Context>,
-    cb: (ctx: Context) => any,
-  ): DoNotation<{
-    [K in Key | keyof Context]: K extends keyof Context ? Context[K] : any;
-  }>;
-
-  abstract let<Key extends string>(
-    key: Exclude<Key, keyof Context>,
-    cb: (ctx: Context) => any,
-  ): DoNotation<{
-    [K in Key | keyof Context]: K extends keyof Context ? Context[K] : any;
-  }>;
 }

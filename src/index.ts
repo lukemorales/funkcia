@@ -1,3 +1,2 @@
-export * from './result';
-export * from './option';
-export * from './types';
+export * from './option.module';
+export * from './result.module';

@@ -1,7 +1,7 @@
-import type { AsyncOption } from './async-option';
-import type { AsyncResult } from './async-result';
 import type { Option } from './option';
+import type { AsyncOption } from './option.async';
 import type { Result } from './result';
+import type { AsyncResult } from './result.async';
 
 class FunkciaError extends Error {}
 
@@ -12,21 +12,21 @@ type Store = {
   AsyncResult?: typeof AsyncResult;
 };
 
-type Primitive = keyof Store;
+type Container = keyof Store;
 
 export class FunkciaStore {
   private static store: Store = {};
 
   private static assert<T>(
-    primitive: T | undefined,
+    container: T | undefined,
     name: string,
-  ): asserts primitive {
-    if (!primitive) throw new FunkciaError(`${name} is not registered`);
+  ): asserts container {
+    if (!container) throw new FunkciaError(`${name} is not registered`);
   }
 
-  static register(primitive: Store[Primitive] & {}): () => void {
-    const name = primitive.name as Primitive;
-    this.store[name] = primitive as never;
+  static register(container: Store[Container] & {}): () => void {
+    const name = container.name as Container;
+    this.store[name] = container as never;
 
     return () => {
       this.store[name] = undefined as never;

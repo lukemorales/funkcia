@@ -1,7 +1,7 @@
+import { Option } from '../src';
+import { not } from '../src/predicate';
 import { dual } from './_internals/dual';
 import { identity } from './functions';
-import { Option } from './option';
-import { not } from './predicate';
 
 // -------------------------------------
 // constructors
@@ -62,7 +62,30 @@ export function empty<A>(): A[] {
  * ```ts
  * import { A } from 'funkcia';
  *
- * const positives = A.range(1, 5); // [1, 2, 3, 4, 5]
+ * const users = [{ id: 1 }, { id: 2 }, { id: 3 }];
+ *
+ * for (const index of A.rangeOf(users)) {
+ *   console.log(index); // 1, 2, 3, 4, 5
+ * }
+ * ```
+ */
+export function rangeOf(array: any[], options?: { offset: number }): number[] {
+  const offset = options?.offset ?? 0,
+    sizeOffset = 1;
+
+  return create(array.length - sizeOffset - offset, (i) => i + offset);
+}
+
+/**
+ * Returns an array filled with values in the provided range
+ *
+ * @example
+ * ```ts
+ * import { A } from 'funkcia';
+ *
+ * for (const number of A.range(1, 5)) {
+ *   console.log(number); // 1, 2, 3, 4, 5
+ * }
  * ```
  */
 export function range(start: number, finish: number): number[] {

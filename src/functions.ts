@@ -1,35 +1,112 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
 /**
- * @template {T}
- * Returns a function that will always return the provided value.
+ * Immediately invokes a function and returns its return value.
  *
- * @returns {() => T}
+ * This is a syntax sugar for `IIFE`s.
  *
  * @example
  * ```ts
- * import { identity } from 'funkcia/functions';
+ * import { invoke } from 'funkcia/functions';
  *
- * // Output: 10
- * const result = identity(10);
+ * declare const shape: Shape;
+ *
+ * const humanReadableShape = invoke(() => {
+ *   switch (shape.kind) {
+ *     case 'CIRCLE':
+ *       return 'Circle';
+ *     case 'SQUARE':
+ *       return 'Square';
+ *     default:
+ *       const invalidKind: never = shape.kind;
+ *       throw new Error(`Invalid shape: ${invalidKind}`);
+ *   }
+ * });
  * ```
  */
-export function constant<T>(value: T): () => T {
+export function invoke<T extends (...args: any[]) => any>(
+  fn: T,
+): ReturnType<T> {
+  return fn();
+}
+
+/**
+ * Lazily computes a value by invoking a function.
+ *
+ * The value only computed only once when the value is first accessed.
+ *
+ * @example
+ * ```ts
+ * import { lazyCompute } from 'funkcia/functions';
+ *
+ * declare function expensiveComputation(target: object[]): string;
+ *
+ * declare const userLogs: object[];
+ *
+ * const computation = lazyCompute(() => expensiveComputation(userLogs));
+ *
+ * const output = computation.value; // value is computed only when accessed
+ * const repeatedOutput = computation.value; // value is cached and computed only once
+ */
+export function lazyCompute<T>(fn: () => T): { value: T } {
+  return {
+    get value() {
+      const value = fn();
+
+      Reflect.defineProperty(this, 'value', {
+        value,
+        writable: false,
+        configurable: false,
+      });
+
+      return value;
+    },
+  };
+}
+
+/**
+ * A ⁠noop function is an intentionally empty function that does nothing,
+ * and returns nothing when called.
+ *
+ * @example
+ * ```ts
+ * import { noop } from 'funkcia/functions';
+ *
+ * noop(); // do nothing
+ * ```
+ */
+export function noop(): void;
+export function noop(): undefined;
+export function noop(): void {
+  // do nothing
+}
+
+/**
+ * Returns a function that will always return the provided value.
+ *
+ * @example
+ * ```ts
+ * import { always } from 'funkcia/functions';
+ *
+ * const alwaysTen = always(10);
+ *
+ * const result = alwaysTen();
+ * // Output: 10
+ * ```
+ */
+export function always<T>(value: T): () => T {
   return () => value;
 }
 
 /**
- * @template {T}
  * Returns the provided value.
- *
- * @returns {T}
  *
  * @example
  * ```ts
  * import { identity } from 'funkcia/functions';
  *
+ * const output = identity(10);
  * // Output: 10
- * const result = identity(10);
  * ```
  */
 export function identity<T>(value: T): T {
@@ -37,26 +114,70 @@ export function identity<T>(value: T): T {
 }
 
 /**
- * Returns null
- *
- * @returns null
+ * Returns `null`.
  */
-export const constNull: () => null = constant(null);
+export const alwaysNull: () => null = always(null);
 
 /**
- * Returns undefined
- *
- * @returns undefined
+ * Returns `undefined`.
  */
-export const constUndefined: () => undefined = constant(undefined);
+export const alwaysUndefined: () => undefined = always(undefined);
 
 /**
- * Returns void
- *
- * @returns void
+ * Returns `void`.
  */
-export const constVoid: () => void = constUndefined;
+export const alwaysVoid: () => void = alwaysUndefined;
 
+/**
+ * Returns `never`.
+ */
+export const ignore: () => never = always(undefined as never);
+
+/**
+ * Returns `true`.
+ */
+export const alwaysTrue: () => true = always(true);
+
+/**
+ * Returns `false`.
+ */
+export const alwaysFalse: () => false = always(false);
+
+/**
+ * Returns the provided value coerced to the desired type.
+ *
+ * @example
+ * ```ts
+ * import { coerce, Result } from 'funkcia/functions';
+ *
+ * //       ┌─── Result<any, SyntaxError>
+ * //       ▼
+ * const result = Result.try(
+ *   () => JSON.parse('{ "name": John }'),
+ *   error => coerce<SyntaxError>(error) // JSON.parse throws a `SyntaxError`
+ * );
+ * ```
+ */
+export function coerce<T>(value: any): T {
+  return value;
+}
+
+/**
+ * Composes two or more functions into a single function.
+ *
+ * @example
+ * ```ts
+ * import { compose } from 'funkcia/functions';
+ *
+ * declare function increment(value: number): number;
+ * declare function double(value: number): number;
+ * declare function stringify(value: number): string;
+ *
+ * const compute = compose(increment, double, stringify);
+ *
+ * const output = compute(9);
+ * // Output: "20"
+ */
 export function compose<A extends readonly unknown[], B>(
   ab: (...a: A) => B,
 ): (...a: A) => B;
@@ -141,6 +262,20 @@ export function compose(fn: Function, ...fns: Function[]): unknown {
   };
 }
 
+/**
+ * Pipes a value into a series of functions, returning the final result.
+ *
+ * @example
+ * ```ts
+ * import { pipe } from 'funkcia/functions';
+ *
+ * declare function increment(value: number): number;
+ * declare function double(value: number): number;
+ * declare function stringify(value: number): string;
+ *
+ * const output = pipe(9, increment, double, stringify);
+ * // Output: "20"
+ */
 export function pipe<A>(a: A): A;
 export function pipe<A, B>(a: A, ab: (a: A) => B): B;
 export function pipe<A, B, C>(a: A, ab: (a: A) => B, bc: (b: B) => C): C;
