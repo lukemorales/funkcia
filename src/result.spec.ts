@@ -1,14 +1,17 @@
+import type { DoNotation } from './do-notation';
 import {
   FailedPredicateError,
-  MissingValueError,
+  NoValueError,
   TaggedError,
-  UnexpectedResultError,
+  UnknownError,
   UnwrapError,
-  type UnknownError,
 } from './exceptions';
+import { FunkciaStore } from './funkcia-store';
 import type { Falsy } from './internals/types';
 import { Option } from './option';
+import { AsyncOption } from './option.async';
 import { Result } from './result';
+import { AsyncResult } from './result.async';
 
 describe('Result', () => {
   describe('constructors', () => {
@@ -18,21 +21,14 @@ describe('Result', () => {
 
         expectTypeOf(result).toEqualTypeOf<Result<string, never>>();
 
-        expect(result.isOk()).toBe(true);
-        expect(result.isError()).toBe(false);
+        expect(result.isOk()).toBeTrue();
         expect(result.unwrap()).toBe('hello world');
       });
     });
 
     describe('of', () => {
-      it('creates a Result with the given value', () => {
-        const result = Result.of('hello world');
-
-        expectTypeOf(result).toEqualTypeOf<Result<string, never>>();
-
-        expect(result.isOk()).toBe(true);
-        expect(result.isError()).toBe(false);
-        expect(result.unwrap()).toBe('hello world');
+      it('references the `ok` method', () => {
+        expect(Result.of).toEqual(Result.ok);
       });
     });
 
@@ -42,8 +38,7 @@ describe('Result', () => {
 
         expectTypeOf(result).toEqualTypeOf<Result<never, 'failed'>>();
 
-        expect(result.isOk()).toBe(false);
-        expect(result.isError()).toBe(true);
+        expect(result.isError()).toBeTrue();
         expect(result.unwrapError()).toBe('failed');
       });
     });
@@ -52,10 +47,9 @@ describe('Result', () => {
       it('creates an Ok Result when the value is not nullable', () => {
         const result = Result.fromNullable('hello world');
 
-        expectTypeOf(result).toEqualTypeOf<Result<string, MissingValueError>>();
+        expectTypeOf(result).toEqualTypeOf<Result<string, NoValueError>>();
 
-        expect(result.isOk()).toBe(true);
-        expect(result.isError()).toBe(false);
+        expect(result.isOk()).toBeTrue();
         expect(result.unwrap()).toBe('hello world');
       });
 
@@ -65,13 +59,10 @@ describe('Result', () => {
         {
           const result = Result.fromNullable(value);
 
-          expectTypeOf(result).toEqualTypeOf<
-            Result<string, MissingValueError>
-          >();
+          expectTypeOf(result).toEqualTypeOf<Result<string, NoValueError>>();
 
-          expect(result.isOk()).toBe(false);
-          expect(result.isError()).toBe(true);
-          expect(result.unwrapError()).toEqual(new MissingValueError());
+          expect(result.isError()).toBeTrue();
+          expect(result.unwrapError()).toEqual(new NoValueError());
         }
 
         {
@@ -82,8 +73,7 @@ describe('Result', () => {
 
           expectTypeOf(result).toEqualTypeOf<Result<string, Error>>();
 
-          expect(result.isOk()).toBe(false);
-          expect(result.isError()).toBe(true);
+          expect(result.isError()).toBeTrue();
           expect(result.unwrapError()).toEqual(new Error('missing value'));
         }
 
@@ -95,8 +85,7 @@ describe('Result', () => {
 
           expectTypeOf(result).toEqualTypeOf<Result<string, Error>>();
 
-          expect(result.isOk()).toBe(false);
-          expect(result.isError()).toBe(true);
+          expect(result.isError()).toBeTrue();
           expect(result.unwrapError()).toEqual(new Error('null value'));
         }
       });
@@ -108,15 +97,14 @@ describe('Result', () => {
 
         const result = Result.fromFalsy(value);
 
-        expectTypeOf(result).toEqualTypeOf<Result<string, MissingValueError>>();
+        expectTypeOf(result).toEqualTypeOf<Result<string, NoValueError>>();
 
-        expect(result.isOk()).toBe(true);
-        expect(result.isError()).toBe(false);
+        expect(result.isOk()).toBeTrue();
         expect(result.unwrap()).toBe('hello world');
       });
 
       it('creates an Error Result when the value is falsy', () => {
-        const testValues = [
+        const falsyValues = [
           '',
           0,
           0n,
@@ -125,37 +113,14 @@ describe('Result', () => {
           false,
         ] satisfies Falsy[];
 
-        for (const value of testValues) {
+        for (const value of falsyValues) {
           const result = Result.fromFalsy(value);
 
-          expectTypeOf(result).toEqualTypeOf<
-            Result<never, MissingValueError>
-          >();
+          expectTypeOf(result).toEqualTypeOf<Result<never, NoValueError>>();
 
-          expect(result.isOk()).toBe(false);
-          expect(result.isError()).toBe(true);
-          expect(result.unwrapError()).toEqual(new MissingValueError());
+          expect(result.isError()).toBeTrue();
+          expect(result.unwrapError()).toEqual(new NoValueError());
         }
-      });
-    });
-
-    describe('fromOption', () => {
-      it('returns Ok when Option is Some', () => {
-        const result = Result.fromOption(Option.some('hello world'));
-
-        expectTypeOf(result).toEqualTypeOf<Result<string, MissingValueError>>();
-
-        expect(result.isOk()).toBe(true);
-        expect(result.unwrap()).toBe('hello world');
-      });
-
-      it('returns Error when Option is None', () => {
-        const result = Result.fromOption(Option.none<string>());
-
-        expectTypeOf(result).toEqualTypeOf<Result<string, MissingValueError>>();
-
-        expect(result.isError()).toBe(true);
-        expect(() => result.unwrap()).toThrow(UnwrapError);
       });
     });
 
@@ -165,8 +130,7 @@ describe('Result', () => {
 
         expectTypeOf(result).toEqualTypeOf<Result<string, UnknownError>>();
 
-        expect(result.isOk()).toBe(true);
-        expect(result.isError()).toBe(false);
+        expect(result.isOk()).toBeTrue();
         expect(result.unwrap()).toBe('hello world');
       });
 
@@ -178,9 +142,10 @@ describe('Result', () => {
 
           expectTypeOf(result).toEqualTypeOf<Result<never, UnknownError>>();
 
-          expect(result.isOk()).toBe(false);
-          expect(result.isError()).toBe(true);
-          expect(result.unwrapError()).toEqual(new Error('computation failed'));
+          expect(result.isError()).toBeTrue();
+          expect(result.unwrapError()).toEqual(
+            new UnknownError(String(new Error('computation failed'))),
+          );
         }
 
         {
@@ -193,23 +158,22 @@ describe('Result', () => {
 
           expectTypeOf(result).toEqualTypeOf<Result<never, TypeError>>();
 
-          expect(result.isOk()).toBe(false);
-          expect(result.isError()).toBe(true);
+          expect(result.isError()).toBeTrue();
           expect(result.unwrapError()).toEqual(new TypeError('custom error'));
         }
       });
     });
 
-    describe('wrap', () => {
-      describe('wrap', () => {
-        class UnsetSetting extends TaggedError {
-          readonly _tag = 'UnsetSetting';
-        }
+    describe('fun', () => {
+      class UnsetSetting extends TaggedError {
+        readonly _tag = 'UnsetSetting';
+      }
 
-        class DisabledSetting extends TaggedError {
-          readonly _tag = 'DisabledSetting';
-        }
+      class DisabledSetting extends TaggedError {
+        readonly _tag = 'DisabledSetting';
+      }
 
+      it('returns a function with improved inference without changing behavior', () => {
         function hasEnabledSetting(enabled: boolean | null) {
           switch (enabled) {
             case true:
@@ -221,35 +185,71 @@ describe('Result', () => {
           }
         }
 
-        it('returns a function with improved inference without changing behavior', () => {
-          const output = hasEnabledSetting(true);
+        const output = hasEnabledSetting(true);
 
-          expectTypeOf(output).toEqualTypeOf<
+        expectTypeOf(output).toEqualTypeOf<
+          | Result<true, never>
+          | Result<never, DisabledSetting>
+          | Result<never, UnsetSetting>
+        >();
+
+        expect(output.isOk()).toBeTrue();
+        expect(output.unwrap()).toBeTrue();
+
+        const wrapped = Result.fun(hasEnabledSetting);
+
+        const result = wrapped(true);
+
+        expectTypeOf(result).toEqualTypeOf<
+          Result<true, UnsetSetting | DisabledSetting>
+        >();
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toBeTrue();
+      });
+
+      it('returns an async function with improved inference without changing behavior', async () => {
+        async function hasEnabledSetting(enabled: boolean | null) {
+          switch (enabled) {
+            case true:
+              return Result.ok(true as const);
+            case false:
+              return Result.error(new DisabledSetting());
+            default:
+              return Result.error(new UnsetSetting());
+          }
+        }
+
+        expectTypeOf(hasEnabledSetting).toEqualTypeOf<
+          (
+            enabled: boolean | null,
+          ) => Promise<
             | Result<true, never>
             | Result<never, DisabledSetting>
             | Result<never, UnsetSetting>
-          >();
+          >
+        >();
 
-          expect(output.isOk()).toBe(true);
-          expect(output.isError()).toBe(false);
-          expect(output.unwrap()).toBe(true);
+        const wrappedFn = Result.fun(hasEnabledSetting);
 
-          const wrapped = Result.wrap(hasEnabledSetting);
+        expectTypeOf(wrappedFn).toEqualTypeOf<
+          (
+            enabled: boolean | null,
+          ) => Promise<Result<true, DisabledSetting | UnsetSetting>>
+        >();
 
-          const result = wrapped(true);
+        const result = await wrappedFn(true);
 
-          expectTypeOf(result).toEqualTypeOf<
-            Result<true, UnsetSetting | DisabledSetting>
-          >();
+        expectTypeOf(result).toEqualTypeOf<
+          Result<true, DisabledSetting | UnsetSetting>
+        >();
 
-          expect(result.isOk()).toBe(true);
-          expect(result.isError()).toBe(false);
-          expect(result.unwrap()).toBe(true);
-        });
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toBeTrue();
       });
     });
 
-    describe('produce', () => {
+    describe('liftFun', () => {
       class InvalidDivisor extends TaggedError {
         readonly _tag = 'InvalidDivisor';
       }
@@ -262,7 +262,7 @@ describe('Result', () => {
         return dividend / divisor;
       }
 
-      const safeDivide = Result.produce<
+      const safeDivide = Result.liftFun<
         Parameters<typeof divide>,
         number,
         InvalidDivisor
@@ -273,8 +273,7 @@ describe('Result', () => {
 
         expectTypeOf(result).toEqualTypeOf<Result<number, InvalidDivisor>>();
 
-        expect(result.isOk()).toBe(true);
-        expect(result.isError()).toBe(false);
+        expect(result.isOk()).toBeTrue();
         expect(result.unwrap()).toBe(5);
       });
 
@@ -283,27 +282,26 @@ describe('Result', () => {
 
         expectTypeOf(result).toEqualTypeOf<Result<number, InvalidDivisor>>();
 
-        expect(result.isOk()).toBe(false);
-        expect(result.isError()).toBe(true);
+        expect(result.isError()).toBeTrue();
         expect(result.unwrapError()).toEqual(
           new InvalidDivisor('Divisor can’t be zero'),
         );
       });
     });
 
-    describe('definePredicate', () => {
+    describe('predicate', () => {
+      interface Circle {
+        kind: 'circle';
+      }
+
+      interface Square {
+        kind: 'square';
+      }
+
+      type Shape = Circle | Square;
+
       it('creates a function that can be used to refine the type of a value', () => {
-        interface Circle {
-          kind: 'circle';
-        }
-
-        interface Square {
-          kind: 'square';
-        }
-
-        type Shape = Circle | Square;
-
-        const isCircle = Result.definePredicate(
+        const isCircle = Result.predicate(
           (shape: Shape): shape is Circle => shape.kind === 'circle',
         );
 
@@ -313,23 +311,8 @@ describe('Result', () => {
           Result<Circle, FailedPredicateError<Square>>
         >();
 
-        expect(circleResult.isOk()).toBe(true);
-        expect(circleResult.isError()).toBe(false);
+        expect(circleResult.isOk()).toBeTrue();
         expect(circleResult.unwrap()).toEqual({ kind: 'circle' });
-      });
-
-      it('creates a function that can be used to assert the type of a value', () => {
-        const isPositive = Result.definePredicate((value: number) => value > 0);
-
-        const positiveResult = isPositive(10);
-
-        expectTypeOf(positiveResult).toEqualTypeOf<
-          Result<number, FailedPredicateError<number>>
-        >();
-
-        expect(positiveResult.isOk()).toBe(true);
-        expect(positiveResult.isError()).toBe(false);
-        expect(positiveResult.unwrap()).toBe(10);
       });
 
       it('creates a function that can be used to refine the type of a value and accepts a custom error', () => {
@@ -337,17 +320,7 @@ describe('Result', () => {
           readonly _tag = 'InvalidShapeError';
         }
 
-        interface Circle {
-          kind: 'circle';
-        }
-
-        interface Square {
-          kind: 'square';
-        }
-
-        type Shape = Circle | Square;
-
-        const isCircle = Result.definePredicate(
+        const isCircle = Result.predicate(
           (shape: Shape): shape is Circle => shape.kind === 'circle',
           (shape) => {
             expectTypeOf(shape).toEqualTypeOf<Square>();
@@ -362,9 +335,21 @@ describe('Result', () => {
           Result<Circle, InvalidShapeError>
         >();
 
-        expect(circleResult.isOk()).toBe(true);
-        expect(circleResult.isError()).toBe(false);
+        expect(circleResult.isOk()).toBeTrue();
         expect(circleResult.unwrap()).toEqual({ kind: 'circle' });
+      });
+
+      it('creates a function that can be used to assert the type of a value', () => {
+        const isPositive = Result.predicate((value: number) => value > 0);
+
+        const positiveResult = isPositive(10);
+
+        expectTypeOf(positiveResult).toEqualTypeOf<
+          Result<number, FailedPredicateError<number>>
+        >();
+
+        expect(positiveResult.isOk()).toBeTrue();
+        expect(positiveResult.unwrap()).toBe(10);
       });
 
       it('creates a function that can be used to assert the type of a value and accepts a custom error', () => {
@@ -372,7 +357,7 @@ describe('Result', () => {
           readonly _tag = 'InvalidNumberError';
         }
 
-        const isPositive = Result.definePredicate(
+        const isPositive = Result.predicate(
           (value: number) => value > 0,
           () => new InvalidNumberError(),
         );
@@ -383,9 +368,252 @@ describe('Result', () => {
           Result<number, InvalidNumberError>
         >();
 
-        expect(positiveResult.isOk()).toBe(true);
-        expect(positiveResult.isError()).toBe(false);
+        expect(positiveResult.isOk()).toBeTrue();
         expect(positiveResult.unwrap()).toBe(10);
+      });
+    });
+
+    describe('relay', () => {
+      class DivisionByZeroError extends TaggedError {
+        readonly _tag = 'DivisionByZeroError';
+      }
+
+      const isPositiveNumber = Result.predicate((value: number) => value > 0);
+
+      const isValidDenominator = Result.predicate(
+        (value: number) => value !== 0,
+        () => new DivisionByZeroError(),
+      );
+
+      it('returns an Ok Result with the value returned by the generator when no errors are yielded', () => {
+        const result = Result.relay(function* compute() {
+          const nominator = yield* isPositiveNumber(20);
+          const denominator = yield* isValidDenominator(2);
+
+          return Result.ok(nominator / denominator);
+        });
+
+        expectTypeOf(result).toEqualTypeOf<
+          Result<number, DivisionByZeroError | FailedPredicateError<number>>
+        >();
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toBe(10);
+      });
+
+      it('returns an Error Result when an error is yielded by a result in the generator', () => {
+        const result = Result.relay(function* compute() {
+          const nominator = yield* isPositiveNumber(-20);
+          const denominator = yield* isValidDenominator(2);
+
+          return Result.ok(nominator / denominator);
+        });
+
+        expectTypeOf(result).toEqualTypeOf<
+          Result<number, DivisionByZeroError | FailedPredicateError<number>>
+        >();
+
+        expect(result.isError()).toBeTrue();
+        expect(result.unwrapError()).toBeInstanceOf(FailedPredicateError);
+      });
+
+      it('returns an Error Result when an error is yielded in the generator', () => {
+        const result = Result.relay(function* compute() {
+          const nominator = yield* isPositiveNumber(20);
+
+          yield new DivisionByZeroError();
+
+          return Result.ok(nominator / 2);
+        });
+
+        expectTypeOf(result).toEqualTypeOf<
+          Result<number, DivisionByZeroError | FailedPredicateError<number>>
+        >();
+
+        expect(result.isError()).toBeTrue();
+        expect(result.unwrapError()).toBeInstanceOf(DivisionByZeroError);
+      });
+    });
+  });
+
+  describe('combinators', () => {
+    describe('values', () => {
+      it('returns an array containing only the values inside `Ok`', () => {
+        const output = Result.values([
+          Result.ok(1),
+          Result.error('Failed computation'),
+          Result.ok(3),
+        ]);
+
+        expect(output).toEqual([1, 3]);
+      });
+
+      it('returns an empty array if all values are `Error`', () => {
+        const output = Result.values<number>([
+          Result.error('Failed computation'),
+          Result.error('Failed computation'),
+          Result.error('Failed computation'),
+        ]);
+
+        expect(output).toEqual([]);
+      });
+    });
+
+    describe('zip', () => {
+      it('combines two `Results` into a single `Result` containing a tuple of their values, if both values are `Ok`', () => {
+        const first = Result.ok('hello');
+        const second = Result.ok('world');
+
+        const result = first.zip(second);
+
+        expectTypeOf(result).toEqualTypeOf<Result<[string, string], never>>();
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toEqual(['hello', 'world']);
+      });
+
+      it('returns `Error` if one of the `Options` is `Error`', () => {
+        const first = Result.fromNullable('hello');
+        const second = Result.fromFalsy('' as string);
+
+        const result = first.zip(second);
+
+        expectTypeOf(result).toEqualTypeOf<
+          Result<[string, string], NoValueError>
+        >();
+
+        expect(result.isError()).toBeTrue();
+      });
+    });
+
+    describe('zipWith', () => {
+      it('combines two `Results` into a single `Result` producing a new value by applying the given function to both values, if both values are `Ok`', () => {
+        const first = Result.ok('hello');
+        const second = Result.ok('world');
+
+        const result = first.zipWith(second, (a, b) => `${a} ${b}`);
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, never>>();
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toEqual('hello world');
+      });
+
+      it('returns `Error` if one of the `Options` is `Error`', () => {
+        const first = Result.fromNullable('hello');
+        const second = Result.fromFalsy('' as string);
+
+        const result = first.zipWith(second, (a, b) => `${a} ${b}`);
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, NoValueError>>();
+
+        expect(result.isError()).toBeTrue();
+      });
+    });
+  });
+
+  describe('do-notation', () => {
+    describe('Do', () => {
+      it('creates an `Result` with an empty object branded with the DoNotation type', () => {
+        const result = Result.Do;
+
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
+        expectTypeOf(result).toEqualTypeOf<Result<DoNotation.Sign, never>>();
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toEqual({});
+      });
+    });
+
+    describe('bindTo', () => {
+      it('binds the current `Result` to a `do-notation`', () => {
+        const option = Result.ok(10).bindTo('a');
+
+        expectTypeOf(option).toEqualTypeOf<
+          Result<DoNotation.Sign<{ a: number }>, never>
+        >();
+
+        expect(option.isOk()).toBeTrue();
+        expect(option.unwrap()).toEqual({ a: 10 });
+      });
+    });
+
+    describe('bind', () => {
+      it('accumulates multiple `bind` calls into an object and is an `Ok` Result if all values are `Ok`', () => {
+        const result = Result.Do.bind('a', () => Result.ok(2))
+          .bind('b', (ctx) => {
+            expectTypeOf(ctx).toEqualTypeOf<Readonly<{ a: number }>>();
+            expect(ctx).toEqual({ a: 2 });
+
+            return Result.ok(2);
+          })
+          .bind('c', (ctx) => {
+            expectTypeOf(ctx).toEqualTypeOf<
+              Readonly<{ a: number; b: number }>
+            >();
+            expect(ctx).toEqual({ a: 2, b: 2 });
+
+            return Result.ok(6);
+          });
+
+        expectTypeOf(result).toEqualTypeOf<
+          Result<
+            DoNotation.Sign<{
+              a: number;
+              b: number;
+              c: number;
+            }>,
+            never
+          >
+        >();
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toEqual({ a: 2, b: 2, c: 6 });
+      });
+
+      it('accumulates multiple `bind` calls into an object and is a `None` Option if any value is `None`', () => {
+        const bindC = vi.fn(() => Result.ok(6));
+
+        const result = Result.Do.bind('a', () => Result.ok(2))
+          .bind('b', () => Result.fromFalsy(0 as number))
+          .bind('c', bindC);
+
+        expectTypeOf(result).toEqualTypeOf<
+          Result<
+            DoNotation.Sign<{
+              a: number;
+              b: number;
+              c: number;
+            }>,
+            NoValueError
+          >
+        >();
+
+        expect(result.isError()).toBeTrue();
+
+        expect(bindC).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('let', () => {
+      it('accumulates multiple `let` calls into an object', () => {
+        const result = Result.Do.let('a', () => 4)
+          .let('b', () => 6)
+          .let('c', (ctx) => ctx.a + ctx.b);
+
+        expectTypeOf(result).toEqualTypeOf<
+          Result<
+            DoNotation.Sign<{
+              a: number;
+              b: number;
+              c: number;
+            }>,
+            never
+          >
+        >();
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toEqual({ a: 4, b: 6, c: 10 });
       });
     });
   });
@@ -398,7 +626,7 @@ describe('Result', () => {
             return value.toUpperCase();
           },
           Error(error) {
-            return error.message.toLowerCase();
+            return error._tag.toLowerCase();
           },
         });
 
@@ -442,6 +670,25 @@ describe('Result', () => {
       });
     });
 
+    describe('unwrapError', () => {
+      it('unwraps the Error value when Result is an Error', () => {
+        const result = Result.fromFalsy<string, Error>(
+          '',
+          () => new Error('computation failed'),
+        ).unwrapError();
+
+        expectTypeOf(result).toEqualTypeOf<Error>();
+
+        expect(result).toEqual(new Error('computation failed'));
+      });
+
+      it('throws an Error when Result is an Ok', () => {
+        const result = Result.ok('hello world');
+
+        expect(() => result.unwrapError()).toThrow(UnwrapError);
+      });
+    });
+
     describe('unwrapOr', () => {
       it('returns the Ok value when the Result is Ok', () => {
         const result = Result.ok('hello world').unwrapOr(() => 'fallback');
@@ -463,27 +710,46 @@ describe('Result', () => {
       });
     });
 
-    describe('unwrapError', () => {
-      it('unwraps the Error value when Result is an Error', () => {
-        const result = Result.fromFalsy<string, Error>(
-          '',
-          () => new Error('computation failed'),
-        ).unwrapError();
+    describe('unwrapOrNull', () => {
+      it('returns the Ok value when Result is an Ok', () => {
+        const result = Result.ok('hello world').unwrapOrNull();
 
-        expectTypeOf(result).toEqualTypeOf<Error>();
+        expectTypeOf(result).toEqualTypeOf<string | null>();
 
-        expect(result).toEqual(new Error('computation failed'));
+        expect(result).toBe('hello world');
       });
 
-      it('throws an Error when Result is an Ok', () => {
-        const result = Result.ok('hello world');
+      it('returns null when Result is an Error', () => {
+        const result = Result.error(
+          new Error('computation failed'),
+        ).unwrapOrNull();
 
-        expect(() => result.unwrapError()).toThrow(UnwrapError);
+        expectTypeOf(result).toEqualTypeOf<null>();
+
+        expect(result).toBe(null);
+      });
+    });
+
+    describe('unwrapOrUndefined', () => {
+      it('returns the Ok value when Result is an Ok', () => {
+        const result = Result.ok('hello world').unwrapOrUndefined();
+
+        expectTypeOf(result).toEqualTypeOf<string | undefined>();
+
+        expect(result).toBe('hello world');
+      });
+
+      it('returns undefined when Result is an Error', () => {
+        const result = Result.fromFalsy<string>('').unwrapOrUndefined();
+
+        expectTypeOf(result).toEqualTypeOf<string | undefined>();
+
+        expect(result).toBe(undefined);
       });
     });
 
     describe('expect', () => {
-      class NotFoundError extends Error {
+      class NotFoundError extends TaggedError {
         readonly _tag = 'NotFoundError';
       }
 
@@ -507,60 +773,23 @@ describe('Result', () => {
           new NotFoundError(),
         );
       });
-
-      it('throws an UnexpectedResultError when Result is an Error and the onError callback returns a string', () => {
-        const result = Result.fromFalsy<string, Error>(
-          '',
-          () => new Error('computation failed'),
-        );
-
-        expect(() => result.expect('custom error message')).toThrow(
-          new UnexpectedResultError(
-            'custom error message',
-            new Error('computation failed'),
-          ),
-        );
-      });
     });
 
-    describe('toNullable', () => {
-      it('returns the Ok value when Result is an Ok', () => {
-        const result = Result.ok('hello world').toNullable();
+    describe('merge', () => {
+      it('returns the value of the Result', () => {
+        const result = Result.fromNullable('hello world').merge();
 
-        expectTypeOf(result).toEqualTypeOf<string | null>();
+        expectTypeOf(result).toEqualTypeOf<string | NoValueError>();
 
         expect(result).toBe('hello world');
       });
 
-      it('returns null when Result is an Error', () => {
-        const result = Result.error(
-          new Error('computation failed'),
-        ).toNullable();
+      it('returns the error of the Result', () => {
+        const result = Result.fromFalsy(0 as number).merge();
 
-        expectTypeOf(result).toEqualTypeOf<null>();
+        expectTypeOf(result).toEqualTypeOf<number | NoValueError>();
 
-        expect(result).toBe(null);
-      });
-    });
-
-    describe('toUndefined', () => {
-      it('returns the Ok value when Result is an Ok', () => {
-        const result = Result.ok('hello world').toUndefined();
-
-        expectTypeOf(result).toEqualTypeOf<string | undefined>();
-
-        expect(result).toBe('hello world');
-      });
-
-      it('returns undefined when Result is an Error', () => {
-        const result = Result.fromFalsy<string, Error>(
-          '',
-          () => new Error('computation failed'),
-        ).toUndefined();
-
-        expectTypeOf(result).toEqualTypeOf<string | undefined>();
-
-        expect(result).toBe(undefined);
+        expect(result).toBeInstanceOf(NoValueError);
       });
     });
 
@@ -572,7 +801,7 @@ describe('Result', () => {
 
         expectTypeOf(result).toEqualTypeOf<boolean>();
 
-        expect(result).toBe(true);
+        expect(result).toBeTrue();
       });
 
       it('returns false when Result is an Ok and the predicate is not fulfilled', () => {
@@ -582,18 +811,110 @@ describe('Result', () => {
 
         expectTypeOf(result).toEqualTypeOf<boolean>();
 
-        expect(result).toBe(false);
+        expect(result).toBeFalse();
       });
 
       it('returns false when Result is an Error', () => {
-        const result = Result.fromFalsy<string, Error>(
-          '',
-          () => new Error('computation failed'),
-        ).contains((value) => value.length > 0);
+        const result = Result.fromFalsy<string>('').contains(
+          (value) => value.length > 0,
+        );
 
         expectTypeOf(result).toEqualTypeOf<boolean>();
 
-        expect(result).toBe(false);
+        expect(result).toBeFalse();
+      });
+    });
+
+    describe('toOption', () => {
+      let unregister: () => void;
+
+      beforeAll(() => {
+        unregister = FunkciaStore.register(Option);
+      });
+
+      afterAll(() => {
+        unregister();
+      });
+
+      it('returns Some when Result is Ok', () => {
+        const result = Result.ok('hello world').toOption();
+
+        expectTypeOf(result).toEqualTypeOf<Option<string>>();
+
+        expect(result.isSome()).toBeTrue();
+        expect(result.unwrap()).toBe('hello world');
+      });
+
+      it('returns None when Result is Error', () => {
+        const result = Result.fromFalsy<string>('').toOption();
+
+        expectTypeOf(result).toEqualTypeOf<Option<string>>();
+
+        expect(result.isNone()).toBeTrue();
+      });
+    });
+
+    describe('toAsyncOption', () => {
+      let unregister: () => void;
+      let unregisterAsyncOption: () => void;
+
+      beforeAll(() => {
+        unregister = FunkciaStore.register(Option);
+        unregisterAsyncOption = FunkciaStore.register(AsyncOption);
+      });
+
+      afterAll(() => {
+        unregister();
+        unregisterAsyncOption();
+      });
+
+      it('returns a `AsyncOption` from the original `Result`', async () => {
+        const result = Result.ok('hello world');
+        const taskOption = result.toAsyncOption();
+
+        expectTypeOf(taskOption).toEqualTypeOf<AsyncOption<string>>();
+        expect(await taskOption.unwrap()).toEqual(result.unwrap());
+      });
+    });
+
+    describe('toAsyncResult', () => {
+      let unregister: () => void;
+
+      beforeAll(() => {
+        unregister = FunkciaStore.register(AsyncResult);
+      });
+
+      afterAll(() => {
+        unregister();
+      });
+
+      it('returns a `AsyncResult` from the original `Result`', async () => {
+        const result = Result.fromNullable('hello world');
+        const taskResult = result.toAsyncResult();
+
+        expectTypeOf(taskResult).toEqualTypeOf<
+          AsyncResult<string, NoValueError>
+        >();
+
+        expect(await taskResult).toEqual(result);
+      });
+    });
+
+    describe('toArray', () => {
+      it('returns an array with the value if Result is Ok', () => {
+        const result = Result.ok('hello world').toArray();
+
+        expectTypeOf(result).toEqualTypeOf<string[]>();
+
+        expect(result).toEqual(['hello world']);
+      });
+
+      it('returns an empty array if Result is Error', () => {
+        const result = Result.fromNullable(null as string | null).toArray();
+
+        expectTypeOf(result).toEqualTypeOf<string[]>();
+
+        expect(result).toEqual([]);
       });
     });
   });
@@ -607,22 +928,20 @@ describe('Result', () => {
 
         expectTypeOf(result).toEqualTypeOf<Result<string, never>>();
 
-        expect(result.isOk()).toBe(true);
-        expect(result.isError()).toBe(false);
+        expect(result.isOk()).toBeTrue();
         expect(result.unwrap()).toBe('HELLO WORLD');
       });
 
-      it('has no effect if Result is an Error', () => {
+      it('is not invoked if Result is an Error', () => {
+        const valueMap = vi.fn((value: string) => value.toUpperCase());
+
         const result = Result.fromFalsy<string, Error>(
           '',
           () => new Error('computation failed'),
-        ).map((value) => value.toUpperCase());
+        ).map(valueMap);
 
         expectTypeOf(result).toEqualTypeOf<Result<string, Error>>();
-
-        expect(result.isOk()).toBe(false);
-        expect(result.isError()).toBe(true);
-        expect(result.unwrapError()).toEqual(new Error('computation failed'));
+        expect(valueMap).not.toHaveBeenCalled();
       });
     });
 
@@ -635,50 +954,49 @@ describe('Result', () => {
 
         expectTypeOf(result).toEqualTypeOf<Result<string, string>>();
 
-        expect(result.isOk()).toBe(false);
-        expect(result.isError()).toBe(true);
+        expect(result.isError()).toBeTrue();
         expect(result.unwrapError()).toBe('COMPUTATION FAILED');
       });
 
-      it('has no effect if Result is an Ok', () => {
-        const result = Result.ok('hello world').mapError((error) =>
-          (error as string).toUpperCase(),
-        );
+      it('is not invoked if Result is an Ok', () => {
+        const errorMap = vi.fn((error: Error) => error.message.toUpperCase());
+
+        const result = Result.ok('hello world').mapError(errorMap);
 
         expectTypeOf(result).toEqualTypeOf<Result<string, string>>();
-
-        expect(result.isOk()).toBe(true);
-        expect(result.isError()).toBe(false);
-        expect(result.unwrap()).toBe('hello world');
+        expect(errorMap).not.toHaveBeenCalled();
       });
     });
 
     describe('mapBoth', () => {
       it('executes the Ok callback when the Result is Ok', () => {
+        const errorCallback = vi.fn((error: TaggedError) =>
+          error._tag.toLowerCase(),
+        );
+
         const result = Result.fromFalsy('hello world').mapBoth({
           Ok(value) {
             return value.toUpperCase();
           },
-          Error(error) {
-            return error.message.toLowerCase();
-          },
+          Error: errorCallback,
         });
 
         expectTypeOf(result).toEqualTypeOf<Result<string, string>>();
 
-        expect(result.isOk()).toBe(true);
-        expect(result.isError()).toBe(false);
+        expect(errorCallback).not.toHaveBeenCalled();
+
+        expect(result.isOk()).toBeTrue();
         expect(result.unwrap()).toBe('HELLO WORLD');
       });
 
       describe('executes the Error callback when the Result is Error', () => {
+        const mapCallback = vi.fn((value: string) => value.toUpperCase());
+
         const result = Result.fromFalsy<string, Error>(
           '',
           () => new Error('computation failed'),
         ).mapBoth({
-          Ok(value) {
-            return value.toLowerCase();
-          },
+          Ok: mapCallback,
           Error(error) {
             return error.message.toUpperCase();
           },
@@ -686,8 +1004,9 @@ describe('Result', () => {
 
         expectTypeOf(result).toEqualTypeOf<Result<string, string>>();
 
-        expect(result.isOk()).toBe(false);
-        expect(result.isError()).toBe(true);
+        expect(mapCallback).not.toHaveBeenCalled();
+
+        expect(result.isError()).toBeTrue();
         expect(result.unwrapError()).toBe('COMPUTATION FAILED');
       });
     });
@@ -698,10 +1017,9 @@ describe('Result', () => {
           Result.fromFalsy(value.toUpperCase()),
         );
 
-        expectTypeOf(result).toEqualTypeOf<Result<string, MissingValueError>>();
+        expectTypeOf(result).toEqualTypeOf<Result<string, NoValueError>>();
 
-        expect(result.isOk()).toBe(true);
-        expect(result.isError()).toBe(false);
+        expect(result.isOk()).toBeTrue();
         expect(result.unwrap()).toBe('HELLO WORLD');
       });
 
@@ -711,11 +1029,10 @@ describe('Result', () => {
         );
 
         expectTypeOf(result).toEqualTypeOf<
-          Result<string, Error | MissingValueError>
+          Result<string, Error | NoValueError>
         >();
 
-        expect(result.isOk()).toBe(false);
-        expect(result.isError()).toBe(true);
+        expect(result.isError()).toBeTrue();
         expect(result.unwrapError()).toEqual(new Error('computation failed'));
       });
     });
@@ -730,8 +1047,7 @@ describe('Result', () => {
           Result<string, FailedPredicateError<string>>
         >();
 
-        expect(result.isOk()).toBe(true);
-        expect(result.isError()).toBe(false);
+        expect(result.isOk()).toBeTrue();
         expect(result.unwrap()).toBe('hello world');
       });
 
@@ -744,26 +1060,206 @@ describe('Result', () => {
           Result<string, FailedPredicateError<string>>
         >();
 
-        expect(result.isOk()).toBe(false);
-        expect(result.isError()).toBe(true);
+        expect(result.isError()).toBeTrue();
         expect(result.unwrapError()).toEqual(
           new FailedPredicateError('hello world'),
         );
       });
 
-      it('has no effect if the Result is an Error', () => {
+      it('is not invoked if the Result is an Error', () => {
+        const predicate = vi.fn((value: string) => value.length > 0);
+
         const result = Result.fromFalsy<string, Error>(
           '',
           () => new Error('computation failed'),
-        ).filter((value) => value.length > 0);
+        ).filter(predicate);
 
         expectTypeOf(result).toEqualTypeOf<
           Result<string, Error | FailedPredicateError<string>>
         >();
+        expect(predicate).not.toHaveBeenCalled();
+      });
+    });
+  });
 
-        expect(result.isOk()).toBe(false);
-        expect(result.isError()).toBe(true);
-        expect(result.unwrapError()).toEqual(new Error('computation failed'));
+  describe('fallbacks', () => {
+    describe('or', () => {
+      it('returns the OK value if the Result is a OK', () => {
+        const lazyResult = vi.fn(() => Result.ok(20));
+
+        const result = Result.ok(10).or(lazyResult);
+
+        expectTypeOf(result).toEqualTypeOf<Result<number, never>>();
+
+        expect(lazyResult).not.toHaveBeenCalled();
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toBe(10);
+      });
+
+      it('returns the fallback value if the Result is a None', () => {
+        const result = Result.error(new Error()).or(() => Result.ok(20));
+
+        expectTypeOf(result).toEqualTypeOf<Result<number, Error>>();
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toBe(20);
+      });
+    });
+
+    describe('swap', () => {
+      it('swaps the value of the Result', () => {
+        const result = Result.fromNullable('hello world');
+        const swapped = result.swap();
+
+        expectTypeOf(result).toEqualTypeOf<Result<string, NoValueError>>();
+        expect(result.isOk()).toBeTrue();
+
+        expectTypeOf(swapped).toEqualTypeOf<Result<NoValueError, string>>();
+        expect(swapped.isOk()).toBeFalse();
+
+        expect(swapped.unwrapError()).toBe('hello world');
+      });
+    });
+  });
+
+  describe('comparisons', () => {
+    describe('isOk', () => {
+      it('returns true if the Result is Ok', () => {
+        const result = Result.ok(10);
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.isError()).toBeFalse();
+      });
+
+      it('returns false if the Result is Error', () => {
+        const result = Result.error(new Error());
+
+        expect(result.isOk()).toBeFalse();
+        expect(result.isError()).toBeTrue();
+      });
+    });
+
+    describe('isError', () => {
+      it('returns true if the Result is Error', () => {
+        const option = Result.error(new Error());
+
+        expect(option.isError()).toBeTrue();
+        expect(option.isOk()).toBeFalse();
+      });
+
+      it('returns false if the Result is a Some', () => {
+        const result = Result.ok(10);
+
+        expect(result.isError()).toBeFalse();
+        expect(result.isOk()).toBeTrue();
+      });
+    });
+
+    describe('equals', () => {
+      it('returns true if the Result is Ok and the other Result is Ok and the values are equal', () => {
+        const isEqual = Result.ok(10).equals(Result.ok(10));
+
+        expect(isEqual).toBeTrue();
+      });
+
+      it('returns the output of the equality function if the Result is Ok and the other Result is Ok', () => {
+        const isSameObject = vi.fn((a, b) => a.value === b.value);
+
+        const isEqual = Result.ok({ value: 10 }).equals(
+          Result.ok({ value: 20 }),
+          isSameObject,
+        );
+
+        expect(isEqual).toBeFalse();
+        expect(isSameObject).toHaveBeenCalled();
+      });
+
+      it('does not call the equality function if one of the Results is an Error', () => {
+        const isSameObject = vi.fn((a, b) => a.value === b.value);
+
+        const isEqual = Result.fromNullable({ value: 10 }).equals(
+          Result.fromNullable(null as unknown as { value: number }),
+          isSameObject,
+        );
+
+        expect(isEqual).toBeFalse();
+        expect(isSameObject).not.toHaveBeenCalled();
+      });
+
+      it('returns false if the Result is Ok and the other Result is Ok and the values are not equal', () => {
+        const isEqual = Result.ok(10).equals(Result.ok(20));
+
+        expect(isEqual).toBeFalse();
+      });
+
+      it('returns false if the Result is Ok and the other Result is Error', () => {
+        const isEqual = Result.fromFalsy(10 as number).equals(
+          Result.fromFalsy(0 as number),
+        );
+
+        expect(isEqual).toBeFalse();
+      });
+
+      it('returns false if the Result is Error and the other Result is Ok', () => {
+        const isEqual = Result.fromFalsy(0 as number).equals(Result.ok(10));
+
+        expect(isEqual).toBeFalse();
+      });
+
+      it('returns true if the Result is Error and the other Result is Error', () => {
+        const isEqual = Result.error('Failed computation').equals(
+          Result.error('Failed computation'),
+        );
+
+        expect(isEqual).toBeTrue();
+      });
+    });
+  });
+
+  describe('other', () => {
+    describe('tap', () => {
+      it('executes the callback if the Result is Ok while ignoring the returned value and preserving the original value of the `Result`', () => {
+        const callback = vi.fn((value: number) => {
+          expect(value).toBe(10);
+
+          return value * 2; // 20
+        });
+
+        const result = Result.ok(10).tap(callback);
+
+        expect(callback).toHaveBeenCalledWith(10);
+
+        expect(result.unwrap()).toBe(10);
+      });
+
+      it('does not execute the callback if the Result is Error', () => {
+        const callback = vi.fn((value: number) => value * 2);
+
+        Result.error(new Error()).tap(callback);
+
+        expect(callback).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('tapError', () => {
+      it('executes the callback if the Result is Error', () => {
+        const callback = vi.fn((error: Error) => error.message.toUpperCase());
+
+        const result = Result.error(new Error('Failed computation')).tapError(
+          callback,
+        );
+
+        expect(callback).toHaveBeenCalledWith(new Error('Failed computation'));
+        expect(result.unwrapError()).toBeInstanceOf(Error);
+      });
+
+      it('does not execute the callback if the Result is Ok', () => {
+        const callback = vi.fn((error: Error) => error.message.toUpperCase());
+
+        Result.ok(10).tapError(callback);
+
+        expect(callback).not.toHaveBeenCalled();
       });
     });
   });

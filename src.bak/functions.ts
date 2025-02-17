@@ -1,209 +1,51 @@
-/* eslint-disable @typescript-eslint/ban-types */
+export type Thunk<T> = () => T;
 
-/**
- * Immediately invokes a function and returns its return value.
- *
- * This is a syntax sugar for `IIFE`s.
- *
- * @example
- * ```ts
- * import { invoke } from 'funkcia/functions';
- *
- * declare const shape: Shape;
- *
- * const humanReadableShape = invoke(() => {
- *   switch (shape.kind) {
- *     case 'CIRCLE':
- *       return 'Circle';
- *     case 'SQUARE':
- *       return 'Square';
- *     default:
- *       const invalidKind: never = shape.kind;
- *       throw new Error(`Invalid shape: ${invalidKind}`);
- *   }
- * });
- * ```
- */
-export function invoke<T extends (...args: any[]) => any>(
-  fn: T,
-): ReturnType<T> {
-  return fn();
-}
-
-/**
- * Lazily computes a value by invoking a function.
- *
- * The value only computed only once when the value is first accessed.
- *
- * @example
- * ```ts
- * import { lazyCompute } from 'funkcia/functions';
- *
- * declare function expensiveComputation(target: object[]): string;
- *
- * declare const userLogs: object[];
- *
- * const computation = lazyCompute(() => expensiveComputation(userLogs));
- *
- * const output = computation.value; // value is computed only when accessed
- * const repeatedOutput = computation.value; // value is cached and computed only once
- */
-export function lazyCompute<T>(fn: () => T): { value: T } {
-  return {
-    get value() {
-      const value = fn();
-
-      Reflect.defineProperty(this, 'value', {
-        value,
-        writable: false,
-        configurable: false,
-      });
-
-      return value;
-    },
-  };
-}
-
-/**
- * A ⁠noop function is an intentionally empty function that does nothing,
- * and returns nothing when called.
- *
- * @example
- * ```ts
- * import { noop } from 'funkcia/functions';
- *
- * noop(); // do nothing
- * ```
- */
-export function noop(): void;
-export function noop(): undefined;
-export function noop(): void {
-  // do nothing
-}
-
-/**
- * Returns a function that will always return the provided value.
- *
- * @example
- * ```ts
- * import { always } from 'funkcia/functions';
- *
- * const alwaysTen = always(10);
- *
- * const result = alwaysTen();
- * // Output: 10
- * ```
- */
-export function always<T>(value: T): () => T {
+export function constant<A>(value: A): Thunk<A> {
   return () => value;
 }
 
-/**
- * Returns the provided value.
- *
- * @example
- * ```ts
- * import { identity } from 'funkcia/functions';
- *
- * const output = identity(10);
- * // Output: 10
- * ```
- */
-export function identity<T>(value: T): T {
+export const constNull: Thunk<null> = constant(null);
+
+export const constUndefined: Thunk<undefined> = constant(undefined);
+
+export const constVoid: Thunk<void> = constUndefined;
+
+export const constTrue: Thunk<true> = constant(true);
+
+export const constFalse: Thunk<false> = constant(false);
+
+export function identity<A>(value: A): A {
   return value;
 }
 
-/**
- * Returns `null`.
- */
-export const alwaysNull: () => null = always(null);
+export const coerce: <A>(value: any) => A = identity;
 
-/**
- * Returns `undefined`.
- */
-export const alwaysUndefined: () => undefined = always(undefined);
-
-/**
- * Returns `void`.
- */
-export const alwaysVoid: () => void = alwaysUndefined;
-
-/**
- * Returns `never`.
- */
-export const ignore: () => never = always(undefined as never);
-
-/**
- * Returns `true`.
- */
-export const alwaysTrue: () => true = always(true);
-
-/**
- * Returns `false`.
- */
-export const alwaysFalse: () => false = always(false);
-
-/**
- * Returns the provided value coerced to the desired type.
- *
- * @example
- * ```ts
- * import { coerce, Result } from 'funkcia/functions';
- *
- * //       ┌─── Result<any, SyntaxError>
- * //       ▼
- * const result = Result.try(
- *   () => JSON.parse('{ "name": John }'),
- *   error => coerce<SyntaxError>(error) // JSON.parse throws a `SyntaxError`
- * );
- * ```
- */
-export function coerce<T>(value: any): T {
-  return value;
-}
-
-/**
- * Composes two or more functions into a single function.
- *
- * @example
- * ```ts
- * import { compose } from 'funkcia/functions';
- *
- * declare function increment(value: number): number;
- * declare function double(value: number): number;
- * declare function stringify(value: number): string;
- *
- * const compute = compose(increment, double, stringify);
- *
- * const output = compute(9);
- * // Output: "20"
- */
-export function compose<A extends readonly unknown[], B>(
+export function flow<A extends readonly unknown[], B>(
   ab: (...a: A) => B,
 ): (...a: A) => B;
-export function compose<A extends readonly unknown[], B, C>(
+export function flow<A extends readonly unknown[], B, C>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
 ): (...a: A) => C;
-export function compose<A extends readonly unknown[], B, C, D>(
+export function flow<A extends readonly unknown[], B, C, D>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
 ): (...a: A) => D;
-export function compose<A extends readonly unknown[], B, C, D, E>(
+export function flow<A extends readonly unknown[], B, C, D, E>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
   de: (d: D) => E,
 ): (...a: A) => E;
-export function compose<A extends readonly unknown[], B, C, D, E, F>(
+export function flow<A extends readonly unknown[], B, C, D, E, F>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
   de: (d: D) => E,
   ef: (e: E) => F,
 ): (...a: A) => F;
-export function compose<A extends readonly unknown[], B, C, D, E, F, G>(
+export function flow<A extends readonly unknown[], B, C, D, E, F, G>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -211,7 +53,7 @@ export function compose<A extends readonly unknown[], B, C, D, E, F, G>(
   ef: (e: E) => F,
   fg: (f: F) => G,
 ): (...a: A) => G;
-export function compose<A extends readonly unknown[], B, C, D, E, F, G, H>(
+export function flow<A extends readonly unknown[], B, C, D, E, F, G, H>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -220,7 +62,7 @@ export function compose<A extends readonly unknown[], B, C, D, E, F, G, H>(
   fg: (f: F) => G,
   gh: (g: G) => H,
 ): (...a: A) => H;
-export function compose<A extends readonly unknown[], B, C, D, E, F, G, H, I>(
+export function flow<A extends readonly unknown[], B, C, D, E, F, G, H, I>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -230,18 +72,7 @@ export function compose<A extends readonly unknown[], B, C, D, E, F, G, H, I>(
   gh: (g: G) => H,
   hi: (h: H) => I,
 ): (...a: A) => I;
-export function compose<
-  A extends readonly unknown[],
-  B,
-  C,
-  D,
-  E,
-  F,
-  G,
-  H,
-  I,
-  J,
->(
+export function flow<A extends readonly unknown[], B, C, D, E, F, G, H, I, J>(
   ab: (...a: A) => B,
   bc: (b: B) => C,
   cd: (c: C) => D,
@@ -252,30 +83,21 @@ export function compose<
   hi: (h: H) => I,
   ij: (i: I) => J,
 ): (...a: A) => J;
-export function compose(fn: Function, ...fns: Function[]): unknown {
+export function flow(firstFn: LazyFn, ...fns: LazyFn[]): unknown {
   return function composed(this: unknown) {
-    return fns.reduce(
-      (result, f) => f(result),
-      // eslint-disable-next-line prefer-rest-params
-      fn.apply(this, arguments as never),
-    );
+    // eslint-disable-next-line prefer-rest-params
+    let result = firstFn.apply(this, arguments as any);
+
+    for (const fn of fns) {
+      result = fn(result);
+    }
+
+    return result;
   };
 }
 
-/**
- * Pipes a value into a series of functions, returning the final result.
- *
- * @example
- * ```ts
- * import { pipe } from 'funkcia/functions';
- *
- * declare function increment(value: number): number;
- * declare function double(value: number): number;
- * declare function stringify(value: number): string;
- *
- * const output = pipe(9, increment, double, stringify);
- * // Output: "20"
- */
+type LazyFn<I = any, O = any> = (arg: I) => O;
+
 export function pipe<A>(a: A): A;
 export function pipe<A, B>(a: A, ab: (a: A) => B): B;
 export function pipe<A, B, C>(a: A, ab: (a: A) => B, bc: (b: B) => C): C;
@@ -495,6 +317,12 @@ export function pipe<A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S>(
   qr: (q: Q) => R,
   rs: (r: R) => S,
 ): S;
-export function pipe(value: unknown, ...fns: Function[]): unknown {
-  return fns.reduce((result, fn) => fn(result), value);
+export function pipe(value: unknown, ...fns: LazyFn[]): unknown {
+  let result = value;
+
+  for (const fn of fns) {
+    result = fn(result);
+  }
+
+  return result;
 }

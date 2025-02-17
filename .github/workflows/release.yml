@@ -6,13 +6,6 @@ on:
   push:
     branches:
       - main
-  # workflow_dispatch:
-  #   inputs:
-  #     forceGPR:
-  #       description: Force GPR release
-  #       type: boolean
-  #       required: false
-  #       default: false
 
 jobs:
   install-deps:
@@ -23,29 +16,23 @@ jobs:
       - name: 🔑 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Install PNPM
-        uses: pnpm/action-setup@v3
+      - name: 🔧 Install Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          version: 8
+          bun-version: latest
 
       - name: ♻️ Cache node_modules
         uses: actions/cache@v4
-        id: pnpm-cache
+        id: bun-cache
         with:
           path: "**/node_modules"
-          key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: 🛠️ Setup Node and install project dependencies
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'latest'
-          check-latest: true
-          cache: 'pnpm'
-
-        if: steps.pnpm-cache.outputs.cache-hit != 'true'
-      - run: pnpm install --prefer-offline
+      - name: 📦 Install dependencies
+        if: steps.bun-cache.outputs.cache-hit != 'true'
+        run: bun install --frozen-lockfile
 
   build:
     name: 🏗️ Build package
@@ -55,30 +42,23 @@ jobs:
       - name: 🔑 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Install PNPM
-        uses: pnpm/action-setup@v3
+      - name: 🔧 Install Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          version: 8
-
-      - name: 🛠️ Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'latest'
-          check-latest: true
-          cache: 'pnpm'
+          bun-version: latest
 
       - name: 📦 Install dependencies
-        if: steps.pnpm-cache.outputs.cache-hit != 'true'
-        run: pnpm install --prefer-offline
+        if: steps.bun-cache.outputs.cache-hit != 'true'
+        run: bun install --frozen-lockfile
 
       - name: 🚨 Check for errors
-        run: pnpm run lint
+        run: bun run lint
 
       - name: 🧪 Run tests
-        run: pnpm run test:ci
+        run: bun run test:ci
 
       - name: ⚒️ Build package
-        run: pnpm run build
+        run: bun run build
 
   release:
     name: 🚀 Release to NPM
@@ -93,29 +73,29 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 🔧 Install PNPM
-        uses: pnpm/action-setup@v3
+      - name: 🔧 Install Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          version: 8
+          bun-version: latest
 
       - name: ♻️ Load node_modules
         uses: actions/cache@v4
         with:
           path: "**/node_modules"
-          key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/bun.lock') }}
 
       - name: ♻️ Load build files
         uses: actions/cache@v4
         with:
           path: "**/dist"
-          key: ${{ runner.os }}-build-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-build-${{ hashFiles('**/bun.lock') }}
 
       - name: 🛠️ Setup Node for NPM
         uses: actions/setup-node@v4
         with:
           node-version: '16.14.2'
           check-latest: true
-          cache: 'pnpm'
+          cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
       - name: 👤 Set git user
@@ -130,52 +110,9 @@ jobs:
           setupGitUser: false
           title: "chore(changesets): bump package version"
           commit: "chore: bump package version"
-          version: node .github/changeset-version.js
-          publish: pnpm run release
+          version: bun .github/changeset-version.js
+          publish: bun run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  # gpr-release:
-  #   name: 🚀 Release to GitHub Package Manager
-  #   if: github.event.inputs.forceGPR == 'true' || needs.release.outputs.published == 'true'
-  #   runs-on: ubuntu-latest
-  #   needs: [build, release]
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   steps:
-  #     - name: 🔑 Checkout Repository
-  #       uses: actions/checkout@v4
-
-  #     - name: 🔧 Install PNPM
-  #       uses: pnpm/action-setup@v3
-  #       with:
-  #         version: 8
-
-  #     - name: ♻️ Load node_modules
-  #       uses: actions/cache@v4
-  #       with:
-  #         path: "**/node_modules"
-  #         key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml') }}
-
-  #     - name: 🛠️ Setup Node for GPR
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: '16.14.2'
-  #         check-latest: true
-  #         cache: 'pnpm'
-  #         registry-url: 'https://npm.pkg.github.com'
-
-  #     - name: 📦 Install dependencies
-  #       if: steps.pnpm-cache.outputs.cache-hit != 'true'
-  #       run: pnpm install --prefer-offline
-
-  #     - name: ⚒️ Build package
-  #       run: pnpm run build
-
-  #     - name: 🚀 Publish to GPR
-  #       run: pnpm publish
-  #       env:
-  #         NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
