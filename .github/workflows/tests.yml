@@ -13,29 +13,23 @@ jobs:
       - name: 🔑 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Install PNPM
-        uses: pnpm/action-setup@v3
+      - name: 🔧 Install Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          version: 8
+          bun-version: latest
 
       - name: ♻️ Cache node_modules
         uses: actions/cache@v4
-        id: pnpm-cache
+        id: bun-cache
         with:
           path: "**/node_modules"
-          key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: 🛠️ Setup Node and install project dependencies
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'latest'
-          check-latest: true
-          cache: 'pnpm'
-
-        if: steps.pnpm-cache.outputs.cache-hit != 'true'
-      - run: pnpm install --prefer-offline
+      - name: 📦 Install dependencies
+        if: steps.bun-cache.outputs.cache-hit != 'true'
+        run: bun install --frozen-lockfile
 
   tests:
     name: 🧪 Test package
@@ -45,30 +39,23 @@ jobs:
       - name: 🔑 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Install PNPM
-        uses: pnpm/action-setup@v3
+      - name: 🔧 Install Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          version: 8
+          bun-version: latest
 
       - name: ♻️ Load node_modules
         uses: actions/cache@v4
         with:
           path: "**/node_modules"
-          key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml') }}
-
-      - name: 🛠️ Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'latest'
-          check-latest: true
-          cache: 'pnpm'
+          key: ${{ runner.os }}-node-${{ hashFiles('**/bun.lock') }}
 
       - name: 📦 Install dependencies
-        if: steps.pnpm-cache.outputs.cache-hit != 'true'
-        run: pnpm install --prefer-offline
+        if: steps.bun-cache.outputs.cache-hit != 'true'
+        run: bun install --frozen-lockfile
 
       - name: 🧪 Run tests
-        run: pnpm run test:ci
+        run: bun run test:ci
 
   build:
     name: 🏗️ Build package
@@ -78,27 +65,20 @@ jobs:
       - name: 🔑 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Install PNPM
-        uses: pnpm/action-setup@v3
+      - name: 🔧 Install Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          version: 8
+          bun-version: latest
 
       - name: ♻️ Load node_modules
         uses: actions/cache@v4
         with:
           path: "**/node_modules"
-          key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml') }}
-
-      - name: 🛠️ Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'latest'
-          check-latest: true
-          cache: 'pnpm'
+          key: ${{ runner.os }}-node-${{ hashFiles('**/bun.lock') }}
 
       - name: 📦 Install dependencies
-        if: steps.pnpm-cache.outputs.cache-hit != 'true'
-        run: pnpm install --prefer-offline
+        if: steps.bun-cache.outputs.cache-hit != 'true'
+        run: bun install --frozen-lockfile
 
       - name: 🏗️ Build package
-        run: pnpm run build
+        run: bun run build
