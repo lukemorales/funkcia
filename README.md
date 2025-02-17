@@ -20,8 +20,8 @@
 </p>
 
 <p align="center">
-  <code>Result</code> and <code>Option</code> types inspired by the best parts of Rust, OCaml, Nim, Scala, and Haskell
-  <br> providing a type-safe way to build your applications with better DX
+  <code>Data types</code> inspired by the best parts of Rust, OCaml, Nim, Scala, and Haskell
+  <br> providing a type-safe way to build your applications with better DX.
 </p>
 
 ## 📦 Install
@@ -30,3 +30,7 @@
 ```dircolors
 npm install funkcia
 ```
+
+## 📖 Documentation
+
+The full documentation is available at [funkcia.lukemorales.io](https://funkcia.lukemorales.io).
