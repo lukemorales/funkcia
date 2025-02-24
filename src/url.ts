@@ -8,13 +8,11 @@ export interface SafeURL {
    *
    * @see https://developer.mozilla.org/en-US/docs/Web/API/URL/URL
    */
-  of: ReturnType<
-    typeof Result.liftFun<ConstructorParameters<typeof URL>, URL, TypeError>
-  >;
+  of: (...args: ConstructorParameters<typeof URL>) => Result<URL, TypeError>;
 }
 
 export const SafeURL: SafeURL = Object.freeze({
-  of: Result.liftFun(
+  of: Result.enhance(
     (...args: ConstructorParameters<typeof URL>): URL => new URL(...args),
-  ),
+  ) as never,
 });

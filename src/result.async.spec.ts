@@ -1,3 +1,4 @@
+/* eslint-disable func-names */
 import type { DoNotation } from './do-notation';
 import type {
   FailedPredicateError,
@@ -6,35 +7,32 @@ import type {
 } from './exceptions';
 import { TaggedError, UnwrapError } from './exceptions';
 import { coerce } from './functions';
-import { FunkciaStore } from './funkcia-store';
 import type { Falsy, Nullable } from './internals/types';
 import { Option } from './option';
-import { AsyncOption } from './option.async';
+import type { OptionAsync } from './option.async';
 import { Result } from './result';
-import { AsyncResult } from './result.async';
+import { ResultAsync } from './result.async';
 
 describe('AsyncResult', () => {
-  let unregisterOption: () => void;
-  let unregisterResult: () => void;
-  let unregisterAsyncOption: () => void;
-
-  beforeAll(() => {
-    unregisterOption = FunkciaStore.register(Option);
-    unregisterResult = FunkciaStore.register(Result);
-    unregisterAsyncOption = FunkciaStore.register(AsyncOption);
-  });
-
-  afterAll(() => {
-    unregisterOption();
-    unregisterResult();
-    unregisterAsyncOption();
-  });
-
   describe('constructors', () => {
+    describe('is', () => {
+      it('returns true if the value is an AsyncResult', () => {
+        const result = ResultAsync.ok('hello world');
+
+        expect(ResultAsync.is(result)).toBeTrue();
+      });
+
+      it('returns false if the value is not an AsyncResult', () => {
+        expect(
+          ResultAsync.is(() => Promise.resolve(Result.ok('hello world'))),
+        ).toBeFalse();
+      });
+    });
+
     describe('ok', () => {
       it('creates a AsyncResult with an `Ok` and the provided value', async () => {
-        const task = AsyncResult.ok('hello world');
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, never>>();
+        const task = ResultAsync.ok('hello world');
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, never>>();
 
         const result = await task;
 
@@ -44,15 +42,21 @@ describe('AsyncResult', () => {
     });
 
     describe('of', () => {
-      it('references the `ok` constructor', () => {
-        expect(AsyncResult.of).toEqual(AsyncResult.ok);
+      it('creates a AsyncResult with an `Ok` and the provided value', async () => {
+        const task = ResultAsync.of('hello world');
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, never>>();
+
+        const result = await task;
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.equals(Result.of('hello world'))).toBeTrue();
       });
     });
 
     describe('error', () => {
       it('creates a AsyncResult with an `Error` value', async () => {
-        const task = AsyncResult.error(new Error('computation failed'));
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<never, Error>>();
+        const task = ResultAsync.error(new Error('computation failed'));
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<never, Error>>();
 
         const result = await task;
         expect(result.isError()).toBeTrue();
@@ -65,8 +69,8 @@ describe('AsyncResult', () => {
       }
 
       it('creates a new AsyncResult with an `Ok` when the value is not nullable', async () => {
-        const task = AsyncResult.fromNullable(nullify('hello world'));
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, NoValueError>>();
+        const task = ResultAsync.fromNullable(nullify('hello world'));
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, NoValueError>>();
 
         const result = await task;
 
@@ -76,17 +80,17 @@ describe('AsyncResult', () => {
 
       it('creates a new AsyncResult with an `Error` when the value is nullable', async () => {
         {
-          const task = AsyncResult.fromNullable(nullify(null));
-          expectTypeOf(task).toEqualTypeOf<AsyncResult<string, NoValueError>>();
+          const task = ResultAsync.fromNullable(nullify(null));
+          expectTypeOf(task).toEqualTypeOf<ResultAsync<string, NoValueError>>();
 
           const result = await task;
           expect(result.isError()).toBeTrue();
         }
 
         {
-          const task = AsyncResult.fromNullable(nullify(undefined));
+          const task = ResultAsync.fromNullable(nullify(undefined));
 
-          expectTypeOf(task).toEqualTypeOf<AsyncResult<string, NoValueError>>();
+          expectTypeOf(task).toEqualTypeOf<ResultAsync<string, NoValueError>>();
 
           const result = await task;
           expect(result.isError()).toBeTrue();
@@ -96,8 +100,8 @@ describe('AsyncResult', () => {
 
     describe('fromFalsy', () => {
       it('creates a AsyncResult with an `Ok` when the value is not falsy', async () => {
-        const task = AsyncResult.fromFalsy('hello world' as string | Falsy);
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, NoValueError>>();
+        const task = ResultAsync.fromFalsy('hello world' as string | Falsy);
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, NoValueError>>();
 
         const result = await task;
 
@@ -116,8 +120,8 @@ describe('AsyncResult', () => {
         ] satisfies Falsy[];
 
         for (const value of falsyValues) {
-          const task = AsyncResult.fromFalsy(value);
-          expectTypeOf(task).toEqualTypeOf<AsyncResult<never, NoValueError>>();
+          const task = ResultAsync.fromFalsy(value);
+          expectTypeOf(task).toEqualTypeOf<ResultAsync<never, NoValueError>>();
 
           const result = await task;
           expect(result.isError()).toBeTrue();
@@ -125,10 +129,25 @@ describe('AsyncResult', () => {
       });
     });
 
+    describe('Do', () => {
+      it('creates an `AsyncResult` with an empty object branded with the DoNotation type', async () => {
+        const task = ResultAsync.Do;
+
+        expectTypeOf(task).toEqualTypeOf<
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
+          ResultAsync<DoNotation.Sign<object>, never>
+        >();
+
+        const result = await task;
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toEqual({});
+      });
+    });
+
     describe('try', () => {
       it('creates a AsyncResult with an `Ok` when the Promise succeeds', async () => {
-        const task = AsyncResult.try(() => Promise.resolve('hello world'));
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, UnknownError>>();
+        const task = ResultAsync.try(() => Promise.resolve('hello world'));
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, UnknownError>>();
 
         const result = await task;
 
@@ -137,78 +156,10 @@ describe('AsyncResult', () => {
       });
 
       it('creates a AsyncResult with an `Error` when the Promise rejects', async () => {
-        const task = AsyncResult.try<string>(() =>
+        const task = ResultAsync.try<string>(() =>
           Promise.reject(new Error('computation failed')),
         );
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, UnknownError>>();
-
-        const result = await task;
-        expect(result.isError()).toBeTrue();
-      });
-    });
-
-    describe('promise', () => {
-      it('creates a new AsyncResult from a Promise that resolves to a Result', async () => {
-        const task = AsyncResult.promise(() =>
-          Promise.resolve(Result.of('hello world')),
-        );
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, never>>();
-
-        const result = await task;
-
-        expect(result.isOk()).toBeTrue();
-        expect(result.equals(Result.ok('hello world'))).toBeTrue();
-      });
-    });
-
-    describe('liftPromise', () => {
-      it('lifts a function that returns a Promise that resolves to a raw value', async () => {
-        const lifted = AsyncResult.liftPromise((greeting: string) =>
-          Promise.resolve(greeting),
-        );
-        expectTypeOf(lifted).toEqualTypeOf<
-          (greeting: string) => AsyncResult<string, UnknownError>
-        >();
-
-        const task = lifted('hello world');
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, UnknownError>>();
-
-        const result = await task;
-
-        expect(result.isOk()).toBe(true);
-        expect(result.equals(Result.ok('hello world'))).toBe(true);
-      });
-
-      it('lifts a function that returns a Promise that resolves to a Result', async () => {
-        const lifted = AsyncResult.liftPromise((greeting: string) =>
-          Promise.resolve(Result.ok(greeting)),
-        );
-        expectTypeOf(lifted).toEqualTypeOf<
-          (greeting: string) => AsyncResult<string, UnknownError>
-        >();
-
-        const task = lifted('hello world');
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, UnknownError>>();
-
-        const result = await task;
-
-        expect(result.isOk()).toBeTrue();
-        expect(result.equals(Result.ok('hello world'))).toBeTrue();
-      });
-
-      it('lifts a function that returns a Promise that rejects', async () => {
-        const lifted = AsyncResult.liftPromise(
-          (_: string) =>
-            Promise.reject<string>(new Error('computation failed')),
-          coerce<Error>,
-        );
-
-        expectTypeOf(lifted).toEqualTypeOf<
-          (greeting: string) => AsyncResult<string, Error>
-        >();
-
-        const task = lifted('hello world');
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, Error>>();
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, UnknownError>>();
 
         const result = await task;
         expect(result.isError()).toBeTrue();
@@ -227,14 +178,14 @@ describe('AsyncResult', () => {
       type Shape = Circle | Square;
 
       it('creates a function that can be used to refine the type of a value', async () => {
-        const isCircle = AsyncResult.predicate(
+        const isCircle = ResultAsync.predicate(
           (shape: Shape): shape is Circle => shape.kind === 'circle',
         );
 
         const task = isCircle({ kind: 'circle' });
 
         expectTypeOf(task).toEqualTypeOf<
-          AsyncResult<Circle, FailedPredicateError<Square>>
+          ResultAsync<Circle, FailedPredicateError<Square>>
         >();
 
         const result = await task;
@@ -247,7 +198,7 @@ describe('AsyncResult', () => {
           readonly _tag = 'InvalidShapeError';
         }
 
-        const isCircle = AsyncResult.predicate(
+        const isCircle = ResultAsync.predicate(
           (shape: Shape): shape is Circle => shape.kind === 'circle',
           (shape) => {
             expectTypeOf(shape).toEqualTypeOf<Square>();
@@ -259,7 +210,7 @@ describe('AsyncResult', () => {
         const task = isCircle({ kind: 'circle' });
 
         expectTypeOf(task).toEqualTypeOf<
-          AsyncResult<Circle, InvalidShapeError>
+          ResultAsync<Circle, InvalidShapeError>
         >();
 
         const result = await task;
@@ -268,12 +219,12 @@ describe('AsyncResult', () => {
       });
 
       it('creates a function that can be used to assert the type of a value', async () => {
-        const isPositive = AsyncResult.predicate((value: number) => value > 0);
+        const isPositive = ResultAsync.predicate((value: number) => value > 0);
 
         const task = isPositive(10);
 
         expectTypeOf(task).toEqualTypeOf<
-          AsyncResult<number, FailedPredicateError<number>>
+          ResultAsync<number, FailedPredicateError<number>>
         >();
 
         const result = await task;
@@ -286,7 +237,7 @@ describe('AsyncResult', () => {
           readonly _tag = 'InvalidNumberError';
         }
 
-        const isPositive = AsyncResult.predicate(
+        const isPositive = ResultAsync.predicate(
           (value: number) => value > 0,
           () => new InvalidNumberError(),
         );
@@ -294,7 +245,7 @@ describe('AsyncResult', () => {
         const task = isPositive(10);
 
         expectTypeOf(task).toEqualTypeOf<
-          AsyncResult<number, InvalidNumberError>
+          ResultAsync<number, InvalidNumberError>
         >();
 
         const result = await task;
@@ -303,22 +254,97 @@ describe('AsyncResult', () => {
       });
     });
 
-    describe('relay', () => {
-      it('safely evaluates the generator, returning the returned AsyncResult when all yields are `Ok`', async () => {
-        const greeting = AsyncResult.ok('hello');
-        const subject = AsyncResult.ok('world');
+    describe('promise', () => {
+      it('creates a new AsyncResult from a Promise that resolves to a Result', async () => {
+        const task = ResultAsync.promise(() =>
+          Promise.resolve(Result.of('hello world')),
+        );
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, never>>();
 
-        const task = AsyncResult.relay(async function* exec() {
+        const result = await task;
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.equals(Result.ok('hello world'))).toBeTrue();
+      });
+    });
+
+    describe('enhance', () => {
+      it('lifts a function that returns a Promise that resolves to a raw value', async () => {
+        const lifted = ResultAsync.enhancePromise((greeting: string) =>
+          Promise.resolve(greeting),
+        );
+        expectTypeOf(lifted).toEqualTypeOf<
+          (greeting: string) => ResultAsync<string, UnknownError>
+        >();
+
+        const task = lifted('hello world');
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, UnknownError>>();
+
+        const result = await task;
+
+        expect(result.isOk()).toBe(true);
+        expect(result.equals(Result.ok('hello world'))).toBe(true);
+      });
+
+      it('lifts a function that returns a Promise that resolves to a Result', async () => {
+        const lifted = ResultAsync.enhancePromise((greeting: string) =>
+          Promise.resolve(Result.ok(greeting)),
+        );
+
+        expectTypeOf(lifted).toEqualTypeOf<
+          (greeting: string) => ResultAsync<string, UnknownError>
+        >();
+
+        const task = lifted('hello world');
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, UnknownError>>();
+
+        const result = await task;
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.equals(Result.ok('hello world'))).toBeTrue();
+      });
+
+      it('lifts a function that returns a Promise that rejects', async () => {
+        const lifted = ResultAsync.enhancePromise(
+          (_: string) =>
+            Promise.reject<string>(new Error('computation failed')),
+          coerce<Error>,
+        );
+
+        expectTypeOf(lifted).toEqualTypeOf<
+          (greeting: string) => ResultAsync<string, Error>
+        >();
+
+        const task = lifted('hello world');
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, Error>>();
+
+        const result = await task;
+        expect(result.isError()).toBeTrue();
+      });
+    });
+
+    describe('use', () => {
+      it('safely evaluates the generator, returning the returned AsyncResult when all yields are `Ok`', async () => {
+        const greeting = ResultAsync.ok('hello').mapError(() => new Error(''));
+        const subject = ResultAsync.ok('world').mapError(() => {
+          class UniqueException extends TaggedError {
+            readonly _tag = 'UniqueException';
+          }
+
+          return new UniqueException('');
+        });
+
+        const task = ResultAsync.use(async function* () {
           const a = yield* greeting;
           expect(a).toBe('hello');
 
           const b = yield* subject;
           expect(b).toBe('world');
 
-          return AsyncResult.ok(`${a} ${b}`);
+          return Result.ok(`${a} ${b}`);
         });
 
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, never>>();
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, Error>>();
 
         const result = await task;
 
@@ -327,17 +353,17 @@ describe('AsyncResult', () => {
       });
 
       it('safely evaluates the generator, early returning when a yield is `Error`', async () => {
-        const greeting = AsyncResult.error(new Error('computation failed'));
-        const getSubject = vi.fn(() => AsyncResult.ok('world'));
+        const greeting = ResultAsync.error(new Error('computation failed'));
+        const getSubject = vi.fn(() => ResultAsync.ok('world'));
 
-        const task = AsyncResult.relay(async function* exec() {
+        const task = ResultAsync.use(async function* () {
           const a = yield* greeting;
           const b = yield* getSubject();
 
-          return AsyncResult.ok(`${a} ${b}`);
+          return ResultAsync.ok(`${a} ${b}`);
         });
 
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, Error>>();
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, Error>>();
 
         const result = await task;
         expect(result.isError()).toBeTrue();
@@ -345,98 +371,50 @@ describe('AsyncResult', () => {
         expect(getSubject).not.toHaveBeenCalled();
       });
     });
-  });
 
-  describe('combinators', () => {
+    describe('createUse', () => {
+      it('returns a function that safely evaluates the generator, returning the returned AsyncResult when all yields are `Ok`', async () => {
+        const propagator = ResultAsync.createUse(async function* (
+          target: string,
+        ) {
+          const greeting = yield* ResultAsync.fromNullable('hello');
+
+          const subject = yield* ResultAsync.fromNullable(target);
+
+          return Result.ok(`${greeting} ${subject}`);
+        });
+
+        expectTypeOf(propagator).toEqualTypeOf<
+          (name: string) => ResultAsync<string, NoValueError>
+        >();
+
+        const result = await propagator('world');
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toBe('hello world');
+      });
+    });
+
     describe('values', () => {
       it('returns an array containing only the values inside `Ok`', async () => {
-        const output = await AsyncResult.values([
-          AsyncResult.ok(1),
-          AsyncResult.error(new Error('computation failed')),
-          AsyncResult.ok(3),
+        const output = await ResultAsync.values([
+          ResultAsync.ok(1),
+          ResultAsync.error(new Error('computation failed')),
+          ResultAsync.ok(3),
         ]);
 
         expect(output).toEqual([1, 3]);
       });
     });
-
-    describe('zip', () => {
-      it('combines two `AsyncResult`s into a single `AsyncResult` containing a tuple of their values, if both `AsyncResult`s are `Ok` variants', async () => {
-        const first = AsyncResult.ok('hello');
-        const second = AsyncResult.ok('world');
-
-        const task = first.zip(second);
-        expectTypeOf(task).toEqualTypeOf<
-          AsyncResult<[string, string], never>
-        >();
-
-        const result = await task;
-        expect(result.isOk()).toBeTrue();
-        expect(result.unwrap()).toEqual(['hello', 'world']);
-      });
-
-      it('returns `Error` if one of the `AsyncResult`s is `Error`', async () => {
-        const first = AsyncResult.ok('hello');
-        const second = AsyncResult.fromFalsy('' as string);
-
-        const task = first.zip(second);
-        expectTypeOf(task).toEqualTypeOf<
-          AsyncResult<[string, string], NoValueError>
-        >();
-
-        const result = await task;
-        expect(result.isError()).toBeTrue();
-      });
-    });
-
-    describe('zipWith', () => {
-      it('combines two `AsyncResult`s into a single `AsyncResult` producing a new value by applying the given function to both values, if both `AsyncResult`s are `Ok` variants', async () => {
-        const first = AsyncResult.ok('hello');
-        const second = AsyncResult.ok('world');
-
-        const task = first.zipWith(second, (a, b) => `${a} ${b}`);
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, never>>();
-
-        const result = await task;
-        expect(result.isOk()).toBeTrue();
-        expect(result.unwrap()).toBe('hello world');
-      });
-
-      it('returns `Error` if one of the `AsyncResult`s is `Error`', async () => {
-        const first = AsyncResult.ok('hello');
-        const second = AsyncResult.fromFalsy('' as string);
-
-        const task = first.zipWith(second, (a, b) => `${a} ${b}`);
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, NoValueError>>();
-
-        const result = await task;
-        expect(result.isError()).toBeTrue();
-      });
-    });
   });
 
-  describe('do-notation', () => {
-    describe('Do', () => {
-      it('creates an `AsyncResult` with an empty object branded with the DoNotation type', async () => {
-        const task = AsyncResult.Do;
-
-        expectTypeOf(task).toEqualTypeOf<
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
-          AsyncResult<DoNotation.Sign<object>, never>
-        >();
-
-        const result = await task;
-        expect(result.isOk()).toBeTrue();
-        expect(result.unwrap()).toEqual({});
-      });
-    });
-
+  describe('instance', () => {
     describe('bindTo', () => {
       it('binds the current `AsyncResult` to a `do-notation`', async () => {
-        const task = AsyncResult.ok(10).bindTo('a');
+        const task = ResultAsync.ok(10).bindTo('a');
 
         expectTypeOf(task).toEqualTypeOf<
-          AsyncResult<DoNotation.Sign<{ a: number }>, never>
+          ResultAsync<DoNotation.Sign<{ a: number }>, never>
         >();
 
         const result = await task;
@@ -448,12 +426,12 @@ describe('AsyncResult', () => {
 
     describe('bind', async () => {
       it('accumulates multiple `bind` calls into an object and is an `Ok` Result if all values are `Ok`', async () => {
-        const task = AsyncResult.Do.bind('a', () => AsyncResult.ok(2))
+        const task = ResultAsync.Do.bind('a', () => ResultAsync.ok(2))
           .bind('b', (ctx) => {
             expectTypeOf(ctx).toEqualTypeOf<Readonly<{ a: number }>>();
             expect(ctx).toEqual({ a: 2 });
 
-            return AsyncResult.ok(2);
+            return ResultAsync.ok(2);
           })
           .bind('c', (ctx) => {
             expectTypeOf(ctx).toEqualTypeOf<
@@ -461,11 +439,11 @@ describe('AsyncResult', () => {
             >();
             expect(ctx).toEqual({ a: 2, b: 2 });
 
-            return AsyncResult.ok(6);
+            return ResultAsync.ok(6);
           });
 
         expectTypeOf(task).toEqualTypeOf<
-          AsyncResult<
+          ResultAsync<
             DoNotation.Sign<{
               a: number;
               b: number;
@@ -482,14 +460,14 @@ describe('AsyncResult', () => {
       });
 
       it('accumulates multiple `bind` calls into an object and is an `Error` Result if any value is `Error`', async () => {
-        const bindC = vi.fn(() => AsyncResult.ok(6));
+        const bindC = vi.fn(() => ResultAsync.ok(6));
 
-        const task = AsyncResult.Do.bind('a', () => AsyncResult.ok(2))
-          .bind('b', () => AsyncResult.fromFalsy(0 as number))
+        const task = ResultAsync.Do.bind('a', () => ResultAsync.ok(2))
+          .bind('b', () => ResultAsync.fromFalsy(0 as number))
           .bind('c', bindC);
 
         expectTypeOf(task).toEqualTypeOf<
-          AsyncResult<
+          ResultAsync<
             DoNotation.Sign<{
               a: number;
               b: number;
@@ -508,12 +486,12 @@ describe('AsyncResult', () => {
 
     describe('let', async () => {
       it('accumulates multiple `let` calls into an object', async () => {
-        const task = AsyncResult.Do.let('a', () => Promise.resolve(4))
+        const task = ResultAsync.Do.let('a', () => Promise.resolve(4))
           .let('b', () => Promise.resolve(6))
           .let('c', (ctx) => Promise.resolve(ctx.a + ctx.b));
 
         expectTypeOf(task).toEqualTypeOf<
-          AsyncResult<
+          ResultAsync<
             DoNotation.Sign<{
               a: number;
               b: number;
@@ -529,12 +507,247 @@ describe('AsyncResult', () => {
         expect(result.unwrap()).toEqual({ a: 4, b: 6, c: 10 });
       });
     });
-  });
 
-  describe('conversions', () => {
+    describe('map', () => {
+      it('maps the value of a AsyncResult when it is an `Ok`', async () => {
+        const mapper = vi.fn((str: string) => str.toUpperCase());
+
+        const task = ResultAsync.ok('hello world').map(mapper);
+        // asserting lazy evaluation of function being enqueued
+        expect(mapper).not.toHaveBeenCalled();
+
+        const result = await task;
+        expect(result.isOk()).toBeTrue();
+        expect(result.equals(Result.ok('HELLO WORLD'))).toBeTrue();
+
+        expect(mapper).toHaveBeenCalledWith('hello world');
+      });
+
+      it('is a no-op if AsyncResult is an Error', async () => {
+        const mapper = vi.fn((str: string) => str.toUpperCase());
+
+        const task = ResultAsync.fromFalsy('' as string).map(mapper);
+        // asserting lazy evaluation of function being enqueued
+        expect(mapper).not.toHaveBeenCalled();
+
+        const result = await task;
+        expect(result.isError()).toBeTrue();
+
+        expect(mapper).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('mapError', () => {
+      it('maps the error of a AsyncResult when it is an `Error`', async () => {
+        const mapper = vi.fn((err: Error) => err.message.toUpperCase());
+
+        const task = ResultAsync.error(
+          new Error('computation failed'),
+        ).mapError(mapper);
+        // asserting lazy evaluation of function being enqueued
+        expect(mapper).not.toHaveBeenCalled();
+
+        await expect(task.unwrapError()).resolves.toBe('COMPUTATION FAILED');
+        expect(mapper).toHaveBeenCalledOnce();
+      });
+    });
+
+    describe('mapBoth', () => {
+      it('executes the Ok callback when the AsyncResult is Ok', async () => {
+        const errorCallback = vi.fn((error: TaggedError) =>
+          error._tag.toLowerCase(),
+        );
+
+        const task = ResultAsync.fromFalsy('hello world' as string).mapBoth({
+          Ok(value) {
+            return value.toUpperCase();
+          },
+          Error: errorCallback,
+        });
+
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, string>>();
+
+        await expect(task.unwrap()).resolves.toBe('HELLO WORLD');
+        expect(errorCallback).not.toHaveBeenCalled();
+      });
+
+      describe('executes the Error callback when the AsyncResult is Error', async () => {
+        const okCallback = vi.fn((value: string) => value.toUpperCase());
+
+        const result = ResultAsync.fromFalsy(
+          '' as string,
+          () => new Error('computation failed'),
+        ).mapBoth({
+          Ok: okCallback,
+          Error(error) {
+            return error.message.toUpperCase();
+          },
+        });
+
+        expectTypeOf(result).toEqualTypeOf<ResultAsync<string, string>>();
+
+        await expect(result.unwrapError()).resolves.toBe('COMPUTATION FAILED');
+        expect(okCallback).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('andThen', () => {
+      it('transforms the `Ok` value while flattening the `AsyncResult`', async () => {
+        const task = ResultAsync.ok('hello world').andThen((str) =>
+          ResultAsync.ok(str.toUpperCase()),
+        );
+
+        const result = await task;
+        expect(result.isOk()).toBeTrue();
+        expect(result.equals(Result.ok('HELLO WORLD'))).toBeTrue();
+      });
+
+      it('has no effect when AsyncResult is an Error and flattens the `AsyncResult`', async () => {
+        const task = ResultAsync.fromFalsy('' as string).andThen(() =>
+          ResultAsync.fromNullable('hello world'),
+        );
+
+        const result = await task;
+        expect(result.isError()).toBeTrue();
+      });
+
+      it('transforms the `Ok` value while lifting a `Result` to an `AsyncResult` and flattens it', async () => {
+        const task = ResultAsync.ok('hello world').andThen((str) =>
+          Result.ok(str.toUpperCase()),
+        );
+
+        const result = await task;
+        expect(result.isOk()).toBeTrue();
+        expect(result.equals(Result.ok('HELLO WORLD'))).toBeTrue();
+      });
+    });
+
+    describe('filter', () => {
+      it('keeps the Ok value if the predicate is fulfilled', async () => {
+        const task = ResultAsync.ok('hello world').filter(
+          (value) => value.length > 0,
+        );
+
+        const result = await task;
+        expect(result.isOk()).toBeTrue();
+        expect(result.equals(Result.ok('hello world'))).toBeTrue();
+      });
+
+      it('filters the Ok value out if the predicate is not fulfilled', async () => {
+        const task = ResultAsync.ok('hello world').filter(
+          (value) => value.length === 0,
+        );
+
+        const result = await task;
+        expect(result.isError()).toBeTrue();
+      });
+
+      it('has no effect if the `AsyncResult` is an Error', async () => {
+        const predicate = vi.fn((value: string) => value.length > 0);
+
+        const task = ResultAsync.fromFalsy('' as string).filter(predicate);
+
+        const result = await task;
+        expect(result.isError()).toBeTrue();
+
+        expect(predicate).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('or', () => {
+      it('returns the Ok value if the `AsyncResult` is an `Ok`', async () => {
+        const fallback = vi.fn(() => ResultAsync.ok('Good bye!'));
+
+        const task = ResultAsync.ok('hello world').or(fallback);
+
+        const result = await task;
+        expect(result.isOk()).toBeTrue();
+        expect(result.equals(Result.ok('hello world'))).toBeTrue();
+
+        expect(fallback).not.toHaveBeenCalled();
+      });
+
+      it('returns the fallback value if the `AsyncResult` is an Error', async () => {
+        const task = ResultAsync.fromFalsy('' as string).or(() =>
+          ResultAsync.ok('Good bye!'),
+        );
+
+        const result = await task;
+        expect(result.isOk()).toBeTrue();
+        expect(result.equals(Result.ok('Good bye!'))).toBeTrue();
+      });
+    });
+
+    describe('swap', () => {
+      it('swaps the value of the AsyncResult', async () => {
+        const task = ResultAsync.fromNullable('hello world');
+
+        const swapped = task.swap();
+        expectTypeOf(swapped).toEqualTypeOf<
+          ResultAsync<NoValueError, string>
+        >();
+
+        await expect(swapped.unwrapError()).resolves.toBe('hello world');
+      });
+    });
+
+    describe('zip', () => {
+      it('combines two `AsyncResult`s into a single `AsyncResult` containing a tuple of their values, if both `AsyncResult`s are `Ok` variants', async () => {
+        const first = ResultAsync.ok('hello');
+        const second = ResultAsync.ok('world');
+
+        const task = first.zip(second);
+        expectTypeOf(task).toEqualTypeOf<
+          ResultAsync<[string, string], never>
+        >();
+
+        const result = await task;
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toEqual(['hello', 'world']);
+      });
+
+      it('returns `Error` if one of the `AsyncResult`s is `Error`', async () => {
+        const first = ResultAsync.ok('hello');
+        const second = ResultAsync.fromFalsy('' as string);
+
+        const task = first.zip(second);
+        expectTypeOf(task).toEqualTypeOf<
+          ResultAsync<[string, string], NoValueError>
+        >();
+
+        const result = await task;
+        expect(result.isError()).toBeTrue();
+      });
+    });
+
+    describe('zipWith', () => {
+      it('combines two `AsyncResult`s into a single `AsyncResult` producing a new value by applying the given function to both values, if both `AsyncResult`s are `Ok` variants', async () => {
+        const first = ResultAsync.ok('hello');
+        const second = ResultAsync.ok('world');
+
+        const task = first.zipWith(second, (a, b) => `${a} ${b}`);
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, never>>();
+
+        const result = await task;
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toBe('hello world');
+      });
+
+      it('returns `Error` if one of the `AsyncResult`s is `Error`', async () => {
+        const first = ResultAsync.ok('hello');
+        const second = ResultAsync.fromFalsy('' as string);
+
+        const task = first.zipWith(second, (a, b) => `${a} ${b}`);
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, NoValueError>>();
+
+        const result = await task;
+        expect(result.isError()).toBeTrue();
+      });
+    });
+
     describe('then', () => {
       it('resolves the promise returning the underlying `Result`', async () => {
-        const result = await AsyncResult.ok(10);
+        const result = await ResultAsync.ok(10);
 
         expectTypeOf(result).toEqualTypeOf<Result<number, never>>();
 
@@ -545,7 +758,7 @@ describe('AsyncResult', () => {
 
     describe('match', () => {
       it('resolves to the Ok case if the `AsyncResult` is an `Ok`', async () => {
-        const task = AsyncResult.ok('world').match({
+        const task = ResultAsync.ok('world').match({
           Ok(value) {
             return `Hello ${value}`;
           },
@@ -558,7 +771,7 @@ describe('AsyncResult', () => {
       });
 
       it('resolves to the Error case if the `AsyncResult` is an Error', async () => {
-        const task = AsyncResult.fromFalsy('' as string).match({
+        const task = ResultAsync.fromFalsy('' as string).match({
           Ok(value) {
             return `Hello ${value}`;
           },
@@ -573,27 +786,35 @@ describe('AsyncResult', () => {
 
     describe('unwrap', () => {
       it('resolves to the value of the `AsyncResult` if it is an `Ok`', async () => {
-        const task = AsyncResult.ok('hello world').unwrap();
+        const task = ResultAsync.ok('hello world').unwrap();
 
         await expect(task).resolves.toBe('hello world');
       });
 
       it('rejects if the `AsyncResult` is an Error', async () => {
-        const task = AsyncResult.fromFalsy('' as string);
+        const task = ResultAsync.fromFalsy('' as string);
 
         await expect(task.unwrap()).rejects.toBeInstanceOf(UnwrapError);
       });
     });
 
+    describe('unwrapError', () => {
+      it('unwraps the error of the AsyncResult', async () => {
+        const task = ResultAsync.error(new Error('Failed computation'));
+
+        await expect(task.unwrapError()).resolves.toBeInstanceOf(Error);
+      });
+    });
+
     describe('unwrapOr', () => {
       it('resolves to the value of the `AsyncResult` if it is an `Ok`', async () => {
-        const task = AsyncResult.ok('hello world').unwrapOr(() => 'Good bye!');
+        const task = ResultAsync.ok('hello world').unwrapOr(() => 'Good bye!');
 
         await expect(task).resolves.toBe('hello world');
       });
 
       it('resolves to the fallback value if the `AsyncResult` is an Error', async () => {
-        const task = AsyncResult.fromFalsy('' as string).unwrapOr(
+        const task = ResultAsync.fromFalsy('' as string).unwrapOr(
           () => 'Good bye!',
         );
 
@@ -603,13 +824,13 @@ describe('AsyncResult', () => {
 
     describe('unwrapOrNull', () => {
       it('resolves to the value of the `AsyncResult` if it is an `Ok`', async () => {
-        const task = AsyncResult.ok('hello world').unwrapOrNull();
+        const task = ResultAsync.ok('hello world').unwrapOrNull();
 
         await expect(task).resolves.toBe('hello world');
       });
 
       it('resolves to null if the `AsyncResult` is an Error', async () => {
-        const task = AsyncResult.fromFalsy('' as string).unwrapOrNull();
+        const task = ResultAsync.fromFalsy('' as string).unwrapOrNull();
 
         await expect(task).resolves.toBeNull();
       });
@@ -617,13 +838,13 @@ describe('AsyncResult', () => {
 
     describe('unwrapOrUndefined', () => {
       it('resolves to the value of the `AsyncResult` if it is an `Ok`', async () => {
-        const task = AsyncResult.ok('hello world').unwrapOrUndefined();
+        const task = ResultAsync.ok('hello world').unwrapOrUndefined();
 
         await expect(task).resolves.toBe('hello world');
       });
 
       it('resolves to null if the `AsyncResult` is an Error', async () => {
-        const task = AsyncResult.fromFalsy('' as string).unwrapOrUndefined();
+        const task = ResultAsync.fromFalsy('' as string).unwrapOrUndefined();
 
         await expect(task).resolves.toBeUndefined();
       });
@@ -631,7 +852,7 @@ describe('AsyncResult', () => {
 
     describe('expect', () => {
       it('resolves to the value of the `AsyncResult` if it is an `Ok`', async () => {
-        const task = AsyncResult.ok('hello world').expect(
+        const task = ResultAsync.ok('hello world').expect(
           () => new Error('Expected ok value'),
         );
 
@@ -639,7 +860,7 @@ describe('AsyncResult', () => {
       });
 
       it('rejects if the `AsyncResult` is an Error', async () => {
-        const task = AsyncResult.fromFalsy('' as string).expect(
+        const task = ResultAsync.fromFalsy('' as string).expect(
           () => new Error('Expected ok value'),
         );
 
@@ -647,9 +868,23 @@ describe('AsyncResult', () => {
       });
     });
 
+    describe('merge', () => {
+      it('returns the value of the AsyncResult', async () => {
+        const task = ResultAsync.fromNullable('hello world');
+
+        await expect(task.merge()).resolves.toBe('hello world');
+      });
+
+      it('returns the error of the AsyncResult', async () => {
+        const task = ResultAsync.error(new Error('Failed computation'));
+
+        await expect(task.merge()).resolves.toBeInstanceOf(Error);
+      });
+    });
+
     describe('contains', () => {
       it('resolves to true if the `AsyncResult` is an `Ok` and the predicate is fulfilled', async () => {
-        const result = AsyncResult.ok('hello world').contains(
+        const result = ResultAsync.ok('hello world').contains(
           (value) => value.length > 0,
         );
 
@@ -657,7 +892,7 @@ describe('AsyncResult', () => {
       });
 
       it('resolves to false if the `AsyncResult` is an `Ok` and the predicate is not fulfilled', async () => {
-        const result = AsyncResult.ok('hello world').contains(
+        const result = ResultAsync.ok('hello world').contains(
           (value) => value.length === 0,
         );
 
@@ -665,7 +900,7 @@ describe('AsyncResult', () => {
       });
 
       it('resolves to false if the `AsyncResult` is an Error', async () => {
-        const result = AsyncResult.fromFalsy('' as string).contains(
+        const result = ResultAsync.fromFalsy('' as string).contains(
           (value) => value.length > 0,
         );
 
@@ -673,30 +908,9 @@ describe('AsyncResult', () => {
       });
     });
 
-    describe('toAsyncOption', () => {
-      it('creates an AsyncOption with a `Some` from an `Ok` `AsyncResult`', async () => {
-        const task = AsyncResult.ok('hello world').toAsyncOption();
-
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
-        const option = await task;
-
-        expect(option.isSome()).toBeTrue();
-        expect(option.equals(Option.some('hello world'))).toBeTrue();
-      });
-
-      it('creates an AsyncOption with a `None` from an `Error` `AsyncResult`', async () => {
-        const task = AsyncResult.fromFalsy('' as string).toAsyncOption();
-
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
-        const option = await task;
-
-        expect(option.isNone()).toBeTrue();
-      });
-    });
-
     describe('toArray', () => {
       it('creates an array with the value if AsyncResult is Ok', async () => {
-        const task = AsyncResult.ok('hello world').toArray();
+        const task = ResultAsync.ok('hello world').toArray();
 
         const array = await task;
         expectTypeOf(array).toEqualTypeOf<string[]>();
@@ -705,7 +919,7 @@ describe('AsyncResult', () => {
       });
 
       it('creates an empty array if AsyncResult is Error', async () => {
-        const task = AsyncResult.fromFalsy('' as string).toArray();
+        const task = ResultAsync.fromFalsy('' as string).toArray();
 
         const array = await task;
         expectTypeOf(array).toEqualTypeOf<string[]>();
@@ -713,134 +927,33 @@ describe('AsyncResult', () => {
         expect(array).toEqual([]);
       });
     });
-  });
 
-  describe('transformations', () => {
-    describe('map', () => {
-      it('maps the value of a AsyncResult when it is an `Ok`', async () => {
-        const mapper = vi.fn((str: string) => str.toUpperCase());
+    describe('toAsyncOption', () => {
+      it('creates an OptionAsync with a `Some` from an `Ok` `AsyncResult`', async () => {
+        const task = ResultAsync.ok('hello world').toAsyncOption();
 
-        const task = AsyncResult.ok('hello world').map(mapper);
-        // asserting lazy evaluation of function being enqueued
-        expect(mapper).not.toHaveBeenCalled();
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
+        const option = await task;
 
-        const result = await task;
-        expect(result.isOk()).toBeTrue();
-        expect(result.equals(Result.ok('HELLO WORLD'))).toBeTrue();
-
-        expect(mapper).toHaveBeenCalledWith('hello world');
+        expect(option.isSome()).toBeTrue();
+        expect(option.equals(Option.some('hello world'))).toBeTrue();
       });
 
-      it('is a no-op if AsyncResult is an Error', async () => {
-        const mapper = vi.fn((str: string) => str.toUpperCase());
+      it('creates an OptionAsync with a `None` from an `Error` `AsyncResult`', async () => {
+        const task = ResultAsync.fromFalsy('' as string).toAsyncOption();
 
-        const task = AsyncResult.fromFalsy('' as string).map(mapper);
-        // asserting lazy evaluation of function being enqueued
-        expect(mapper).not.toHaveBeenCalled();
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
+        const option = await task;
 
-        const result = await task;
-        expect(result.isError()).toBeTrue();
-
-        expect(mapper).not.toHaveBeenCalled();
+        expect(option.isNone()).toBeTrue();
       });
     });
 
-    describe('andThen', () => {
-      it('transforms the `Ok` value while flattening the `AsyncResult`', async () => {
-        const task = AsyncResult.ok('hello world').andThen((str) =>
-          AsyncResult.ok(str.toUpperCase()),
-        );
-
-        const result = await task;
-        expect(result.isOk()).toBeTrue();
-        expect(result.equals(Result.ok('HELLO WORLD'))).toBeTrue();
-      });
-
-      it('has no effect when AsyncResult is an Error and flattens the `AsyncResult`', async () => {
-        const task = AsyncResult.fromFalsy('' as string).andThen(() =>
-          AsyncResult.fromNullable('hello world'),
-        );
-
-        const result = await task;
-        expect(result.isError()).toBeTrue();
-      });
-
-      it('transforms the `Ok` value while lifting a `Result` to an `AsyncResult` and flattens it', async () => {
-        const task = AsyncResult.ok('hello world').andThen((str) =>
-          Result.ok(str.toUpperCase()),
-        );
-
-        const result = await task;
-        expect(result.isOk()).toBeTrue();
-        expect(result.equals(Result.ok('HELLO WORLD'))).toBeTrue();
-      });
-    });
-
-    describe('filter', () => {
-      it('keeps the Ok value if the predicate is fulfilled', async () => {
-        const task = AsyncResult.ok('hello world').filter(
-          (value) => value.length > 0,
-        );
-
-        const result = await task;
-        expect(result.isOk()).toBeTrue();
-        expect(result.equals(Result.ok('hello world'))).toBeTrue();
-      });
-
-      it('filters the Ok value out if the predicate is not fulfilled', async () => {
-        const task = AsyncResult.ok('hello world').filter(
-          (value) => value.length === 0,
-        );
-
-        const result = await task;
-        expect(result.isError()).toBeTrue();
-      });
-
-      it('has no effect if the `AsyncResult` is an Error', async () => {
-        const predicate = vi.fn((value: string) => value.length > 0);
-
-        const task = AsyncResult.fromFalsy('' as string).filter(predicate);
-
-        const result = await task;
-        expect(result.isError()).toBeTrue();
-
-        expect(predicate).not.toHaveBeenCalled();
-      });
-    });
-  });
-
-  describe('fallbacks', () => {
-    describe('or', () => {
-      it('returns the Ok value if the `AsyncResult` is an `Ok`', async () => {
-        const fallback = vi.fn(() => AsyncResult.ok('Good bye!'));
-
-        const task = AsyncResult.ok('hello world').or(fallback);
-
-        const result = await task;
-        expect(result.isOk()).toBeTrue();
-        expect(result.equals(Result.ok('hello world'))).toBeTrue();
-
-        expect(fallback).not.toHaveBeenCalled();
-      });
-
-      it('returns the fallback value if the `AsyncResult` is an Error', async () => {
-        const task = AsyncResult.fromFalsy('' as string).or(() =>
-          AsyncResult.ok('Good bye!'),
-        );
-
-        const result = await task;
-        expect(result.isOk()).toBeTrue();
-        expect(result.equals(Result.ok('Good bye!'))).toBeTrue();
-      });
-    });
-  });
-
-  describe('other', () => {
     describe('tap', () => {
       it('executes the callback if the `AsyncResult` is an `Ok` while ignoring the returned value and preserving the original value of the `AsyncResult`', async () => {
         const callback = vi.fn((value: string) => value.toUpperCase());
 
-        const task = AsyncResult.ok('hello world').tap(callback);
+        const task = ResultAsync.ok('hello world').tap(callback);
 
         const result = await task;
         expect(result.isOk()).toBeTrue();
@@ -852,7 +965,7 @@ describe('AsyncResult', () => {
       it('does not execute the callback if the `AsyncResult` is an Error', async () => {
         const callback = vi.fn((value: string) => value.toUpperCase());
 
-        const task = AsyncResult.fromFalsy('' as string).tap(callback);
+        const task = ResultAsync.fromFalsy('' as string).tap(callback);
 
         const result = await task;
         expect(result.isError()).toBeTrue();
@@ -865,7 +978,7 @@ describe('AsyncResult', () => {
       it('executes the callback if the `AsyncResult` is an `Error` while ignoring the returned value and preserving the original value of the `AsyncResult`', async () => {
         const callback = vi.fn((value: NoValueError) => value.message);
 
-        const task = AsyncResult.fromNullable('hello world').tapError(callback);
+        const task = ResultAsync.fromNullable('hello world').tapError(callback);
 
         const result = await task;
         expect(result.isOk()).toBeTrue();
@@ -876,7 +989,7 @@ describe('AsyncResult', () => {
       it('does not execute the callback if the `AsyncResult` is an Error', async () => {
         const callback = vi.fn((value: NoValueError) => value.message);
 
-        const task = AsyncResult.fromFalsy('' as string).tapError(callback);
+        const task = ResultAsync.fromFalsy('' as string).tapError(callback);
 
         const result = await task;
         expect(result.isError()).toBeTrue();

@@ -1,4 +1,4 @@
-import { type Option } from './option';
+import type { Option } from './option';
 
 export type StrictOptional<T> = {
   [K in keyof T]-?: Option<NonNullable<T[K]>>;

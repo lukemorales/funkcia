@@ -2,21 +2,34 @@ import { describe } from 'vitest';
 
 import type { NoValueError } from './exceptions';
 import { UnwrapError } from './exceptions';
-import { AsyncOption } from './option.async';
+import { OptionAsync } from './option.async';
 // import { AsyncResult } from './async-result';
 import type { DoNotation } from './do-notation';
-import { FunkciaStore } from './funkcia-store';
 import type { Falsy, Nullable } from './internals/types';
 import { Option } from './option';
 import { Result } from './result';
-import { AsyncResult } from './result.async';
+import type { ResultAsync } from './result.async';
 
-describe('AsyncOption', () => {
+describe('OptionAsync', () => {
   describe('constructors', () => {
+    describe('is', () => {
+      it('returns true if the value is an OptionAsync', () => {
+        const option = OptionAsync.some('hello world');
+
+        expect(OptionAsync.is(option)).toBeTrue();
+      });
+
+      it('returns false if the value is not an OptionAsync', () => {
+        expect(
+          OptionAsync.is(() => Promise.resolve(Option.some('hello world'))),
+        ).toBeFalse();
+      });
+    });
+
     describe('some', () => {
-      it('creates a AsyncOption with a `Some` and the provided value', async () => {
-        const task = AsyncOption.some('hello world');
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
+      it('creates a OptionAsync with a `Some` and the provided value', async () => {
+        const task = OptionAsync.some('hello world');
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
 
         const option = await task;
 
@@ -26,15 +39,21 @@ describe('AsyncOption', () => {
     });
 
     describe('of', () => {
-      it('references the `some` constructor', () => {
-        expect(AsyncOption.of).toEqual(AsyncOption.some);
+      it('creates a OptionAsync with a `Some` and the provided value', async () => {
+        const task = OptionAsync.of('hello world');
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
+
+        const option = await task;
+
+        expect(option.isSome()).toBeTrue();
+        expect(option.equals(Option.of('hello world'))).toBeTrue();
       });
     });
 
     describe('none', () => {
-      it('creates a AsyncOption with a `None` value', async () => {
-        const task = AsyncOption.none();
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<never>>();
+      it('creates a OptionAsync with a `None` value', async () => {
+        const task = OptionAsync.none();
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<never>>();
 
         const option = await task;
         expect(option.isNone()).toBeTrue();
@@ -46,9 +65,9 @@ describe('AsyncOption', () => {
         return value;
       }
 
-      it('creates a new AsyncOption with a `Some` when the value is not nullable', async () => {
-        const task = AsyncOption.fromNullable(nullify('hello world'));
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
+      it('creates a new OptionAsync with a `Some` when the value is not nullable', async () => {
+        const task = OptionAsync.fromNullable(nullify('hello world'));
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
 
         const option = await task;
 
@@ -56,19 +75,19 @@ describe('AsyncOption', () => {
         expect(option.equals(Option.some('hello world'))).toBeTrue();
       });
 
-      it('creates a new AsyncOption with a `None` when the value is nullable', async () => {
+      it('creates a new OptionAsync with a `None` when the value is nullable', async () => {
         {
-          const task = AsyncOption.fromNullable(nullify(null));
-          expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
+          const task = OptionAsync.fromNullable(nullify(null));
+          expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
 
           const option = await task;
           expect(option.isNone()).toBeTrue();
         }
 
         {
-          const task = AsyncOption.fromNullable(nullify(undefined));
+          const task = OptionAsync.fromNullable(nullify(undefined));
 
-          expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
+          expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
 
           const option = await task;
           expect(option.isNone()).toBeTrue();
@@ -77,9 +96,9 @@ describe('AsyncOption', () => {
     });
 
     describe('fromFalsy', () => {
-      it('creates a AsyncOption with a `Some` when the value is not falsy', async () => {
-        const task = AsyncOption.fromFalsy('hello world' as string | Falsy);
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
+      it('creates a OptionAsync with a `Some` when the value is not falsy', async () => {
+        const task = OptionAsync.fromFalsy('hello world' as string | Falsy);
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
 
         const option = await task;
 
@@ -98,8 +117,8 @@ describe('AsyncOption', () => {
         ] satisfies Falsy[];
 
         for (const value of falsyValues) {
-          const task = AsyncOption.fromFalsy(value);
-          expectTypeOf(task).toEqualTypeOf<AsyncOption<never>>();
+          const task = OptionAsync.fromFalsy(value);
+          expectTypeOf(task).toEqualTypeOf<OptionAsync<never>>();
 
           const option = await task;
           expect(option.isNone()).toBeTrue();
@@ -107,10 +126,23 @@ describe('AsyncOption', () => {
       });
     });
 
+    describe('Do', () => {
+      it('creates an `OptionAsync` with an empty object branded with the DoNotation type', async () => {
+        const task = OptionAsync.Do;
+
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<DoNotation.Sign>>();
+
+        const option = await task;
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toEqual({});
+      });
+    });
+
     describe('try', () => {
-      it('creates a AsyncOption with a `Some` when the Promise succeeds', async () => {
-        const task = AsyncOption.try(() => Promise.resolve('hello world'));
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
+      it('creates a OptionAsync with a `Some` when the Promise succeeds', async () => {
+        const task = OptionAsync.try(() => Promise.resolve('hello world'));
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
 
         const option = await task;
 
@@ -118,11 +150,11 @@ describe('AsyncOption', () => {
         expect(option.equals(Option.some('hello world'))).toBeTrue();
       });
 
-      it('creates a AsyncOption with the Option resolved from the Promise', async () => {
-        const task = AsyncOption.try(() =>
+      it('creates a OptionAsync with the Option resolved from the Promise', async () => {
+        const task = OptionAsync.try(() =>
           Promise.resolve(Option.of('hello world')),
         );
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
 
         const option = await task;
 
@@ -130,87 +162,50 @@ describe('AsyncOption', () => {
         expect(option.equals(Option.some('hello world'))).toBeTrue();
       });
 
-      it('creates a AsyncOption with a `None` when the Promise succeeds but returns null', async () => {
-        const task = AsyncOption.try(() =>
+      it('creates a OptionAsync with a `None` when the Promise succeeds but returns null', async () => {
+        const task = OptionAsync.try(() =>
           Promise.resolve(null as string | null),
         );
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
 
         const option = await task;
         expect(option.isNone()).toBeTrue();
       });
 
-      it('creates a AsyncOption with a `None` when the Promise rejects', async () => {
-        const task = AsyncOption.try<string>(() =>
+      it('creates a OptionAsync with a `None` when the Promise rejects', async () => {
+        const task = OptionAsync.try<string>(() =>
           Promise.reject(new Error('computation failed')),
         );
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
 
         const option = await task;
         expect(option.isNone()).toBeTrue();
       });
     });
 
-    describe('promise', () => {
-      it('creates a new AsyncOption from a Promise that resolves to an Option', async () => {
-        const task = AsyncOption.promise(() =>
-          Promise.resolve(Option.of('hello world')),
-        );
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
+    describe('firstSomeOf', () => {
+      it('returns the first `Some` value', async () => {
+        const task = OptionAsync.firstSomeOf([
+          OptionAsync.some(1),
+          OptionAsync.none<number>(),
+          OptionAsync.some(3),
+        ]);
+
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<number>>();
 
         const option = await task;
-
         expect(option.isSome()).toBeTrue();
-        expect(option.equals(Option.some('hello world'))).toBeTrue();
-      });
-    });
-
-    describe('liftPromise', () => {
-      it('lifts a function that returns a Promise that resolves to a nullable value', async () => {
-        const lifted = AsyncOption.liftPromise((greeting: string) =>
-          Promise.resolve(greeting),
-        );
-        expectTypeOf(lifted).toEqualTypeOf<
-          (greeting: string) => AsyncOption<string>
-        >();
-
-        const task = lifted('hello world');
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
-
-        const option = await task;
-
-        expect(option.isSome()).toBe(true);
-        expect(option.equals(Option.some('hello world'))).toBe(true);
+        expect(option.unwrap()).toBe(1);
       });
 
-      it('lifts a function that returns a Promise that resolves to an Option', async () => {
-        const lifted = AsyncOption.liftPromise((greeting: string) =>
-          Promise.resolve(Option.some(greeting)),
-        );
-        expectTypeOf(lifted).toEqualTypeOf<
-          (greeting: string) => AsyncOption<string>
-        >();
+      it('returns `None` if all values are `None`', async () => {
+        const task = OptionAsync.firstSomeOf<number>([
+          OptionAsync.none(),
+          OptionAsync.none(),
+          OptionAsync.none(),
+        ]);
 
-        const task = lifted('hello world');
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
-
-        const option = await task;
-
-        expect(option.isSome()).toBeTrue();
-        expect(option.equals(Option.some('hello world'))).toBeTrue();
-      });
-
-      it('lifts a function that returns a Promise that rejects', async () => {
-        const lifted = AsyncOption.liftPromise((_: string) =>
-          Promise.reject<string>(new Error('computation failed')),
-        );
-
-        expectTypeOf(lifted).toEqualTypeOf<
-          (greeting: string) => AsyncOption<string>
-        >();
-
-        const task = lifted('hello world');
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<number>>();
 
         const option = await task;
         expect(option.isNone()).toBeTrue();
@@ -218,7 +213,7 @@ describe('AsyncOption', () => {
     });
 
     describe('predicate', () => {
-      it('creates a function that will return an `AsyncOption` with the refined type of a value if the predicate is fulfilled', async () => {
+      it('creates a function that will return an `OptionAsync` with the refined type of a value if the predicate is fulfilled', async () => {
         interface Circle {
           kind: 'circle';
         }
@@ -229,35 +224,35 @@ describe('AsyncOption', () => {
 
         type Shape = Circle | Square;
 
-        const ensureCircle = AsyncOption.predicate(
+        const ensureCircle = OptionAsync.predicate(
           (shape: Shape): shape is Circle => shape.kind === 'circle',
         );
 
         expectTypeOf(ensureCircle).toEqualTypeOf<
-          (shape: Shape) => AsyncOption<Circle>
+          (shape: Shape) => OptionAsync<Circle>
         >();
 
         const task = ensureCircle({ kind: 'circle' });
 
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<Circle>>();
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<Circle>>();
 
         const option = await task;
         expect(option.isSome()).toBeTrue();
         expect(option.unwrap()).toEqual({ kind: 'circle' });
       });
 
-      it('creates a function that will return an `AsyncOption` if the predicate is fullfiled', async () => {
-        const ensurePositive = AsyncOption.predicate(
+      it('creates a function that will return an `OptionAsync` if the predicate is fullfiled', async () => {
+        const ensurePositive = OptionAsync.predicate(
           (value: number) => value > 0,
         );
 
         expectTypeOf(ensurePositive).toEqualTypeOf<
-          (value: number) => AsyncOption<number>
+          (value: number) => OptionAsync<number>
         >();
 
         const task = ensurePositive(10);
 
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<number>>();
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<number>>();
 
         const option = await task;
         expect(option.isSome()).toBeTrue();
@@ -265,22 +260,88 @@ describe('AsyncOption', () => {
       });
     });
 
-    describe('relay', () => {
-      it('safely evaluates the generator, returning the returned AsyncOption when all yields are `Some`', async () => {
-        const greeting = AsyncOption.some('hello');
-        const subject = AsyncOption.some('world');
+    describe('promise', () => {
+      it('creates a new OptionAsync from a Promise that resolves to an Option', async () => {
+        const task = OptionAsync.promise(() =>
+          Promise.resolve(Option.of('hello world')),
+        );
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
 
-        const task = AsyncOption.relay(async function* exec() {
+        const option = await task;
+
+        expect(option.isSome()).toBeTrue();
+        expect(option.equals(Option.some('hello world'))).toBeTrue();
+      });
+    });
+
+    describe('enhance', () => {
+      it('lifts a function that returns a Promise that resolves to a nullable value', async () => {
+        const lifted = OptionAsync.enhance((greeting: string) =>
+          Promise.resolve(greeting),
+        );
+        expectTypeOf(lifted).toEqualTypeOf<
+          (greeting: string) => OptionAsync<string>
+        >();
+
+        const task = lifted('hello world');
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
+
+        const option = await task;
+
+        expect(option.isSome()).toBe(true);
+        expect(option.equals(Option.some('hello world'))).toBe(true);
+      });
+
+      it('lifts a function that returns a Promise that resolves to an Option', async () => {
+        const lifted = OptionAsync.enhance((greeting: string) =>
+          Promise.resolve(Option.some(greeting)),
+        );
+        expectTypeOf(lifted).toEqualTypeOf<
+          (greeting: string) => OptionAsync<string>
+        >();
+
+        const task = lifted('hello world');
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
+
+        const option = await task;
+
+        expect(option.isSome()).toBeTrue();
+        expect(option.equals(Option.some('hello world'))).toBeTrue();
+      });
+
+      it('lifts a function that returns a Promise that rejects', async () => {
+        const lifted = OptionAsync.enhance((_: string) =>
+          Promise.reject<string>(new Error('computation failed')),
+        );
+
+        expectTypeOf(lifted).toEqualTypeOf<
+          (greeting: string) => OptionAsync<string>
+        >();
+
+        const task = lifted('hello world');
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
+
+        const option = await task;
+        expect(option.isNone()).toBeTrue();
+      });
+    });
+
+    describe('use', () => {
+      it('safely evaluates the generator, returning the returned OptionAsync when all yields are `Some`', async () => {
+        const greeting = OptionAsync.some('hello');
+        const subject = OptionAsync.some('world');
+
+        const task = OptionAsync.use(async function* () {
           const a = yield* greeting;
           expect(a).toBe('hello');
 
           const b = yield* subject;
           expect(b).toBe('world');
 
-          return AsyncOption.some(`${a} ${b}`);
+          return OptionAsync.some(`${a} ${b}`);
         });
 
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
 
         const option = await task;
 
@@ -289,17 +350,17 @@ describe('AsyncOption', () => {
       });
 
       it('safely evaluates the generator, early returning when a yield is `None`', async () => {
-        const greeting = AsyncOption.none<string>();
-        const getSubject = vi.fn(() => AsyncOption.some('world'));
+        const greeting = OptionAsync.none<string>();
+        const getSubject = vi.fn(() => OptionAsync.some('world'));
 
-        const task = AsyncOption.relay(async function* exec() {
+        const task = OptionAsync.use(async function* () {
           const a = yield* greeting;
           const b = yield* getSubject();
 
-          return AsyncOption.some(`${a} ${b}`);
+          return OptionAsync.some(`${a} ${b}`);
         });
 
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
 
         const option = await task;
         expect(option.isNone()).toBeTrue();
@@ -308,120 +369,55 @@ describe('AsyncOption', () => {
       });
     });
 
-    describe('firstSomeOf', () => {
-      it('returns the first `Some` value', async () => {
-        const task = AsyncOption.firstSomeOf([
-          AsyncOption.some(1),
-          AsyncOption.none<number>(),
-          AsyncOption.some(3),
-        ]);
+    describe('createUse', () => {
+      it('returns a function that safely evaluates the generator, returning the returned OptionAsync when all yields are `Some`', async () => {
+        const execute = OptionAsync.createUse(async function* (
+          greeting: string,
+          subject: string,
+        ) {
+          const a = yield* OptionAsync.fromFalsy(greeting);
+          expect(a).toBe('hello');
 
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<number>>();
+          const b = yield* OptionAsync.fromFalsy(subject);
+          expect(b).toBe('world');
+
+          return OptionAsync.some(`${a} ${b}`);
+        });
+
+        expectTypeOf(execute).toEqualTypeOf<
+          (greeting: string, subject: string) => OptionAsync<string>
+        >();
+
+        const task = execute('hello', 'world');
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
 
         const option = await task;
+
         expect(option.isSome()).toBeTrue();
-        expect(option.unwrap()).toBe(1);
-      });
-
-      it('returns `None` if all values are `None`', async () => {
-        const task = AsyncOption.firstSomeOf<number>([
-          AsyncOption.none(),
-          AsyncOption.none(),
-          AsyncOption.none(),
-        ]);
-
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<number>>();
-
-        const option = await task;
-        expect(option.isNone()).toBeTrue();
+        expect(option.unwrap()).toBe('hello world');
       });
     });
-  });
 
-  describe('combinators', () => {
     describe('values', () => {
       it('returns an array containing only the values inside `Some`', async () => {
-        const output = await AsyncOption.values([
-          AsyncOption.some(1),
-          AsyncOption.none<number>(),
-          AsyncOption.some(3),
+        const output = await OptionAsync.values([
+          OptionAsync.some(1),
+          OptionAsync.none<number>(),
+          OptionAsync.some(3),
         ]);
 
         expect(output).toEqual([1, 3]);
       });
     });
-
-    describe('zip', () => {
-      it('combines two `AsyncOption`s into a single `AsyncOption` containing a tuple of their values, if both `AsyncOption`s are `Some` variants', async () => {
-        const first = AsyncOption.some('hello');
-        const second = AsyncOption.some('world');
-
-        const task = first.zip(second);
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<[string, string]>>();
-
-        const option = await task;
-        expect(option.isSome()).toBeTrue();
-        expect(option.unwrap()).toEqual(['hello', 'world']);
-      });
-
-      it('returns `None` if one of the `AsyncOption`s is `None`', async () => {
-        const first = AsyncOption.some('hello');
-        const second = AsyncOption.none<string>();
-
-        const task = first.zip(second);
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<[string, string]>>();
-
-        const option = await task;
-        expect(option.isNone()).toBeTrue();
-      });
-    });
-
-    describe('zipWith', () => {
-      it('combines two `AsyncOption`s into a single `AsyncOption` producing a new value by applying the given function to both values, if both `AsyncOption`s are `Some` variants', async () => {
-        const first = AsyncOption.some('hello');
-        const second = AsyncOption.some('world');
-
-        const task = first.zipWith(second, (a, b) => `${a} ${b}`);
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
-
-        const option = await task;
-        expect(option.isSome()).toBeTrue();
-        expect(option.unwrap()).toBe('hello world');
-      });
-
-      it('returns `None` if one of the `AsyncOption`s is `None`', async () => {
-        const first = AsyncOption.some('hello');
-        const second = AsyncOption.none<string>();
-
-        const task = first.zipWith(second, (a, b) => `${a} ${b}`);
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<string>>();
-
-        const option = await task;
-        expect(option.isNone()).toBeTrue();
-      });
-    });
   });
 
-  describe('do-notation', () => {
-    describe('Do', () => {
-      it('creates a `AsyncOption` with an empty object branded with the DoNotation type', async () => {
-        const task = AsyncOption.Do;
-
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments
-        expectTypeOf(task).toEqualTypeOf<AsyncOption<DoNotation.Sign>>();
-
-        const option = await task;
-        expect(option.isSome()).toBeTrue();
-        expect(option.unwrap()).toEqual({});
-      });
-    });
-
+  describe('instance', () => {
     describe('bindTo', () => {
-      it('binds the current `AsyncOption` to a `do-notation`', async () => {
-        const task = AsyncOption.some(10).bindTo('a');
+      it('binds the current `OptionAsync` to a `do-notation`', async () => {
+        const task = OptionAsync.some(10).bindTo('a');
 
         expectTypeOf(task).toEqualTypeOf<
-          AsyncOption<DoNotation.Sign<{ a: number }>>
+          OptionAsync<DoNotation.Sign<{ a: number }>>
         >();
 
         const option = await task;
@@ -433,12 +429,12 @@ describe('AsyncOption', () => {
 
     describe('bind', async () => {
       it('accumulates multiple `bind` calls into an object and is a `Some` Option if all values are `Some`', async () => {
-        const task = AsyncOption.Do.bind('a', () => AsyncOption.some(2))
+        const task = OptionAsync.Do.bind('a', () => OptionAsync.some(2))
           .bind('b', (ctx) => {
             expectTypeOf(ctx).toEqualTypeOf<Readonly<{ a: number }>>();
             expect(ctx).toEqual({ a: 2 });
 
-            return AsyncOption.some(2);
+            return OptionAsync.some(2);
           })
           .bind('c', (ctx) => {
             expectTypeOf(ctx).toEqualTypeOf<
@@ -446,11 +442,11 @@ describe('AsyncOption', () => {
             >();
             expect(ctx).toEqual({ a: 2, b: 2 });
 
-            return AsyncOption.some(6);
+            return OptionAsync.some(6);
           });
 
         expectTypeOf(task).toEqualTypeOf<
-          AsyncOption<
+          OptionAsync<
             DoNotation.Sign<{
               a: number;
               b: number;
@@ -466,14 +462,14 @@ describe('AsyncOption', () => {
       });
 
       it('accumulates multiple `bind` calls into an object and is a `None` Option if any value is `None`', async () => {
-        const bindC = vi.fn(() => AsyncOption.some(6));
+        const bindC = vi.fn(() => OptionAsync.some(6));
 
-        const task = AsyncOption.Do.bind('a', () => AsyncOption.some(2))
-          .bind('b', () => AsyncOption.none<number>())
+        const task = OptionAsync.Do.bind('a', () => OptionAsync.some(2))
+          .bind('b', () => OptionAsync.none<number>())
           .bind('c', bindC);
 
         expectTypeOf(task).toEqualTypeOf<
-          AsyncOption<
+          OptionAsync<
             DoNotation.Sign<{
               a: number;
               b: number;
@@ -491,12 +487,12 @@ describe('AsyncOption', () => {
 
     describe('let', async () => {
       it('accumulates multiple `let` calls into an object', async () => {
-        const task = AsyncOption.Do.let('a', () => Promise.resolve(4))
+        const task = OptionAsync.Do.let('a', () => Promise.resolve(4))
           .let('b', () => Promise.resolve(6))
           .let('c', (ctx) => Promise.resolve(ctx.a + ctx.b));
 
         expectTypeOf(task).toEqualTypeOf<
-          AsyncOption<
+          OptionAsync<
             DoNotation.Sign<{
               a: number;
               b: number;
@@ -511,12 +507,176 @@ describe('AsyncOption', () => {
         expect(option.unwrap()).toEqual({ a: 4, b: 6, c: 10 });
       });
     });
-  });
 
-  describe('conversions', () => {
+    describe('map', () => {
+      it('maps the value of a OptionAsync when it is a `Some`', async () => {
+        const mapper = vi.fn((str: string) => str.toUpperCase());
+
+        const task = OptionAsync.some('hello world').map(mapper);
+        // asserting lazy evaluation of function being enqueued
+        expect(mapper).not.toHaveBeenCalled();
+
+        const option = await task;
+        expect(option.isSome()).toBeTrue();
+        expect(option.equals(Option.some('HELLO WORLD'))).toBeTrue();
+
+        expect(mapper).toHaveBeenCalledWith('hello world');
+      });
+
+      it('is a no-op if OptionAsync is a None', async () => {
+        const mapper = vi.fn((str: string) => str.toUpperCase());
+
+        const task = OptionAsync.none<string>().map(mapper);
+        // asserting lazy evaluation of function being enqueued
+        expect(mapper).not.toHaveBeenCalled();
+
+        const option = await task;
+        expect(option.isNone()).toBeTrue();
+
+        expect(mapper).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('andThen', () => {
+      it('transforms the `Some` value while flattening the `OptionAsync`', async () => {
+        const task = OptionAsync.some('hello world').andThen((str) =>
+          OptionAsync.some(str.toUpperCase()),
+        );
+
+        const option = await task;
+        expect(option.isSome()).toBeTrue();
+        expect(option.equals(Option.some('HELLO WORLD'))).toBeTrue();
+      });
+
+      it('has no effect when OptionAsync is a None and flattens the OptionAsync', async () => {
+        const task = OptionAsync.none<string>().andThen(() =>
+          OptionAsync.fromNullable('hello world'),
+        );
+
+        const option = await task;
+        expect(option.isNone()).toBeTrue();
+      });
+
+      it('transforms the `Some` value while lifting an `Option` to an `OptionAsync` and flattens it', async () => {
+        const task = OptionAsync.some('hello world').andThen((str) =>
+          Option.some(str.toUpperCase()),
+        );
+
+        const option = await task;
+        expect(option.isSome()).toBeTrue();
+        expect(option.equals(Option.some('HELLO WORLD'))).toBeTrue();
+      });
+    });
+
+    describe('filter', () => {
+      it('keeps the Some value if the predicate is fulfilled', async () => {
+        const task = OptionAsync.some('hello world').filter(
+          (value) => value.length > 0,
+        );
+
+        const option = await task;
+        expect(option.isSome()).toBeTrue();
+        expect(option.equals(Option.some('hello world'))).toBeTrue();
+      });
+
+      it('filters the Some value out if the predicate is not fulfilled', async () => {
+        const task = OptionAsync.some('hello world').filter(
+          (value) => value.length === 0,
+        );
+
+        const option = await task;
+        expect(option.isNone()).toBeTrue();
+      });
+
+      it('has no effect if the OptionAsync is a None', async () => {
+        const predicate = vi.fn((value: string) => value.length > 0);
+
+        const task = OptionAsync.none<string>().filter(predicate);
+
+        const option = await task;
+        expect(option.isNone()).toBeTrue();
+
+        expect(predicate).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('or', () => {
+      it('returns the Some value if the OptionAsync is a Some', async () => {
+        const fallback = vi.fn(() => OptionAsync.some('Good bye!'));
+
+        const task = OptionAsync.some('hello world').or(fallback);
+
+        const option = await task;
+        expect(option.isSome()).toBeTrue();
+        expect(option.equals(Option.some('hello world'))).toBeTrue();
+
+        expect(fallback).not.toHaveBeenCalled();
+      });
+
+      it('returns the fallback value if the OptionAsync is a None', async () => {
+        const fallback = vi.fn(() => OptionAsync.some('Good bye!'));
+
+        const task = OptionAsync.none<string>().or(fallback);
+
+        const option = await task;
+        expect(option.isSome()).toBeTrue();
+        expect(option.equals(Option.some('Good bye!'))).toBeTrue();
+      });
+    });
+
+    describe('zip', () => {
+      it('combines two `OptionAsync`s into a single `OptionAsync` containing a tuple of their values, if both `OptionAsync`s are `Some` variants', async () => {
+        const first = OptionAsync.some('hello');
+        const second = OptionAsync.some('world');
+
+        const task = first.zip(second);
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<[string, string]>>();
+
+        const option = await task;
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toEqual(['hello', 'world']);
+      });
+
+      it('returns `None` if one of the `OptionAsync`s is `None`', async () => {
+        const first = OptionAsync.some('hello');
+        const second = OptionAsync.none<string>();
+
+        const task = first.zip(second);
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<[string, string]>>();
+
+        const option = await task;
+        expect(option.isNone()).toBeTrue();
+      });
+    });
+
+    describe('zipWith', () => {
+      it('combines two `OptionAsync`s into a single `OptionAsync` producing a new value by applying the given function to both values, if both `OptionAsync`s are `Some` variants', async () => {
+        const first = OptionAsync.some('hello');
+        const second = OptionAsync.some('world');
+
+        const task = first.zipWith(second, (a, b) => `${a} ${b}`);
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
+
+        const option = await task;
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toBe('hello world');
+      });
+
+      it('returns `None` if one of the `OptionAsync`s is `None`', async () => {
+        const first = OptionAsync.some('hello');
+        const second = OptionAsync.none<string>();
+
+        const task = first.zipWith(second, (a, b) => `${a} ${b}`);
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<string>>();
+
+        const option = await task;
+        expect(option.isNone()).toBeTrue();
+      });
+    });
+
     describe('then', () => {
       it('resolves the promise returning the underlying `Option`', async () => {
-        const option = await AsyncOption.some(10);
+        const option = await OptionAsync.some(10);
 
         expectTypeOf(option).toEqualTypeOf<Option<number>>();
 
@@ -526,8 +686,8 @@ describe('AsyncOption', () => {
     });
 
     describe('match', () => {
-      it('resolves to the Some case if the AsyncOption is a Some', async () => {
-        const task = AsyncOption.some('world').match({
+      it('resolves to the Some case if the OptionAsync is a Some', async () => {
+        const task = OptionAsync.some('world').match({
           Some(value) {
             return `Hello ${value}`;
           },
@@ -539,8 +699,8 @@ describe('AsyncOption', () => {
         await expect(task).resolves.toBe('Hello world');
       });
 
-      it('resolves to the None case if the AsyncOption is a None', async () => {
-        const task = AsyncOption.none<string>().match({
+      it('resolves to the None case if the OptionAsync is a None', async () => {
+        const task = OptionAsync.none<string>().match({
           Some(value) {
             return `Hello ${value}`;
           },
@@ -554,74 +714,74 @@ describe('AsyncOption', () => {
     });
 
     describe('unwrap', () => {
-      it('resolves to the value of the AsyncOption if it is a Some', async () => {
-        const task = AsyncOption.some('hello world').unwrap();
+      it('resolves to the value of the OptionAsync if it is a Some', async () => {
+        const task = OptionAsync.some('hello world').unwrap();
 
         await expect(task).resolves.toBe('hello world');
       });
 
-      it('rejects if the AsyncOption is a None', async () => {
-        const task = AsyncOption.none<string>();
+      it('rejects if the OptionAsync is a None', async () => {
+        const task = OptionAsync.none<string>();
 
         await expect(task.unwrap()).rejects.toEqual(new UnwrapError('Option'));
       });
     });
 
     describe('unwrapOr', () => {
-      it('resolves to the value of the AsyncOption if it is a Some', async () => {
-        const task = AsyncOption.some('hello world').unwrapOr(
+      it('resolves to the value of the OptionAsync if it is a Some', async () => {
+        const task = OptionAsync.some('hello world').unwrapOr(
           () => 'Good bye!',
         );
 
         await expect(task).resolves.toBe('hello world');
       });
 
-      it('resolves to the fallback value if the AsyncOption is a None', async () => {
-        const task = AsyncOption.none<string>().unwrapOr(() => 'Good bye!');
+      it('resolves to the fallback value if the OptionAsync is a None', async () => {
+        const task = OptionAsync.none<string>().unwrapOr(() => 'Good bye!');
 
         await expect(task).resolves.toBe('Good bye!');
       });
     });
 
     describe('unwrapOrNull', () => {
-      it('resolves to the value of the AsyncOption if it is a Some', async () => {
-        const task = AsyncOption.some('hello world').unwrapOrNull();
+      it('resolves to the value of the OptionAsync if it is a Some', async () => {
+        const task = OptionAsync.some('hello world').unwrapOrNull();
 
         await expect(task).resolves.toBe('hello world');
       });
 
-      it('resolves to null if the AsyncOption is a None', async () => {
-        const task = AsyncOption.none<string>().unwrapOrNull();
+      it('resolves to null if the OptionAsync is a None', async () => {
+        const task = OptionAsync.none<string>().unwrapOrNull();
 
         await expect(task).resolves.toBeNull();
       });
     });
 
     describe('unwrapOrUndefined', () => {
-      it('resolves to the value of the AsyncOption if it is a Some', async () => {
-        const task = AsyncOption.some('hello world').unwrapOrUndefined();
+      it('resolves to the value of the OptionAsync if it is a Some', async () => {
+        const task = OptionAsync.some('hello world').unwrapOrUndefined();
 
         await expect(task).resolves.toBe('hello world');
       });
 
-      it('resolves to null if the AsyncOption is a None', async () => {
-        const task = AsyncOption.none<string>().unwrapOrUndefined();
+      it('resolves to null if the OptionAsync is a None', async () => {
+        const task = OptionAsync.none<string>().unwrapOrUndefined();
 
         await expect(task).resolves.toBeUndefined();
       });
     });
 
     describe('expect', () => {
-      it('resolves to the value of the AsyncOption if it is a Some', async () => {
-        const task = AsyncOption.some('hello world').expect(
+      it('resolves to the value of the OptionAsync if it is a Some', async () => {
+        const task = OptionAsync.some('hello world').expect(
           () => new Error('Expected some value'),
         );
 
         await expect(task).resolves.toBe('hello world');
       });
 
-      it('rejects if the AsyncOption is a None', async () => {
-        const task = AsyncOption.none<string>().expect(
+      it('rejects if the OptionAsync is a None', async () => {
+        const task = OptionAsync.none<string>().expect(
           () => new Error('Expected some value'),
         );
 
@@ -630,24 +790,24 @@ describe('AsyncOption', () => {
     });
 
     describe('contains', () => {
-      it('resolves to true if the AsyncOption is a Some and the predicate is fulfilled', async () => {
-        const result = AsyncOption.some('hello world').contains(
+      it('resolves to true if the OptionAsync is a Some and the predicate is fulfilled', async () => {
+        const result = OptionAsync.some('hello world').contains(
           (value) => value.length > 0,
         );
 
         await expect(result).resolves.toBe(true);
       });
 
-      it('resolves to false if the AsyncOption is a Some and the predicate is not fulfilled', async () => {
-        const result = AsyncOption.some('hello world').contains(
+      it('resolves to false if the OptionAsync is a Some and the predicate is not fulfilled', async () => {
+        const result = OptionAsync.some('hello world').contains(
           (value) => value.length === 0,
         );
 
         await expect(result).resolves.toBe(false);
       });
 
-      it('resolves to false if the AsyncOption is a None', async () => {
-        const result = AsyncOption.none<string>().contains(
+      it('resolves to false if the OptionAsync is a None', async () => {
+        const result = OptionAsync.none<string>().contains(
           (value) => value.length > 0,
         );
 
@@ -655,55 +815,9 @@ describe('AsyncOption', () => {
       });
     });
 
-    describe('toAsyncResult', () => {
-      let unregister: () => void;
-      let unregisterTask: () => void;
-
-      beforeAll(() => {
-        unregister = FunkciaStore.register(Result);
-        unregisterTask = FunkciaStore.register(AsyncResult);
-      });
-
-      afterAll(() => {
-        unregister();
-        unregisterTask();
-      });
-
-      it('creates an AsyncResult with an `Ok` from a Some AsyncOption', async () => {
-        const task = AsyncOption.some('hello world').toAsyncResult();
-
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, NoValueError>>();
-        const result = await task;
-
-        expect(result.isOk()).toBeTrue();
-        expect(result.equals(Result.fromNullable('hello world'))).toBeTrue();
-      });
-
-      it('creates an AsyncResult with an `Error` from a None AsyncOption', async () => {
-        const task = AsyncOption.none<string>().toAsyncResult();
-
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, NoValueError>>();
-        const result = await task;
-
-        expect(result.isError()).toBeTrue();
-      });
-
-      it('creates an AsyncResult with a custom error from a None AsyncOption', async () => {
-        const task = AsyncOption.none<string>().toAsyncResult(
-          () => new Error('computation failed'),
-        );
-
-        expectTypeOf(task).toEqualTypeOf<AsyncResult<string, Error>>();
-        const result = await task;
-
-        expect(result.isError()).toBeTrue();
-        expect(result.unwrapError()).toEqual(new Error('computation failed'));
-      });
-    });
-
     describe('toArray', () => {
-      it('creates an array with the value if AsyncOption is Some', async () => {
-        const task = AsyncOption.some('hello world').toArray();
+      it('creates an array with the value if OptionAsync is Some', async () => {
+        const task = OptionAsync.some('hello world').toArray();
 
         const array = await task;
         expectTypeOf(array).toEqualTypeOf<string[]>();
@@ -711,8 +825,8 @@ describe('AsyncOption', () => {
         expect(array).toEqual(['hello world']);
       });
 
-      it('creates an empty array if AsyncOption is None', async () => {
-        const task = AsyncOption.none<string>().toArray();
+      it('creates an empty array if OptionAsync is None', async () => {
+        const task = OptionAsync.none<string>().toArray();
 
         const array = await task;
         expectTypeOf(array).toEqualTypeOf<string[]>();
@@ -720,134 +834,45 @@ describe('AsyncOption', () => {
         expect(array).toEqual([]);
       });
     });
-  });
 
-  describe('transformations', () => {
-    describe('map', () => {
-      it('maps the value of a AsyncOption when it is a `Some`', async () => {
-        const mapper = vi.fn((str: string) => str.toUpperCase());
+    describe('toAsyncResult', () => {
+      it('creates an AsyncResult with an `Ok` from a Some OptionAsync', async () => {
+        const task = OptionAsync.some('hello world').toAsyncResult();
 
-        const task = AsyncOption.some('hello world').map(mapper);
-        // asserting lazy evaluation of function being enqueued
-        expect(mapper).not.toHaveBeenCalled();
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, NoValueError>>();
+        const result = await task;
 
-        const option = await task;
-        expect(option.isSome()).toBeTrue();
-        expect(option.equals(Option.some('HELLO WORLD'))).toBeTrue();
-
-        expect(mapper).toHaveBeenCalledWith('hello world');
+        expect(result.isOk()).toBeTrue();
+        expect(result.equals(Result.fromNullable('hello world'))).toBeTrue();
       });
 
-      it('is a no-op if AsyncOption is a None', async () => {
-        const mapper = vi.fn((str: string) => str.toUpperCase());
+      it('creates an AsyncResult with an `Error` from a None OptionAsync', async () => {
+        const task = OptionAsync.none<string>().toAsyncResult();
 
-        const task = AsyncOption.none<string>().map(mapper);
-        // asserting lazy evaluation of function being enqueued
-        expect(mapper).not.toHaveBeenCalled();
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, NoValueError>>();
+        const result = await task;
 
-        const option = await task;
-        expect(option.isNone()).toBeTrue();
+        expect(result.isError()).toBeTrue();
+      });
 
-        expect(mapper).not.toHaveBeenCalled();
+      it('creates an AsyncResult with a custom error from a None OptionAsync', async () => {
+        const task = OptionAsync.none<string>().toAsyncResult(
+          () => new Error('computation failed'),
+        );
+
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<string, Error>>();
+        const result = await task;
+
+        expect(result.isError()).toBeTrue();
+        expect(result.unwrapError()).toEqual(new Error('computation failed'));
       });
     });
 
-    describe('andThen', () => {
-      it('transforms the `Some` value while flattening the `AsyncOption`', async () => {
-        const task = AsyncOption.some('hello world').andThen((str) =>
-          AsyncOption.some(str.toUpperCase()),
-        );
-
-        const option = await task;
-        expect(option.isSome()).toBeTrue();
-        expect(option.equals(Option.some('HELLO WORLD'))).toBeTrue();
-      });
-
-      it('has no effect when AsyncOption is a None and flattens the AsyncOption', async () => {
-        const task = AsyncOption.none<string>().andThen(() =>
-          AsyncOption.fromNullable('hello world'),
-        );
-
-        const option = await task;
-        expect(option.isNone()).toBeTrue();
-      });
-
-      it('transforms the `Some` value while lifting an `Option` to an `AsyncOption` and flattens it', async () => {
-        const task = AsyncOption.some('hello world').andThen((str) =>
-          Option.some(str.toUpperCase()),
-        );
-
-        const option = await task;
-        expect(option.isSome()).toBeTrue();
-        expect(option.equals(Option.some('HELLO WORLD'))).toBeTrue();
-      });
-    });
-
-    describe('filter', () => {
-      it('keeps the Some value if the predicate is fulfilled', async () => {
-        const task = AsyncOption.some('hello world').filter(
-          (value) => value.length > 0,
-        );
-
-        const option = await task;
-        expect(option.isSome()).toBeTrue();
-        expect(option.equals(Option.some('hello world'))).toBeTrue();
-      });
-
-      it('filters the Some value out if the predicate is not fulfilled', async () => {
-        const task = AsyncOption.some('hello world').filter(
-          (value) => value.length === 0,
-        );
-
-        const option = await task;
-        expect(option.isNone()).toBeTrue();
-      });
-
-      it('has no effect if the AsyncOption is a None', async () => {
-        const predicate = vi.fn((value: string) => value.length > 0);
-
-        const task = AsyncOption.none<string>().filter(predicate);
-
-        const option = await task;
-        expect(option.isNone()).toBeTrue();
-
-        expect(predicate).not.toHaveBeenCalled();
-      });
-    });
-  });
-
-  describe('fallbacks', () => {
-    describe('or', () => {
-      it('returns the Some value if the AsyncOption is a Some', async () => {
-        const fallback = vi.fn(() => AsyncOption.some('Good bye!'));
-
-        const task = AsyncOption.some('hello world').or(fallback);
-
-        const option = await task;
-        expect(option.isSome()).toBeTrue();
-        expect(option.equals(Option.some('hello world'))).toBeTrue();
-
-        expect(fallback).not.toHaveBeenCalled();
-      });
-
-      it('returns the fallback value if the AsyncOption is a None', async () => {
-        const fallback = vi.fn(() => AsyncOption.some('Good bye!'));
-
-        const task = AsyncOption.none<string>().or(fallback);
-
-        const option = await task;
-        expect(option.isSome()).toBeTrue();
-        expect(option.equals(Option.some('Good bye!'))).toBeTrue();
-      });
-    });
-  });
-
-  describe('other', () => {
     describe('tap', () => {
-      it('executes the callback if the AsyncOption is a Some while ignoring the returned value and preserving the original value of the `AsyncOption`', async () => {
+      it('executes the callback if the OptionAsync is a Some while ignoring the returned value and preserving the original value of the `OptionAsync`', async () => {
         const callback = vi.fn((value: string) => value.toUpperCase());
 
-        const task = AsyncOption.some('hello world').tap(callback);
+        const task = OptionAsync.some('hello world').tap(callback);
 
         const option = await task;
         expect(option.isSome()).toBeTrue();
@@ -856,10 +881,10 @@ describe('AsyncOption', () => {
         expect(callback).toHaveBeenCalledWith('hello world');
       });
 
-      it('does not execute the callback if the AsyncOption is a None', async () => {
+      it('does not execute the callback if the OptionAsync is a None', async () => {
         const callback = vi.fn((value: string) => value.toUpperCase());
 
-        const task = AsyncOption.none<string>().tap(callback);
+        const task = OptionAsync.none<string>().tap(callback);
 
         const option = await task;
         expect(option.isNone()).toBeTrue();

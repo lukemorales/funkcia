@@ -1,18 +1,20 @@
-import type { Option } from './option';
-import type { AsyncOption } from './option.async';
-import type { Result } from './result';
-import type { AsyncResult } from './result.async';
+import type { OptionAsyncProxy } from './option.async.proxy';
+import type { None, Some } from './option.proxy';
+import type { ResultAsyncProxy } from './result.async.proxy';
+import type { Err, Ok } from './result.proxy';
 
 class FunkciaError extends Error {}
 
 type Store = {
-  Result?: typeof Result;
-  Option?: typeof Option;
-  AsyncOption?: typeof AsyncOption;
-  AsyncResult?: typeof AsyncResult;
+  Some?: typeof Some;
+  None?: typeof None;
+  Ok?: typeof Ok;
+  Err?: typeof Err;
+  OptionAsync?: typeof OptionAsyncProxy;
+  ResultAsync?: typeof ResultAsyncProxy;
 };
 
-type Container = keyof Store;
+type Constructors = keyof Store & string;
 
 export class FunkciaStore {
   private static store: Store = {};
@@ -24,36 +26,48 @@ export class FunkciaStore {
     if (!container) throw new FunkciaError(`${name} is not registered`);
   }
 
-  static register(container: Store[Container] & {}): () => void {
-    const name = container.name as Container;
-    this.store[name] = container as never;
+  static register(constructor: Store[Constructors] & {}): () => void {
+    const name = constructor.name.replace('Proxy', '') as Constructors;
+    this.store[name] = constructor as never;
 
     return () => {
       this.store[name] = undefined as never;
     };
   }
 
-  static get Result(): typeof Result {
-    this.assert(this.store.Result, 'Result');
+  static get Some(): typeof Some {
+    this.assert(this.store.Some, 'Some');
 
-    return this.store.Result;
+    return this.store.Some;
   }
 
-  static get Option(): typeof Option {
-    this.assert(this.store.Option, 'Option');
+  static get None(): typeof None {
+    this.assert(this.store.None, 'None');
 
-    return this.store.Option;
+    return this.store.None;
   }
 
-  static get AsyncOption(): typeof AsyncOption {
-    this.assert(this.store.AsyncOption, 'AsyncOption');
+  static get Ok(): typeof Ok {
+    this.assert(this.store.Ok, 'Ok');
 
-    return this.store.AsyncOption;
+    return this.store.Ok;
   }
 
-  static get AsyncResult(): typeof AsyncResult {
-    this.assert(this.store.AsyncResult, 'AsyncResult');
+  static get Err(): typeof Err {
+    this.assert(this.store.Err, 'Err');
 
-    return this.store.AsyncResult;
+    return this.store.Err;
+  }
+
+  static get OptionAsync(): typeof OptionAsyncProxy {
+    this.assert(this.store.OptionAsync, 'OptionAsync');
+
+    return this.store.OptionAsync;
+  }
+
+  static get ResultAsync(): typeof ResultAsyncProxy {
+    this.assert(this.store.ResultAsync, 'ResultAsync');
+
+    return this.store.ResultAsync;
   }
 }

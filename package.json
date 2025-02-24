@@ -103,7 +103,7 @@
         "error",
         "as-needed",
         {
-          "generators": "as-needed"
+          "generators": "never"
         }
       ],
       "@typescript-eslint/consistent-type-imports": [

@@ -1,19 +1,24 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition, import/export, @typescript-eslint/ban-types, require-yield, @typescript-eslint/method-signature-style */
+
 import type { DoNotation } from './do-notation';
 import type { NoValueError } from './exceptions';
-import { UnwrapError } from './exceptions';
-import { alwaysNull, alwaysUndefined, identity } from './functions';
-import { FunkciaStore } from './funkcia-store';
+import { identity, invoke } from './functions';
 import type { EqualityFn } from './internals/equality';
-import { isEqual } from './internals/equality';
-import type { Falsy, Nullable, Thunk, Tuple } from './internals/types';
-import { beautify, emptyObject } from './internals/utils';
-import type { AsyncOption } from './option.async';
+import type {
+  $Iterable,
+  AnyUnaryFn,
+  Falsy,
+  Nullable,
+  Thunk,
+  Tuple,
+} from './internals/types';
+import { emptyObject } from './internals/utils';
+import type { OptionAsync } from './option.async';
+import type { AnyOption, NoneTrait, SomeTrait } from './option.proxy';
+import { isOption, None, Some } from './option.proxy';
 import type { Predicate } from './predicate';
 import type { Result } from './result';
-import type { AsyncResult } from './result.async';
-
-const Some = Symbol.for('Option::Some');
-const None = Symbol.for('Option::None');
+import type { ResultAsync } from './result.async';
 
 /**
  * `Option` represents an optional value: every `Option` is either `Some`,
@@ -23,23 +28,84 @@ const None = Symbol.for('Option::None');
  * return a value due to failure or missing data, such as a network request,
  * a file read, or a database query.
  */
-export class Option<Value> implements DoNotation.Signed<'Option', Value> {
-  readonly #tag: Option.$some | Option.$none;
+export const Option: OptionTrait = invoke((): OptionTrait => {
+  const fromNullable: OptionTrait['fromNullable'] = (value) =>
+    value == null ? (None() as never) : Some(value);
 
-  readonly #value: Value;
+  const tryCatch: OptionTrait['try'] = (fn) => {
+    try {
+      return fromNullable(fn());
+    } catch {
+      return None() as never;
+    }
+  };
 
-  private constructor(tag: Option.$none);
+  const use: OptionTrait['use'] = (generator) => {
+    const { done, value } = generator().next();
 
-  private constructor(tag: Option.$some, value: Value);
+    return (done ? value : None()) as never;
+  };
 
-  private constructor(tag: Option.$some | Option.$none, value?: any) {
-    this.#tag = tag;
-    this.#value = value;
-  }
+  return {
+    is: isOption,
+    some: Some,
+    of: Some,
+    none: None as never,
+    fromNullable,
+    fromFalsy(value) {
+      return (value ? Some(value) : None()) as never;
+    },
+    get Do() {
+      return Some(emptyObject) as never;
+    },
+    try: tryCatch,
+    firstSomeOf(options) {
+      for (const option of options) {
+        if (option.isSome()) return option;
+      }
 
-  // ------------------------
-  // #region: CONSTRUCTORS---
-  // ------------------------
+      return None() as never;
+    },
+    predicate(criteria: AnyUnaryFn) {
+      return (value: any) => Some(value).filter(criteria);
+    },
+    fun: identity as never,
+    enhance(callback) {
+      return (...args) => tryCatch(() => callback(...args));
+    },
+    use,
+    createUse(generator) {
+      return (...args) => use(() => generator(...args));
+    },
+    values(options) {
+      return options.reduce<Array<DoNotation.Unsign<any>>>((acc, option) => {
+        if (option.isSome()) acc.push(option.unwrap());
+
+        return acc;
+      }, []);
+    },
+  };
+});
+
+interface OptionTrait {
+  /**
+   * Asserts that an *unknown* value is an `Option`.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * declare const maybeAnOptionWithUser: unknown;
+   *
+   * if (Option.is(maybeAnOptionWithUser)) {
+   * //                     ┌─── Option<unknown>
+   * //                     ▼
+   *   const user = maybeAnOptionWithUser.filter(User.is);
+   * //       ▲
+   * //       └─── Option<User>
+   * }
+   */
+  is(value: unknown): value is Option<unknown>;
 
   /**
    * Constructs a `Some` `Option`, representing an optional value that exists.
@@ -54,9 +120,7 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * // Output: Some(10)
    * ```
    */
-  static some<Value extends {}>(value: Value): Option<Value> {
-    return new Option(Some, value);
-  }
+  some<Value extends {}>(value: Value): Option<Value>;
 
   /**
    * @alias
@@ -66,13 +130,12 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * ```ts
    * import { Option } from 'funkcia';
    *
-   * declare const divisor: number;
    * //       ┌─── Option<number>
    * //       ▼
    * const option = Option.of(10);
    * // Output: Some(10)
    */
-  static of: <Value extends {}>(value: Value) => Option<Value> = Option.some; // eslint-disable-line @typescript-eslint/member-ordering, @typescript-eslint/no-shadow
+  of<Value extends {}>(value: Value): Option<Value>;
 
   /**
    * Constructs a `None` `Option`, representing an optional value that does not exist.
@@ -90,9 +153,7 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * }
    * ```
    */
-  static none<Value = never>(): Option<NonNullable<Value>> {
-    return new Option(None);
-  }
+  none<Value = never>(): Option<NonNullable<Value>>;
 
   /**
    * Constructs an `Option` from a nullable value.
@@ -104,18 +165,14 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * ```ts
    * import { Option } from 'funkcia';
    *
-   * declare const user: User | null
+   * declare const user: User | null;
    *
    * //       ┌─── Option<User>
    * //       ▼
    * const option = Option.fromNullable(user);
    * ```
    */
-  static fromNullable<Value>(
-    value: Nullable<Value>,
-  ): Option<NonNullable<Value>> {
-    return value != null ? Option.some(value) : Option.none();
-  }
+  fromNullable<Value>(value: Nullable<Value>): Option<NonNullable<Value>>;
 
   /**
    * Constructs an `Option` from a falsy value.
@@ -136,11 +193,47 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * const option = Option.fromFalsy(getEnv('BASE_URL'));
    * ```
    */
-  static fromFalsy<Value>(
+  fromFalsy<Value>(
     value: Value | Falsy,
-  ): Option<Exclude<NonNullable<Value>, Falsy>> {
-    return (value ? Option.some(value) : Option.none()) as never;
-  }
+  ): Option<Exclude<NonNullable<Value>, Falsy>>;
+
+  /**
+   * Initiates a `Do-notation` for the `Option` type, allowing to write code
+   * in a more declarative style, similar to the “do notation” in other programming languages.
+   * It provides a way to define variables and perform operations on them
+   * using functions like `bind` and `let`, piping the returned values into a context object.
+   *
+   * Within the `Do` scope, you can use the `bind` function to bind a value to a variable.
+   * The `bind` function takes two arguments: the name of the variable and a function that returns an `Option` to be bound.
+   * If the returned `Option` is `Some`, the value is assigned to the variable in the context object.
+   * If the returned `Option` is `None`, the parent `Option` running the `Do` simulation becomes a `None`.
+   *
+   * You can also use the `let` function to bind a simple value to a variable.
+   * The `let` function takes two arguments: the name of the variable and a function that returns a value to be bound.
+   * You can return any value from the function, like a `string`, `number`, `boolean` etc,
+   * and it will be assigned to the variable in the context object.
+   * If the returned value is `null` or `undefined`, the parent `Option` running the `Do` simulation becomes a `None`.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * declare function getUser(id: string): Option<User>;
+   * declare function getUserScore(user: User): Option<UserScore>;
+   * declare function getUserLevel(user: User, score: UserScore): UserLevel;
+   *
+   * //        ┌─── Option<UserLevel>
+   * //        ▼
+   * const userLevel = Option.Do
+   *   .bind('user', () => getUser('user_123'))
+   * //                 ┌─── { user: User }
+   * //                 ▼
+   *   .bind('score', (ctx) => getUserScore(ctx.user)) // getUserScore is dependent on getUser result
+   *   .map((ctx) => getUserLevel(ctx.user, ctx.score));
+   * //       ▲
+   * //       └─── { user: User; score: UserScore }
+   */
+  get Do(): Option<DoNotation.Sign>;
 
   /**
    * Constructs an `Option` from a function that may throw.
@@ -158,37 +251,33 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * // Output: None
    * ```
    */
-  static try<Value>(fn: Thunk<Value>): Option<NonNullable<Value>> {
-    try {
-      return Option.fromNullable(fn());
-    } catch {
-      return Option.none();
-    }
-  }
+  try<Value>(fn: Thunk<Value>): Option<NonNullable<Value>>;
 
   /**
-   * Converts a function that may throw or return a nullable value
-   * to an enhanced function that returns an `Option`.
+   * Returns the first `Option.Some` value in the iterable. If all values are `Option.None`, returns `Option.None`.
    *
    * @example
    * ```ts
    * import { Option } from 'funkcia';
    *
-   * //         ┌─── (text: string, reviver?: Function) => Option<any>
-   * //         ▼
-   * const safeJsonParse = Option.liftFun(JSON.parse);
+   * interface ContactInformation {
+   *   primary: Option<string>;
+   *   secondary: Option<string>;
+   *   emergency: Option<string>;
+   * }
    *
-   * //       ┌─── Option<any>
+   * declare const contact: ContactInformation;
+   *
+   * //       ┌─── Option<string>
    * //       ▼
-   * const profile = safeJsonParse('{ "name": "John Doe" }');
-   * // Output: Some({ name: 'John Doe' })
+   * const option = Option.firstSomeOf([
+   *   contact.primary,
+   *   contact.secondary,
+   *   contact.emergency,
+   * ]);
    * ```
    */
-  static liftFun<Args extends readonly unknown[], Value>(
-    callback: (...args: Args) => Value,
-  ): (...args: Args) => Option<NonNullable<Value>> {
-    return (...args) => Option.try(() => callback(...args));
-  }
+  firstSomeOf<Value>(options: Iterable<Option<Value>>): Option<Value>;
 
   /**
    * Returns a function that asserts that a value passes the test implemented by the provided function,
@@ -214,7 +303,7 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * const option = ensureCircle(input);
    * ```
    */
-  static predicate<Criteria extends Predicate.Guard<any, any>>(
+  predicate<Criteria extends Predicate.Guard<any, any>>(
     criteria: Criteria,
   ): (...args: Parameters<Criteria>) => Option<Predicate.Guarded<Criteria>>;
 
@@ -228,7 +317,6 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * ```ts
    * import { Option } from 'funkcia';
    *
-   *
    * //          ┌─── (value: number) => Option<number>
    * //          ▼
    * const ensurePositive = Option.predicate(
@@ -240,22 +328,136 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * const option = ensurePositive(input);
    * ```
    */
-  static predicate<Criteria extends Predicate.Predicate<any>>(
+  predicate<Criteria extends Predicate.Predicate<any>>(
     criteria: Criteria,
   ): (...args: Parameters<Criteria>) => Option<Parameters<Criteria>[0]>;
 
-  static predicate(
-    criteria: Predicate.Predicate<any>,
-  ): (input: any) => Option<any> {
-    return (input) => Option.of(input).filter(criteria);
-  }
+  /**
+   * Utility to ensure a function always returns an `Option`.
+   *
+   * This method offers improved type inference for the function's
+   * return value and guarantees that the function will consistently return an `Option`.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * // When defining a normal function allowing typescript to infer the return type,
+   * // sometimes the return type will be a union of `Option<T>` and `Option<U>` and `Option<never>`
+   * function hasAcceptedTermsOfService(user: User) {
+   *   if (typeof user.termsOfService !== 'boolean')
+   *     return Option.none();
+   *
+   *   return user.termsOfService
+   *     ? Option.some('ACCEPTED' as const)
+   *     : Option.some('DECLINED' as const);
+   * }
+   *
+   * //       ┌─── Option<'ACCEPTED'> | Option<'DECLINED'> | Option<never>
+   * //       ▼
+   * const option = hasAcceptedTermsOfService(user);
+   *
+   * // When using the `fun` method, the return type is always `Option<T | U>`
+   * const improvedTermsOfServiceCheck = Option.fun(hasAcceptedTermsOfService);
+   *
+   * //       ┌─── Option<'ACCEPTED' | 'DECLINED'>
+   * //       ▼
+   * const option = improvedTermsOfServiceCheck(user);
+   * ```
+   */
+  fun<
+    Callback extends
+      | ((...args: any[]) => AnyOption)
+      | ((...args: any[]) => Promise<AnyOption>),
+  >(
+    fn: Callback,
+  ): (
+    ...args: Parameters<Callback>
+  ) => ReturnType<Callback> extends Promise<any>
+    ? Promise<Option<Option.Unwrap<Awaited<ReturnType<Callback>>>>>
+    : Option<Option.Unwrap<ReturnType<Callback>>>;
 
-  // ----------------
-  // #endregion -----
+  /**
+   * Converts a function that may throw or return a nullable value
+   * to an enhanced function that returns an `Option`.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * //         ┌─── (text: string, reviver?: Function) => Option<any>
+   * //         ▼
+   * const safeJsonParse = Option.enhance(JSON.parse);
+   *
+   * //       ┌─── Option<any>
+   * //       ▼
+   * const profile = safeJsonParse('{ "name": "John Doe" }');
+   * // Output: Some({ name: 'John Doe' })
+   * ```
+   */
+  enhance<Args extends readonly unknown[], Value>(
+    callback: (...args: Args) => Value,
+  ): (...args: Args) => Option<NonNullable<Value>>;
 
-  // ------------------------
-  // #region: COMBINATORS---
-  // ------------------------
+  /**
+   * Returns a function that evaluates the declared generator with the provided arguments, early returning when an `Option.None` is propagated
+   * or returning the `Option` returned by the generator.
+   *
+   * - Each yield* automatically unwraps the `Option` value or propagates `None`.
+   *
+   * - If any operation returns `Option.None`, the entire generator exits early.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * const safeParseInt = Option.enhance(parseInt);
+   *
+   * //       ┌─── Option<number>
+   * //       ▼
+   * const option = Option.use(function* () {
+   *   const x: number = yield* safeParseInt('10');
+   *   const y: number = yield* safeParseInt('invalid'); // returns Option.None immediately
+   *
+   *   return Option.some(x + y); // doesn't run
+   * });
+   * // Output: None
+   * ```
+   */
+  use<$Option extends AnyOption>(
+    generator: () => Generator<never, $Option>,
+  ): Option<Option.Unwrap<$Option>>;
+
+  /**
+   * Returns a function that evaluates a generator when called, early returning when an `Option.None` is propagated
+   * or returning the `Option` returned by the generator.
+   *
+   * - Each yield* automatically unwraps the `Option` value or propagates `None`.
+   *
+   * - If any operation returns `Option.None`, the entire generator exits early.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * const safeParseInt = Option.enhance(parseInt);
+   *
+   * //       ┌─── (a: string, b: string) => Option<number>
+   * //       ▼
+   * const execute = Option.createUse(function* (a: string, b: string) {
+   *   const x: number = yield* safeParseInt(a);
+   *   const y: number = yield* safeParseInt(b);
+   *
+   *   return Option.some(x + y);
+   * });
+   *
+   * const option = execute('10', '20');
+   * // Output: Some(30)
+   * ```
+   */
+  createUse<Args extends readonly unknown[], $Option extends AnyOption>(
+    generator: (...args: Args) => Generator<never, $Option>,
+  ): (...args: Args) => Option<Option.Unwrap<$Option>>;
 
   /**
    * Given an array of `Option`s, returns an array containing only the values inside `Option.Some`.
@@ -274,117 +476,21 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * // Output: [1, 3]
    * ```
    */
-  static values<Value>(
-    options: Array<Option<Value>>,
-  ): Array<DoNotation.Unsign<Value>> {
-    return options.reduce<Array<DoNotation.Unsign<Value>>>((acc, option) => {
-      if (option.isSome()) acc.push(option.unwrap());
+  values<$Options extends AnyOption>(
+    options: $Options[],
+  ): Array<Option.Unwrap<DoNotation.Unsign<$Options>>>;
+}
 
-      return acc;
-    }, []);
-  }
-
-  /**
-   * Combines two `Option`s into a single `Option` containing a tuple of their values,
-   * if both `Option`s are `Some` variants, otherwise, returns `None`.
-   *
-   * @example
-   * ```ts
-   * import { Option } from 'funkcia';
-   *
-   * const first = Option.some('hello');
-   * const second = Option.some('world');
-   *
-   * //       ┌─── Option<[string, string]>
-   * //       ▼
-   * const strings = first.zip(second);
-   * // Output: Some(['hello', 'world'])
-   * ```
-   */
-  zip<Value2 extends {}>(
-    that: Option<Value2>,
-  ): Option<Tuple<DoNotation.Unsign<Value>, DoNotation.Unsign<Value2>>> {
-    return this.andThen((a) => that.map((b) => [a, b]));
-  }
-
-  /**
-   * Combines two `Option`s into a single `Option`. The new value is produced
-   * by applying the given function to both values, if both `Option`s are `Some` variants,
-   * otherwise, returns `None`.
-   *
-   * @example
-   * ```ts
-   * import { Option } from 'funkcia';
-   *
-   *
-   * const first = Option.some('hello');
-   * const second = Option.some('world');
-   *
-   * //        ┌─── Option<string>
-   * //        ▼
-   * const greeting = first.zipWith(second, (a, b) => `${a} ${b}`);
-   * // Output: Some('hello world')
-   * ```
-   */
-  zipWith<Value2 extends {}, Output extends {}>(
-    that: Option<Value2>,
-    fn: (
-      arg0: DoNotation.Unsign<Value>,
-      arg1: DoNotation.Unsign<Value2>,
-    ) => Output,
-  ): Option<Output> {
-    return this.zip(that).map((options) => fn(...options) as never);
-  }
-
-  // ----------------
-  // #endregion -----
-
-  // -----------------------
-  // #region: DO-NOTATION---
-  // -----------------------
-
-  /**
-   * Initiates a `Do-notation` for the `Option` type, allowing to write code
-   * in a more declarative style, similar to the “do notation” in other programming languages.
-   * It provides a way to define variables and perform operations on them
-   * using functions like `bind` and `let`, piping the returned values into a context object.
-   *
-   * Within the `Do` scope, you can use the `bind` function to bind a value to a variable.
-   * The `bind` function takes two arguments: the name of the variable and a function that returns an `Option` to be bound.
-   * If the returned `Option` is `Some`, the value is assigned to the variable in the context object.
-   * If the returned `Option` is `None`, the parent `Option` running the `Do` simulation becomes a `None`.
-   *
-   * You can also use the `let` function to bind a simple value to a variable.
-   * The `let` function takes two arguments: the name of the variable and a function that returns a value to be bound.
-   * You can return any value from the function, like a `string`, `number`, `boolean` etc,
-   * and it will be assigned to the variable in the context object.
-   * If the returned value is `null` or `undefined`, the parent `Option` running the `Do` simulation becomes a `None`.
-   *
-   * @example
-   * ```ts
-   * import { Option } from 'funkcia';
-   *
-   * declare function getUser(id: string): Option<User>;
-   *
-   * declare function getUserScore(user: User): Option<UserScore>;
-   *
-   * declare function getUserLevel(user: User, score: UserScore): UserLevel;
-   *
-   * //        ┌─── Option<UserLevel>
-   * //        ▼
-   * const userLevel = Option.Do
-   *   .bind('user', () => getUser('user_123'))
-   * //                 ┌─── { user: User }
-   * //                 ▼
-   *   .bind('score', (ctx) => getUserScore(ctx.user)) // getUserScore is dependent on getUser result
-   *   .map((ctx) => getUserLevel(ctx.user, ctx.score));
-   * //       ▲
-   * //       └─── { user: User; score: UserScore }
-   */
-  static get Do(): Option<DoNotation.Sign> {
-    return new Option(Some, emptyObject) as never;
-  }
-
+/**
+ * `Option` represents an optional value: every `Option` is either `Some`,
+ * and contains a value, or `None`, and it's empty.
+ *
+ * It is commonly used to represent the result of a function that may not
+ * return a value due to failure or missing data, such as a network request,
+ * a file read, or a database query.
+ */
+export interface Option<Value>
+  extends $Iterable<never, DoNotation.Unsign<Value>> {
   /**
    * Initiates a `Do-notation` with the current `Option`, binding it to a
    * context object with the provided key.
@@ -394,9 +500,7 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * import { Option } from 'funkcia';
    *
    * declare function getUser(id: string): Option<User>;
-   *
    * declare function getUserScore(user: User): Option<UserScore>;
-   *
    * declare function getUserLevel(user: User, score: UserScore): UserLevel;
    *
    * //        ┌─── Option<UserLevel>
@@ -413,9 +517,7 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    */
   bindTo<Key extends string>(
     key: Key,
-  ): Option<DoNotation.Sign<{ [K in Key]: Value }>> {
-    return Option.Do.bind(key as never, () => this as never) as never;
-  }
+  ): Option<DoNotation.Sign<{ [K in Key]: Value }>>;
 
   /**
    * Binds an `Option` to the context object in a `Do-notation`.
@@ -428,9 +530,7 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * import { Option } from 'funkcia';
    *
    * declare function getUser(id: string): Option<User>;
-   *
    * declare function getUserScore(user: User): Option<UserScore>;
-   *
    * declare function getUserLevel(user: User, score: UserScore): UserLevel;
    *
    * //        ┌─── Option<UserLevel>
@@ -457,15 +557,7 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
         ? Value[K]
         : U;
     }>
-  > {
-    return (this as Option<Value>).andThen((ctx) =>
-      fn(ctx).map(
-        (value) =>
-          // eslint-disable-next-line prefer-object-spread
-          Object.assign({ [key]: value }, ctx) as {},
-      ),
-    ) as never;
-  }
+  >;
 
   /**
    * Binds a raw value to the context object in a `Do-notation`.
@@ -492,29 +584,164 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
       ? this
       : DoNotation.Forbid<'Option', 'let'>,
     key: Exclude<Key, keyof Value>,
-    fn: (
-      ctx: DoNotation.Unsign<Value>,
-    ) => Option.NoOptionGuard<ValueToBind, 'bind'>,
+    fn: (ctx: DoNotation.Unsign<Value>) => NoOptionGuard<ValueToBind, 'bind'>,
   ): Option<
     DoNotation.Sign<{
       [K in Key | keyof DoNotation.Unsign<Value>]: K extends keyof Value
         ? Value[K]
         : NonNullable<ValueToBind>;
     }>
-  > {
-    // @ts-expect-error the compiler is complaining because of DoNotation check in argument `this`
-    return (this as Option<Value>).bind(
-      key,
-      (ctx) => Option.fromNullable(fn(ctx)) as never,
-    );
-  }
+  >;
 
-  // ----------------
-  // #endregion -----
+  /**
+   * Applies a callback function to the value of the `Option` when it is `Some`,
+   * returning a new `Option` containing the new value.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * //       ┌─── Option<number>
+   * //       ▼
+   * const option = Option.of(10).map(number => number * 2);
+   * // Output: Some(20)
+   * ```
+   */
+  map<Output>(
+    onSome: (
+      value: DoNotation.Unsign<Value>,
+    ) => NoOptionGuard<Output, 'andThen'>,
+  ): unknown extends Output ? Option<Output> : Option<NonNullable<Output>>;
 
-  // -----------------------
-  // #region: CONVERSIONS---
-  // -----------------------
+  /**
+   * Applies a callback function to the value of the `Option` when it is `Some`,
+   * and returns the new value.
+   *
+   * This is similar to `chain` (also known as `flatMap`), with the difference
+   * that the callback must return an `Option`, not a raw value.
+   * This allows chaining multiple calls that return `Option`s together.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * declare function readFile(path: string): Option<string>;
+   * declare function parseJsonFile(contents: string): Option<FileContent>;
+   *
+   * //       ┌─── Option<FileContent>
+   * //       ▼
+   * const option = readFile('data.json').andThen(parseJsonFile);
+   * ```
+   */
+  andThen<$Option extends AnyOption>(
+    onSome: (value: DoNotation.Unsign<Value>) => $Option,
+  ): Option<Option.Unwrap<$Option>>;
+
+  /**
+   * Asserts that the `Option` value passes the test implemented by the provided function,
+   * narrowing down the value to the provided type predicate.
+   *
+   * If the test fails, the value is filtered out of the `Option`, returning a `None` instead.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * declare const input: Shape;
+   *
+   * //      ┌─── Option<Circle>
+   * //      ▼
+   * const circle = Option.of(input).filter(
+   *   (shape): shape is Circle => shape.kind === 'circle',
+   * );
+   * ```
+   */
+  filter<Output extends DoNotation.Unsign<Value>>(
+    refinement: Predicate.Guard<DoNotation.Unsign<Value>, Output>,
+  ): Option<Output>;
+  /**
+   * Asserts that the `Option` value passes the test implemented by the provided function.
+   *
+   * If the test fails, the value is filtered out of the `Option`, returning a `None` instead.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * //       ┌─── Option<User>
+   * //       ▼
+   * const option = Option.of(user).filter((user) => user.age >= 21);
+   * ```
+   */
+  filter(
+    predicate: Predicate.Predicate<DoNotation.Unsign<Value>>,
+  ): Option<Value>;
+
+  /**
+   * Replaces the current `Option` with the provided fallback `Option` when it is `None`.
+   *
+   * If the current `Option` is `Some`, it returns the current `Option`.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * const option = Option.some('Paul').or(() => Option.some('John'));
+   * // Output: Some('Paul')
+   *
+   * const greeting = Option.none().or(() => Option.some('John'));
+   * // Output: Some('John')
+   * ```
+   */
+  or(onNone: Thunk<Option<Value>>): Option<Value>;
+
+  /**
+   * Combines two `Option`s into a single `Option` containing a tuple of their values,
+   * if both `Option`s are `Some` variants, otherwise, returns `None`.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * const first = Option.some('hello');
+   * const second = Option.some('world');
+   *
+   * //       ┌─── Option<[string, string]>
+   * //       ▼
+   * const strings = first.zip(second);
+   * // Output: Some(['hello', 'world'])
+   * ```
+   */
+  zip<Value2 extends {}>(
+    that: Option<Value2>,
+  ): Option<Tuple<DoNotation.Unsign<Value>, DoNotation.Unsign<Value2>>>;
+
+  /**
+   * Combines two `Option`s into a single `Option`. The new value is produced
+   * by applying the given function to both values, if both `Option`s are `Some` variants,
+   * otherwise, returns `None`.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   *
+   * const first = Option.some('hello');
+   * const second = Option.some('world');
+   *
+   * //        ┌─── Option<string>
+   * //        ▼
+   * const greeting = first.zipWith(second, (a, b) => `${a} ${b}`);
+   * // Output: Some('hello world')
+   * ```
+   */
+  zipWith<Value2 extends {}, Output extends {}>(
+    that: Option<Value2>,
+    fn: (
+      arg0: DoNotation.Unsign<Value>,
+      arg1: DoNotation.Unsign<Value2>,
+    ) => Output,
+  ): Option<Output>;
 
   /**
    * Compare the `Option` against the possible patterns and then execute code based on which pattern matches.
@@ -524,28 +751,26 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * import { Option } from 'funkcia';
    *
    * declare function readFile(path: string): Option<string>;
+   * declare function parseSalesRecords(content: string): Option<SalesRecord[]>;
+   * declare function aggregateSales(salesRecords: SalesRecord[]): AggregatedSaleRecord[];
    *
-   * declare function parseJsonFile(contents: string): Option<FileContent>;
-   *
-   * //         ┌─── string
-   * //         ▼
-   * const userGreeting = readFile('data.json')
-   *   .andThen(parseJsonFile)
+   * //             ┌─── AggregatedSaleRecord[]
+   * //             ▼
+   * const aggregatedSalesRecords = readFile('data.json')
+   *   .andThen(parseSalesRecords)
    *   .match({
    *     Some(contents) {
-   *       return processFile(contents);
+   *       return aggregateSales(contents);
    *     },
    *     None() {
-   *       return 'File is invalid JSON';
+   *       return [];
    *     },
    *   });
    * ```
    */
   match<Output, NoneOutput>(
     cases: Option.Match<DoNotation.Unsign<Value>, Output, NoneOutput>,
-  ): Output | NoneOutput {
-    return this.isSome() ? cases.Some(this.#value as never) : cases.None();
-  }
+  ): Output | NoneOutput;
 
   /**
    * Unwraps the `Option` value.
@@ -556,19 +781,17 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * ```ts
    * import { Option } from 'funkcia';
    *
-   * //     ┌─── User
-   * //     ▼
-   * const user = Option.some(databaseUser).unwrap();
+   * declare const findUserById: (id: string) => User | null;
    *
-   * const team = Option.none().unwrap();
+   * //     ┌─── 10
+   * //     ▼
+   * const user = Option.some(findUserById('user_123')).unwrap();
+   *
+   * const team = Option.none<Team>().unwrap();
    * // Output: Uncaught exception: 'called "Option.unwrap()" on a "None" value'
    * ```
    */
-  unwrap(): DoNotation.Unsign<Value> {
-    return this.unwrapOr(() => {
-      throw new UnwrapError('Option');
-    }) as never;
-  }
+  unwrap(): DoNotation.Unsign<Value>;
 
   /**
    * Unwraps the `Option` value.
@@ -590,9 +813,7 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * // Output: 'sk_test_9FK7CiUnKaU'
    * ```
    */
-  unwrapOr(onNone: Thunk<DoNotation.Unsign<Value>>): DoNotation.Unsign<Value> {
-    return this.match({ Some: identity, None: onNone });
-  }
+  unwrapOr(onNone: () => DoNotation.Unsign<Value>): DoNotation.Unsign<Value>;
 
   /**
    * Unwraps the value of the `Option` if it is a `Some`, otherwise returns `null`.
@@ -603,14 +824,14 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * ```ts
    * import { Option } from 'funkcia';
    *
+   * declare const findUserById: (id: string) => Option<User>;
+   *
    * //     ┌─── User | null
    * //     ▼
-   * const user = Option.some(databaseUser).unwrapOrNull();
+   * const user = findUserById('user_123').unwrapOrNull();
    * ```
    */
-  unwrapOrNull(): DoNotation.Unsign<Value> | null {
-    return this.unwrapOr(alwaysNull as never);
-  }
+  unwrapOrNull(): DoNotation.Unsign<Value> | null;
 
   /**
    * Unwraps the value of the `Option` if it is a `Some`, otherwise returns `undefined`.
@@ -621,14 +842,14 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * ```ts
    * import { Option } from 'funkcia';
    *
+   * declare const findUserById: (id: string) => Option<User>;
+   *
    * //     ┌─── User | undefined
    * //     ▼
-   * const user = Option.some(databaseUser).unwrapOrUndefined();
+   * const user = findUserById('user_123').unwrapOrUndefined();
    * ```
    */
-  unwrapOrUndefined(): DoNotation.Unsign<Value> | undefined {
-    return this.unwrapOr(alwaysUndefined as never);
-  }
+  unwrapOrUndefined(): DoNotation.Unsign<Value> | undefined;
 
   /**
    * Unwraps the `Option` value.
@@ -655,11 +876,7 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    */
   expect<Exception extends globalThis.Error>(
     onNone: Thunk<Exception>,
-  ): DoNotation.Unsign<Value> {
-    return this.unwrapOr(() => {
-      throw onNone();
-    });
-  }
+  ): DoNotation.Unsign<Value>;
 
   /**
    * Verifies if the `Option` contains a value that passes the test implemented by the provided function.
@@ -677,9 +894,7 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * // Output: true
    * ```
    */
-  contains(predicate: Predicate.Predicate<DoNotation.Unsign<Value>>): boolean {
-    return this.isSome() && predicate(this.#value as never);
-  }
+  contains(predicate: Predicate.Predicate<DoNotation.Unsign<Value>>): boolean;
 
   /**
    * Converts an `Option` to a `Result`.
@@ -696,7 +911,7 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * //          ┌─── Result<User, NoValueError>
    * //          ▼
    * const authorizedUser = findUserById('user_123')
-   *   .toResult()
+   *   .toResult();
    */
   toResult(): Result<NonNullable<Value>, NoValueError>;
 
@@ -715,65 +930,52 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * //          ┌─── Result<User, UserNotFound>
    * //          ▼
    * const authorizedUser = findUserById('user_123')
-   *   .toResult(() => new UserNotFound('user_123'))
+   *   .toResult(() => new UserNotFound('user_123'));
    */
   toResult<Error extends {}>(
     onNone: Thunk<Error>,
   ): Result<NonNullable<Value>, Error>;
 
-  toResult(onNone?: Thunk<any>): Result<NonNullable<Value>, any> {
-    return FunkciaStore.Result.fromNullable(
-      this.unwrapOrNull(),
-      onNone as never,
-    ) as never;
-  }
-
   /**
-   * Converts the `Option` to a `AsyncOption`.
+   * Converts the `Option` to an `OptionAsync`.
    *
    * @example
    * import { Option } from 'funkcia';
    *
    * declare function readFile(path: string): Option<string>;
+   * declare function parseSalesRecords(content: string): Option<SalesRecord[]>;
    *
-   * declare function parseJsonFile(contents: string): Option<FileContent>;
-   *
-   * //       ┌─── AsyncOption<FileContent>
+   * //       ┌─── OptionAsync<SalesRecord[]>
    * //       ▼
    * const asyncFile = readFile('data.json')
-   *   .andThen(parseJsonFile)
+   *   .andThen(parseSalesRecords)
    *   .toAsyncOption();
-   * // Output: Promise<Some(FileContent)>
+   * // Output: Promise<Some(SalesRecord[])>
    */
-  toAsyncOption(): AsyncOption<NonNullable<Value>> {
-    return FunkciaStore.AsyncOption.promise(() =>
-      Promise.resolve(this),
-    ) as never;
-  }
+  toAsyncOption(): OptionAsync<NonNullable<Value>>;
 
   /**
-   * Converts the `Option` to a `AsyncResult`.
+   * Converts the `Option` to a `ResultAsync`.
    *
-   * If `Option` is `Some`, returns an `AsyncResult.ok`.
-   * If `Option` is `None`, returns an `AsyncResult.error` with a `NoValueError`.
+   * If `Option` is `Some`, returns an `ResultAsync.ok`.
+   * If `Option` is `None`, returns an `ResultAsync.error` with a `NoValueError`.
    *
    * @example
    * ```ts
    * import { Option } from 'funkcia';
    *
    * declare function readFile(path: string): Option<string>;
+   * declare function parseSalesRecords(content: string): Option<SalesRecord[]>;
    *
-   * declare function parseJsonFile(contents: string): Option<FileContent>;
-   *
-   * //       ┌─── AsyncResult<FileContent, NoValueError>
+   * //       ┌─── ResultAsync<SalesRecord[], NoValueError>
    * //       ▼
    * const asyncFile = readFile('data.json')
-   *   .andThen(parseJsonFile)
+   *   .andThen(parseSalesRecords)
    *   .toAsyncResult();
-   * // Output: Promise<Ok(FileContent)>
+   * // Output: Promise<Ok(SalesRecord[])>
    * ```
    */
-  toAsyncResult(): AsyncResult<NonNullable<Value>, NoValueError>;
+  toAsyncResult(): ResultAsync<NonNullable<Value>, NoValueError>;
 
   /**
    * Converts the `Option` to a `AsyncResult`.
@@ -787,26 +989,19 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * import { Option } from 'funkcia';
    *
    * declare function readFile(path: string): Option<string>;
+   * declare function parseSalesRecords(content: string): Option<SalesRecord[]>;
    *
-   * declare function parseJsonFile(contents: string): Option<FileContent>;
-   *
-   * //       ┌─── AsyncResult<FileContent, InvalidFile>
+   * //       ┌─── AsyncResult<SalesRecord[], InvalidFile>
    * //       ▼
    * const asyncFile = readFile('data.json')
    *   .andThen(parseJsonFile)
    *   .toAsyncResult(() => new InvalidFile('data.json'));
-   * // Output: Promise<Ok(FileContent)>
+   * // Output: Promise<Ok(SalesRecord[])>
    * ```
    */
   toAsyncResult<Error extends {}>(
     onNone: Thunk<Error>,
-  ): AsyncResult<NonNullable<Value>, Error>;
-
-  toAsyncResult(onNone?: Thunk<any>): AsyncResult<NonNullable<Value>, any> {
-    return FunkciaStore.AsyncResult.promise(() =>
-      Promise.resolve(this.toResult(onNone as never)),
-    );
-  }
+  ): ResultAsync<NonNullable<Value>, Error>;
 
   /**
    * Converts an `Option` to an array.
@@ -824,20 +1019,14 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * // Output: [10]
    * ```
    */
-  toArray(): Array<DoNotation.Unsign<Value>> {
-    return this.match({ Some: (value) => [value], None: () => [] });
-  }
-
-  // ----------------
-  // #endregion -----
-
-  // ---------------------------
-  // #region: TRANSFORMATIONS---
-  // ---------------------------
+  toArray(): Array<DoNotation.Unsign<Value>>;
 
   /**
-   * Applies a callback function to the value of the `Option` when it is `Some`,
-   * returning a new `Option` containing the new value.
+   * Calls the function with the `Option` value, then returns the `Option` itself.
+   * The return value of the provided function is ignored.
+   *
+   * This allows "tapping into" a function sequence in a pipe, to perform side effects
+   * on intermediate results.
    *
    * @example
    * ```ts
@@ -845,184 +1034,11 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    *
    * //       ┌─── Option<number>
    * //       ▼
-   * const option = Option.of(10).map(number => number * 2);
-   * // Output: Some(20)
+   * const option = Option.some(10)
+   *   .tap((value) => console.log(value)); // Console output: 10
    * ```
    */
-  map<Output>(
-    onSome: (
-      value: DoNotation.Unsign<Value>,
-    ) => Option.NoOptionGuard<Output, 'andThen'>,
-  ): unknown extends Output ? Option<Output> : Option<NonNullable<Output>> {
-    if (this.isNone()) return this as never;
-
-    // @ts-expect-error the compiler is complaining because of NoOptionInMapGuard
-    return Option.fromNullable(onSome(this.#value));
-  }
-
-  /**
-   * Applies a callback function to the value of the `Option` when it is `Some`,
-   * and returns the new value.
-   *
-   * This is similar to `chain` (also known as `flatMap`), with the difference
-   * that the callback must return an `Option`, not a raw value.
-   * This allows chaining multiple calls that return `Option`s together.
-   *
-   * @example
-   * ```ts
-   * import { Option } from 'funkcia';
-   *
-   * declare function readFile(path: string): Option<string>;
-   *
-   * declare function parseJsonFile(contents: string): Option<FileContent>;
-   *
-   * //       ┌─── Option<FileContent>
-   * //       ▼
-   * const option = readFile('data.json').andThen(parseJsonFile);
-   * ```
-   */
-  andThen<Output extends {}>(
-    onSome: (value: DoNotation.Unsign<Value>) => Option<Output>,
-  ): Option<Output> {
-    return this.isSome() ? onSome(this.#value as never) : (this as never);
-  }
-
-  /**
-   * Asserts that the `Option` value passes the test implemented by the provided function,
-   * narrowing down the value to the provided type predicate.
-   *
-   * If the test fails, the value is filtered out of the `Option`, returning a `None` instead.
-   *
-   * @example
-   * ```ts
-   * import { Option } from 'funkcia';
-   *
-   * declare const input: Shape;
-   *
-   * //      ┌─── Option<Circle>
-   * //      ▼
-   * const circle = Option.of(input).filter(
-   *   (shape): shape is Circle => shape.kind === 'circle',
-   * );
-   * ```
-   */
-  filter<Output extends DoNotation.Unsign<Value>>(
-    refinement: Predicate.Guard<DoNotation.Unsign<Value>, Output>,
-  ): Option<Output>;
-
-  /**
-   * Asserts that the `Option` value passes the test implemented by the provided function.
-   *
-   * If the test fails, the value is filtered out of the `Option`, returning a `None` instead.
-   *
-   * @example
-   * ```ts
-   * import { Option } from 'funkcia';
-   *
-   * //       ┌─── Option<User>
-   * //       ▼
-   * const option = Option.of(user).filter((user) => user.age >= 21);
-   * ```
-   */
-  filter(
-    predicate: Predicate.Predicate<DoNotation.Unsign<Value>>,
-  ): Option<Value>;
-
-  filter(predicate: Predicate.Predicate<DoNotation.Unsign<Value>>): this {
-    if (this.isNone()) return this;
-
-    return predicate(this.#value as never) ? this : (Option.none() as never);
-  }
-
-  // ----------------
-  // #endregion -----
-
-  // -----------------------
-  // #region: FALLBACKS---
-  // -----------------------
-
-  /**
-   * Replaces the current `Option` with the provided fallback `Option` when it is `None`.
-   *
-   * If the current `Option` is `Some`, it returns the current `Option`.
-   *
-   * @example
-   * ```ts
-   * import { Option } from 'funkcia';
-   *
-   * // Output: Some('Paul')
-   * const option = Option.some('Paul')
-   *   .or(() => Option.some('John'))
-   *
-   *
-   * // Output: Some('John')
-   * const greeting = Option.none()
-   *   .or(() => Option.some('John'))
-   * ```
-   */
-  or(onNone: Thunk<Option<Value>>): Option<Value> {
-    return this.isSome() ? this : onNone();
-  }
-
-  /**
-   * Returns the first `Option.Some` value in the iterable. If all values are `Option.None`, returns `Option.None`.
-   *
-   * @example
-   * ```ts
-   * import { Option } from 'funkcia';
-   *
-   * interface ContactInformation {
-   *   primary: Option<string>;
-   *   secondary: Option<string>;
-   *   emergency: Option<string>;
-   * }
-   *
-   * declare const contact: ContactInformation;
-   *
-   * //       ┌─── Option<string>
-   * //       ▼
-   * const option = Option.firstSomeOf([
-   *   contact.primary,
-   *   contact.secondary,
-   *   contact.emergency,
-   * ]);
-   * ```
-   */
-  static firstSomeOf<Value>(options: Iterable<Option<Value>>): Option<Value> {
-    for (const option of options) {
-      if (option.isSome()) return option;
-    }
-
-    return Option.none();
-  }
-
-  // ----------------
-  // #endregion -----
-
-  // -----------------------
-  // #region: COMPARISONS---
-  // -----------------------
-
-  /**
-   * Asserts that an *unknown* value is an `Option`.
-   *
-   * @example
-   * ```ts
-   * import { Option } from 'funkcia';
-   *
-   * declare const maybeAnOptionWithUser: unknown;
-   *
-   * if (Option.is(maybeAnOptionWithUser)) {
-   * //                     ┌─── Option<unknown>
-   * //                     ▼
-   *   const user = maybeAnOptionWithUser.filter(isUser);
-   * //        ▲
-   * //        └─── Option<User>
-   * }
-   */
-  static is(value: unknown): value is Option<unknown> {
-    return value instanceof Option;
-  }
+  tap(onSome: (value: DoNotation.Unsign<Value>) => unknown): Option<Value>;
 
   /**
    * Returns `true` is the `Option` contains a value.
@@ -1040,9 +1056,7 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * }
    * ```
    */
-  isSome(): this is Option.Some<Value> {
-    return this.#tag === Some;
-  }
+  isSome(): this is SomeTrait<Value>;
 
   /**
    * Returns `true` is the `Option` is empty.
@@ -1056,15 +1070,11 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    * const user = findUserByEmail(data.email);
    *
    * if (user.isNone()) {
-   *   return await createUser(data);
+   *   return await createUser(data); // Creates a new user
    * }
-   *
-   * return user.unwrap();
    * ```
    */
-  isNone(): this is Option.None {
-    return this.#tag === None;
-  }
+  isNone(): this is NoneTrait;
 
   /**
    * Compares the `Option` with another `Option` and returns `true` if they are equal.
@@ -1082,227 +1092,24 @@ export class Option<Value> implements DoNotation.Signed<'Option', Value> {
    */
   equals(
     that: Option<Value>,
-    equalityFn: EqualityFn<DoNotation.Unsign<Value>> = isEqual,
-  ): boolean {
-    try {
-      return equalityFn(this.unwrap(), that.unwrap());
-    } catch {
-      return this.isNone() && that.isNone();
-    }
-  }
-
-  // ----------------
-  // #endregion -----
-
-  // -----------------
-  // #region: OTHER---
-  // -----------------
-
-  /**
-   * Calls the function with the `Option` value, then returns the `Option` itself.
-   * The return value of the provided function is ignored.
-   *
-   * This allows "tapping into" a function sequence in a pipe, to perform side effects
-   * on intermediate results.
-   *
-   * @example
-   * ```ts
-   * import { Option } from 'funkcia';
-   *
-   * //       ┌─── Option<number>
-   * //       ▼
-   * const option = Option.some(10).tap((value) => console.log(value)); // LOG: 10
-   * ```
-   */
-  tap(onSome: (value: DoNotation.Unsign<Value>) => unknown): this {
-    if (this.isSome()) onSome(this.#value as never);
-
-    return this;
-  }
-
-  /**
-   * Utility to ensure a function always returns an `Option`.
-   *
-   * This method offers improved type inference for the function's
-   * return value and guarantees that the function will consistently return an `Option`.
-   *
-   * @example
-   * ```ts
-   * import { Option } from 'funkcia';
-   *
-   * // When defining a normal function allowing typescript to infer the return type,
-   * // sometimes the return type will be a union of `Option<T>` and `Option<U>` or `Option<never>`
-   * function hasAcceptedTermsOfService(user: User) {
-   *   if (typeof user.termsOfService !== 'boolean') return Option.none();
-   *
-   *   return user.termsOfService
-   *     ? Option.some('ACCEPTED' as const)
-   *     : Option.some('DECLINED' as const);
-   * }
-   *
-   * //       ┌─── Option<'ACCEPTED'> | Option<'DECLINED'> | Option<never>
-   * //       ▼
-   * const option = hasAcceptedTermsOfService(user);
-   *
-   * // When using the `fun` method, the return type is always `Option<T>`
-   * const hasAcceptedTermsOfService = Option.fun((user: User) => {
-   *   if (typeof user.termsOfService !== 'boolean') return Option.none();
-   *
-   *   return user.termsOfService
-   *     ? Option.some('ACCEPTED' as const)
-   *     : Option.some('DECLINED' as const);
-   * });
-   *
-   * //       ┌─── Option<'ACCEPTED' | 'DECLINED'>
-   * //       ▼
-   * const option = hasAcceptedTermsOfService(user);
-   * ```
-   */
-  static fun<
-    Callback extends
-      | ((...args: any[]) => Option<any> | Option<never>)
-      | ((...args: any[]) => Promise<Option<any> | Option<never>>),
-  >(
-    fn: Callback,
-  ): (
-    ...args: Parameters<Callback>
-  ) => ReturnType<Callback> extends Promise<any>
-    ? Promise<Option<Option.Unwrap<Awaited<ReturnType<Callback>>>>>
-    : Option<Option.Unwrap<ReturnType<Callback>>> {
-    return fn as never;
-  }
-
-  *[Symbol.iterator](): Iterator<never, DoNotation.Unsign<Value>> {
-    if (this.isNone()) yield undefined as never;
-
-    return this.#value as never;
-  }
-
-  [Symbol.for('nodejs.util.inspect.custom')](): string {
-    return this.match({
-      Some: (value) => `Some(${beautify(value)})`,
-      None: () => 'None',
-    });
-  }
-
-  /**
-   * Evaluates a generator early returning when an `Option.None` is propagated
-   * or returning the `Option` returned by the generator.
-   *
-   * `yield*` an `Option<Value>` unwraps values and propagates `None`s.
-   *
-   * If the value is `Option.None`, then it will return `Option.None`
-   * from the enclosing function.
-   *
-   * If applied to `Option.Some<U>`, then it will unwrap the value to evaluate `U`.
-   *
-   * @example
-   * ```ts
-   * import { Option } from 'funkcia';
-   *
-   * const safeParseInt = Option.liftFun(parseInt);
-   *
-   * //       ┌─── Option<number>
-   * //       ▼
-   * const option = Option.relay(function* () {
-   *   const x: number = yield* safeParseInt('10');
-   *   const y: number = yield* safeParseInt('invalid'); // returns Option.None immediately
-   *
-   *   return Option.some(x + y); // doesn't run
-   * });
-   * // Output: None
-   * ```
-   */
-  static relay<Value extends {}>(
-    generator: () => Generator<never, Option<Value>>,
-  ): Option<Value> {
-    const { done, value } = generator().next();
-
-    return done ? value : Option.none();
-  }
-
-  // ----------------
-  // #endregion -----
+    equalityFn?: EqualityFn<DoNotation.Unsign<Value>>,
+  ): boolean;
 }
 
-FunkciaStore.register(Option);
-
-declare namespace Option {
-  type $some = typeof Some;
-  type $none = typeof None;
-
+export declare namespace Option {
   interface Match<Value, Output, NoneOutput> {
     Some: (value: Value) => Output;
     None: () => NoneOutput;
   }
 
-  type NoOptionInReturn<CorrectMethod extends string> =
-    `ERROR: Use ${CorrectMethod} instead. Cause: the transformation is returning an Option, use ${CorrectMethod} to flatten the Option.`;
-
-  type NoOptionGuard<
-    Value,
-    AnotherMethod extends string,
-  > = Value extends Option<infer _> ? NoOptionInReturn<AnotherMethod> : Value;
-
   type Unwrap<Output> = Output extends Option<infer Value> ? Value : never;
-
-  interface Some<Value> {
-    /**  @override this method will not throw the expected error on a `Some` Option, use `unwrap` instead */
-    match: never;
-    /**  @override this method is safe to call on a `Some` Option */
-    unwrap: () => Value;
-    /**  @override this method has no effect on a `Some` Option */
-    unwrapOr: never;
-    /**  @override this method will not throw the expected error on a `Some` Option, use `unwrap` instead */
-    expect: never;
-    /**  @override this method has no effect on a `Some` Option */
-    unwrapOrNull: never;
-    /**  @override this method has no effect on a `Some` Option */
-    unwrapOrUndefined: never;
-    /**  @override this method has no effect on a `Some` Option */
-    or: never;
-    /**  @override this method has no effect on a `Some` Option */
-    isNone: never;
-  }
-
-  interface None {
-    /** @override this method has no effect on a `None` Option */
-    zip: never;
-    /** @override this method has no effect on a `None` Option */
-    zipWith: never;
-    /** @override this method has no effect on a `None` Option */
-    bindTo: never;
-    /** @override this method has no effect on a `None` Option */
-    bind: never;
-    /** @override this method has no effect on a `None` Option */
-    let: never;
-    /** @override this method has no effect on a `None` Option */
-    match: never;
-    /** @override this method has no effect on a `None` Option */
-    unwrap: never;
-    /** @override `unwrapOrNull` will not return a `Value` in this context. Option is guaranteed to be None. */
-    unwrapOrNull: () => null;
-    /** @override `unwrapOrUndefined` will not return a `Value` in this context. Option is guaranteed to be None. */
-    unwrapOrUndefined: () => undefined;
-    /** @override this method has no effect on a `None` Option */
-    expect: never;
-    /** @override this method has no effect on a `None` Option */
-    contains: never;
-    /** @override this method has no effect on a `None` Option */
-    toResult: never;
-    /** @override this method has no effect on a `None` Option */
-    toAsyncOption: never;
-    /** @override this method has no effect on a `None` Option */
-    toAsyncResult: never;
-    /** @override this method has no effect on a `None` Option */
-    map: never;
-    /** @override this method has no effect on a `None` Option */
-    andThen: never;
-    /** @override this method has no effect on a `None` Option */
-    filter: never;
-    /** @override this method has no effect on a `None` Option */
-    isSome: never;
-    /** @override this method has no effect on a `None` Option */
-    tap: never;
-  }
 }
+
+type NoOptionInReturn<CorrectMethod extends string> =
+  `ERROR: Use ${CorrectMethod} instead. Cause: the transformation is returning an Option, use ${CorrectMethod} to flatten the Option.`;
+
+type NoOptionGuard<Value, AnotherMethod extends string> = Value extends Option<
+  infer _
+>
+  ? NoOptionInReturn<AnotherMethod>
+  : Value;

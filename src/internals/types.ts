@@ -11,3 +11,12 @@ export type Tuple<A, B> = [A, B];
 export type Thunk<T> = () => T;
 
 export type Task<T> = () => Promise<T>;
+
+export interface $Iterable<T, U> {
+  // eslint-disable-next-line @typescript-eslint/method-signature-style
+  [Symbol.iterator](): Iterator<T, U>;
+}
+export interface $AsyncIterable<T, U> {
+  // eslint-disable-next-line @typescript-eslint/method-signature-style
+  [Symbol.asyncIterator](): AsyncIterator<T, U>;
+}

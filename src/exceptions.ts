@@ -1,4 +1,4 @@
-export abstract class TaggedError extends Error {
+export abstract class TaggedError extends TypeError {
   abstract readonly _tag: string;
 }
 
@@ -6,7 +6,7 @@ export abstract class TaggedError extends Error {
 // ---MARK: COMMON EXCEPTIONS---
 // -----------------------------
 
-export class UnwrapError extends TypeError {
+export class UnwrapError extends TaggedError {
   readonly _tag = 'UnwrapError';
 
   static is(error: unknown): error is UnwrapError {

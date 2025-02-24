@@ -10,9 +10,9 @@ export interface SafeJSON {
    *
    * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse
    */
-  parse: ReturnType<
-    typeof Result.liftFun<Parameters<typeof JSON.parse>, unknown, SyntaxError>
-  >;
+  parse: (
+    ...args: Parameters<typeof JSON.parse>
+  ) => Result<unknown, SyntaxError>;
 
   /**
    * Converts a JavaScript value to a JavaScript Object Notation (JSON) string.
@@ -45,6 +45,6 @@ export interface SafeJSON {
 }
 
 export const SafeJSON: SafeJSON = Object.freeze({
-  parse: Result.liftFun(JSON.parse),
-  stringify: Result.liftFun(JSON.stringify) as never,
+  parse: Result.enhance(JSON.parse) as never,
+  stringify: Result.enhance(JSON.stringify) as never,
 });
