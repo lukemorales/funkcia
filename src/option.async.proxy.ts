@@ -159,6 +159,9 @@ const optionAsyncProxyHandler: ProxyHandler<AnyOptionAsync> = {
       ? operations[operation]
       : Reflect.get(rawPromise, operation);
   },
+  apply() {
+    throw new TypeError('OptionAsync is not a function');
+  },
   has(target, key) {
     if (key === proxySymbol) return true;
 
