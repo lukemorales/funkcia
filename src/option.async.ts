@@ -5,7 +5,7 @@ import type { NoValueError } from './exceptions';
 import { invoke } from './functions';
 import { FunkciaStore } from './funkcia-store';
 import type {
-  $AsyncIterable,
+  BetterAsyncIterable,
   Falsy,
   Nullable,
   Task,
@@ -121,7 +121,7 @@ export const OptionAsync: OptionAsyncTrait = invoke((): OptionAsyncTrait => {
  */
 export interface OptionAsync<Value>
   extends PromiseLike<Option<Value>>,
-    $AsyncIterable<never, DoNotation.Unsign<Value>> {
+    BetterAsyncIterable<never, DoNotation.Unsign<Value>> {
   /**
    * Initiates a `Do-notation` with the current `OptionAsync`, binding it to a
    * context object with the provided key.

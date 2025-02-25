@@ -6,8 +6,8 @@ import { NoValueError, UnknownError } from './exceptions';
 import { invoke } from './functions';
 import type { EqualityFn } from './internals/equality';
 import type {
-  $Iterable,
   AnyUnaryFn,
+  BetterIterable,
   Falsy,
   Nullable,
   Thunk,
@@ -654,7 +654,7 @@ interface ResultTrait {
  * `Result` is commonly used to represent the result of a function that can fail, such as a network request, a file read, or a database query.
  */
 export interface Result<Value, Error>
-  extends $Iterable<Error, DoNotation.Unsign<Value>> {
+  extends BetterIterable<Error, DoNotation.Unsign<Value>> {
   /**
    * Initiates a `Do-notation` with the current `Result`, binding it to a
    * context object with the provided key.

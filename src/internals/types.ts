@@ -12,11 +12,9 @@ export type Thunk<T> = () => T;
 
 export type Task<T> = () => Promise<T>;
 
-export interface $Iterable<T, U> {
-  // eslint-disable-next-line @typescript-eslint/method-signature-style
+export interface BetterIterable<T, U> {
   [Symbol.iterator](): Iterator<T, U>;
 }
-export interface $AsyncIterable<T, U> {
-  // eslint-disable-next-line @typescript-eslint/method-signature-style
+export interface BetterAsyncIterable<T, U> {
   [Symbol.asyncIterator](): AsyncIterator<T, U>;
 }

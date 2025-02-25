@@ -6,8 +6,8 @@ import { NoValueError } from './exceptions';
 import { invoke } from './functions';
 import { FunkciaStore } from './funkcia-store';
 import type {
-  $AsyncIterable,
   AnyUnaryFn,
+  BetterAsyncIterable,
   Falsy,
   Nullable,
   Task,
@@ -112,7 +112,7 @@ export const ResultAsync: ResultAsyncTrait = invoke((): ResultAsyncTrait => {
  */
 export interface ResultAsync<Value, Error>
   extends PromiseLike<Result<Value, Error>>,
-    $AsyncIterable<Error, DoNotation.Unsign<Value>> {
+    BetterAsyncIterable<Error, DoNotation.Unsign<Value>> {
   /**
    * Initiates a `Do-notation` with the current `AsyncResult`, binding it to a
    * context object with the provided key.

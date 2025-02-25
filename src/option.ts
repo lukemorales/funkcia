@@ -5,8 +5,8 @@ import type { NoValueError } from './exceptions';
 import { identity, invoke } from './functions';
 import type { EqualityFn } from './internals/equality';
 import type {
-  $Iterable,
   AnyUnaryFn,
+  BetterIterable,
   Falsy,
   Nullable,
   Thunk,
@@ -490,7 +490,7 @@ interface OptionTrait {
  * a file read, or a database query.
  */
 export interface Option<Value>
-  extends $Iterable<never, DoNotation.Unsign<Value>> {
+  extends BetterIterable<never, DoNotation.Unsign<Value>> {
   /**
    * Initiates a `Do-notation` with the current `Option`, binding it to a
    * context object with the provided key.
