@@ -333,10 +333,10 @@ interface OptionTrait {
   ): (...args: Parameters<Criteria>) => Option<Parameters<Criteria>[0]>;
 
   /**
-   * Utility to ensure a function always returns an `Option`.
+   * Declare a function that always returns an `Option`.
    *
-   * This method offers improved type inference for the function's
-   * return value and guarantees that the function will consistently return an `Option`.
+   * This method offers improved type inference for the function's return value
+   * and guarantees that the function will always return an `Option`.
    *
    * @example
    * ```ts
@@ -358,11 +358,11 @@ interface OptionTrait {
    * const option = hasAcceptedTermsOfService(user);
    *
    * // When using the `fun` method, the return type is always `Option<T | U>`
-   * const improvedTermsOfServiceCheck = Option.fun(hasAcceptedTermsOfService);
+   * const improvedHasAcceptedTermsOfService = Option.fun(hasAcceptedTermsOfService);
    *
    * //       ┌─── Option<'ACCEPTED' | 'DECLINED'>
    * //       ▼
-   * const option = improvedTermsOfServiceCheck(user);
+   * const option = improvedHasAcceptedTermsOfService(user);
    * ```
    */
   fun<
@@ -411,7 +411,7 @@ interface OptionTrait {
    * ```ts
    * import { Option } from 'funkcia';
    *
-   * const safeParseInt = Option.enhance(parseInt);
+   * declare const safeParseInt: (string: string, radix?: number) => Option<number>;
    *
    * //       ┌─── Option<number>
    * //       ▼
@@ -429,10 +429,10 @@ interface OptionTrait {
   ): Option<Option.Unwrap<$Option>>;
 
   /**
-   * Returns a function that evaluates a generator when called, early returning when an `Option.None` is propagated
-   * or returning the `Option` returned by the generator.
+   * Returns a function that evaluates a generator when called with the declared arguments,
+   * early returning when an `Option.None` is propagated or returning the `Option` returned by the generator.
    *
-   * - Each yield* automatically unwraps the `Option` value or propagates `None`.
+   * - Each `yield*` automatically unwraps the `Option` value or propagates `None`.
    *
    * - If any operation returns `Option.None`, the entire generator exits early.
    *
@@ -440,18 +440,18 @@ interface OptionTrait {
    * ```ts
    * import { Option } from 'funkcia';
    *
-   * const safeParseInt = Option.enhance(parseInt);
+   * declare const safeParseInt: (string: string, radix?: number) => Option<number>;
    *
-   * //       ┌─── (a: string, b: string) => Option<number>
-   * //       ▼
-   * const execute = Option.createUse(function* (a: string, b: string) {
+   * //           ┌─── (a: string, b: string) => Option<number>
+   * //           ▼
+   * const sumParsedIntegers = Option.createUse(function* (a: string, b: string) {
    *   const x: number = yield* safeParseInt(a);
    *   const y: number = yield* safeParseInt(b);
    *
    *   return Option.some(x + y);
    * });
    *
-   * const option = execute('10', '20');
+   * const option = sumParsedIntegers('10', '20');
    * // Output: Some(30)
    * ```
    */

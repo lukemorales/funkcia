@@ -23,10 +23,10 @@ interface ErrorImpl<Error> {
   readonly error: Error;
 }
 
-const $ok = Symbol.for('Result::Ok');
-const $error = Symbol.for('Result::Error');
+const $ok = Symbol('Result::Ok');
+const $error = Symbol('Result::Error');
 
-const proxySymbol = Symbol.for('Result::Proxy');
+const proxySymbol = Symbol('Result::Proxy');
 
 export function isResult(result: unknown): result is Result<unknown, unknown> {
   return (

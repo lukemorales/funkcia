@@ -23,10 +23,10 @@ export interface NoneImpl {
   readonly _tag: typeof $none;
 }
 
-const $some = Symbol.for('Option::Some');
-const $none = Symbol.for('Option::None');
+const $some = Symbol('Option::Some');
+const $none = Symbol('Option::None');
 
-const proxySymbol = Symbol.for('Option::Proxy');
+const proxySymbol = Symbol('Option::Proxy');
 
 export function isOption(result: unknown): result is Option<unknown> {
   return (

@@ -68,7 +68,7 @@ export const Result: ResultTrait = invoke((): ResultTrait => {
     predicate(criteria: AnyUnaryFn) {
       return (value: any) => Ok(value).filter(criteria) as never;
     },
-    func(fn) {
+    fun(fn) {
       return fn as never;
     },
     enhance(callback: Function, onThrow?: AnyUnaryFn) {
@@ -147,12 +147,12 @@ interface ResultTrait {
    * ```ts
    * import { Result } from 'funkcia';
    *
-   * function divide(numerator: number, denominator: number): Result<number, InvalidDenominator> {
-   *   if (denominator === 0) {
-   *     return Result.error(new InvalidDenominator('Division by zero'));
+   * function divide(dividend: number, divisor: number): Result<number, InvalidDivisor> {
+   *   if (divisor === 0) {
+   *     return Result.error(new InvalidDivisor());
    *   }
    *
-   *   return Result.ok(numerator / denominator);
+   *   return Result.ok(dividend / divisor);
    * }
    * ```
    */
@@ -161,16 +161,18 @@ interface ResultTrait {
   /**
    * Constructs a `Result` from a nullable value.
    *
-   * If the value is `null` or `undefined`, it returns a `Result.Error` with a `NoValueError` exception.
+   * If the value is `null` or `undefined`, it returns a `Result.Error` with a `NoValueError` error.
    * Otherwise, it returns a `Result.Ok`.
    *
    * @example
    * ```ts
    * import { Result } from 'funkcia';
    *
-   * //      ┌─── Result<string, NoValueError>
+   * declare const user: User | null;
+   *
+   * //      ┌─── Result<User, NoValueError>
    * //      ▼
-   * const result = Result.fromNullable(localStorage.getItem('@app/theme'));
+   * const result = Result.fromNullable(user);
    * ```
    */
   fromNullable<Value>(
@@ -187,11 +189,13 @@ interface ResultTrait {
    * ```ts
    * import { Result } from 'funkcia';
    *
-   * //      ┌─── Result<string, Error>
+   * declare const user: User | null;
+   *
+   * //      ┌─── Result<string, UserNotFoundError>
    * //      ▼
    * const result = Result.fromNullable(
-   *   localStorage.getItem('@app/theme'),
-   *   () => new Error('Theme not set'),
+   *   user,
+   *   () => new UserNotFoundError(),
    * );
    * ```
    */
@@ -203,7 +207,7 @@ interface ResultTrait {
   /**
    * Constructs a `Result` from a _falsy_ value.
    *
-   * If the value is _falsy_, it returns a `Result.Error` result with a `NoValueError` exception.
+   * If the value is _falsy_, it returns a `Result.Error` result with a `NoValueError` error.
    * Otherwise, it returns a `Result.Ok`.
    *
    * @example
@@ -410,9 +414,9 @@ interface ResultTrait {
    * //          ▼
    * const ensureCircle = Result.predicate(
    *   (shape: Shape): shape is Circle => shape.kind === 'circle',
-   * //   ┌─── Square
-   * //   ▼
    *   (shape) => new InvalidShapeError(shape.kind),
+   * //   ▲
+   * //   └─── Square
    * );
    *
    * //       ┌─── Result<Circle, InvalidShapeError>
@@ -468,7 +472,7 @@ interface ResultTrait {
     : never;
 
   /**
-   * Utility to ensure a function always returns a `Result`.
+   * Declare a function that always returns a `Result`.
    *
    * This method improves the inference of the function's
    * return value and guarantees that it will always return a `Result`.
@@ -482,35 +486,27 @@ interface ResultTrait {
    * // the return type is always a union of `Result<T, never>` and `Result<never, E>`
    * function hasAcceptedTermsOfService(user: User) {
    *   if (typeof user.termsOfService !== 'boolean') {
-   *     return Result.error(new TermsOfServiceNotAcceptedError(user.id));
+   *     return Result.error('NOT ACCEPTED' as const);
    *   }
    *
    *   return user.termsOfService ?
    *       Result.ok('ACCEPTED' as const)
-   *     : Result.error(new RejectedTermsOfServiceError(user.id));
+   *     : Result.error('REJECTED' as const);
    * }
    *
-   * //       ┌─── Result<'ACCEPTED', never> | Result<never, TermsOfServiceNotAcceptedError> | Result<never, RejectedTermsOfServiceError>
+   * //       ┌─── Result<'ACCEPTED', never> | Result<never, 'REJECTED'> | Result<never, 'NOT ACCEPTED'>
    * //       ▼
    * const result = hasAcceptedTermsOfService(user);
    *
    * // When using the `fun` method, the return type is always `Result<T, E>`
-   * const hasAcceptedTermsOfService = Result.fun((user: User) => {
-   *   if (typeof user.termsOfService !== 'boolean') {
-   *     return Result.error(new TermsOfServiceNotAcceptedError(user.id));
-   *   }
+   * const improvedHasAcceptedTermsOfService = Result.fun(hasAcceptedTermsOfService);
    *
-   *   return user.termsOfService ?
-   *       Result.ok('ACCEPTED' as const)
-   *     : Result.ok(new RejectedTermsOfServiceError(user.id));
-   * });
-   *
-   * //       ┌─── Result<'ACCEPTED', TermsOfServiceNotAcceptedError | RejectedTermsOfServiceError>
+   * //       ┌─── Result<'ACCEPTED', 'REJECTED' | 'NOT ACCEPTED'>
    * //       ▼
-   * const result = hasAcceptedTermsOfService(user);
+   * const result = improvedHasAcceptedTermsOfService(user);
    * ```
    */
-  func<
+  fun<
     Callback extends
       | ((...args: any[]) => AnyResult)
       | ((...args: any[]) => Promise<AnyResult>),
@@ -597,11 +593,11 @@ interface ResultTrait {
    * ```ts
    * import { Result } from 'funkcia';
    *
-   * declare function safeParseInt(value: string): Result<number, ParseIntError>;
+   * declare const safeParseInt: (string: string, radix?: number) => Result<number, TypeError>;
    *
    * //       ┌─── Result<number, ParseIntError>
    * //       ▼
-   * const result = Result.safeContext(function* () {
+   * const result = Result.use(function* () {
    *   const x: number = yield* safeParseInt('10');
    *   const y: number = yield* safeParseInt('invalid'); // returns Result.Error<ParseIntError> immediately
    *
@@ -614,6 +610,33 @@ interface ResultTrait {
     generator: () => Generator<Error, $Result>,
   ): Result<Result.Unwrap<$Result>, Error | Result.UnwrapError<$Result>>;
 
+  /**
+   * Returns a function that evaluates a generator when called with the declared arguments,
+   * early returning when a `Result.Error` is propagated or returning the `Result` returned by the generator.
+   *
+   * - Each `yield*` automatically unwraps the `Result` value or propagates `Error`s.
+   *
+   * - If any operation returns `Result.Error`, the entire generator exits early.
+   *
+   * @example
+   * ```ts
+   * import { Result } from 'funkcia';
+   *
+   * declare const safeParseInt: (string: string, radix?: number) => Result<number, TypeError>;
+   *
+   * //           ┌─── (a: string, b: string) => Result<number, TypeError>
+   * //           ▼
+   * const sumParsedIntegers = Result.createUse(function* (a: string, b: string) {
+   *   const x: number = yield* safeParseInt(a);
+   *   const y: number = yield* safeParseInt(b);
+   *
+   *   return Result.ok(x + y);
+   * });
+   *
+   * const result = sumParsedIntegers('10', '20');
+   * // Output: Ok(30)
+   * ```
+   */
   createUse<
     Args extends readonly unknown[],
     $Result extends AnyResult,

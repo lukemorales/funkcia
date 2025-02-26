@@ -303,7 +303,7 @@ describe('Result', () => {
         expect(output.isOk()).toBeTrue();
         expect(output.unwrap()).toBeTrue();
 
-        const wrapped = Result.func(hasEnabledSetting);
+        const wrapped = Result.fun(hasEnabledSetting);
 
         const result = wrapped(true);
 
@@ -337,7 +337,7 @@ describe('Result', () => {
           >
         >();
 
-        const wrappedFn = Result.func(hasEnabledSetting);
+        const wrappedFn = Result.fun(hasEnabledSetting);
 
         expectTypeOf(wrappedFn).toEqualTypeOf<
           (

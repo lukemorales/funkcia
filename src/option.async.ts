@@ -930,26 +930,23 @@ interface OptionAsyncTrait {
    * Evaluates an **async* generator early returning when an `Option.None` is propagated
    * or returning the `OptionAsync` returned by the generator.
    *
-   * `yield*` an `OptionAsync<Value>` unwraps values and propagates `Option.None`s.
-   *
-   * If the value is `Option.None`, then it will return an `OptionAsync` that resolves to `Option.None`
-   * from the enclosing function.
-   *
-   * If applied to an `OptionAsync` that resolves to `Option.Some<U>`, then it will unwrap the value to evaluate `U`.
+   * - Each `yield*` automatically awaits and unwraps the `OptionAsync` value or propagates `None`.
+   * - If any operation resolves to `Option.None`, the entire generator exits early.
    *
    * @example
    * ```ts
    * import { OptionAsync } from 'funkcia';
    *
-   * const safeParseInt = OptionAsync.liftFun(parseInt)
+   * declare const safeReadFile: (path: string) => OptionAsync<string>;
+   * declare const safeWriteFile: (path: string, content: string) => OptionAsync<string>;
    *
-   * //       ┌─── OptionAsync<number>
-   * //       ▼
-   * const option = OptionAsync.use(async function* () {
-   *   const x: number = yield* safeParseInt('10');
-   *   const y: number = yield* safeParseInt('invalid'); // returns OptionAsync.None immediately
+   * //          ┌─── OptionAsync<string>
+   * //          ▼
+   * const mergedContent = OptionAsync.use(async function* () {
+   *   const fileA: string = yield* safeReadFile('data.txt');
+   *   const fileB: string = yield* safeReadFile('non-existent-file.txt'); // returns OptionAsync.None immediately
    *
-   *   return OptionAsync.some(x + y); // doesn't run
+   *   return safeWriteFile('output.txt', `${fileA}\n${fileB}`); // doesn't run
    * });
    * // Output: Promise<None>
    * ```
@@ -959,31 +956,30 @@ interface OptionAsyncTrait {
   ): OptionAsync<OptionAsync.Unwrap<$Option>>;
 
   /**
-   * Returns a function that evaluates an **async* generator when called, early returning when an `Option.None` is propagated
-   * or returning the `OptionAsync` returned by the generator.
+   * Returns a function that evaluates an *async* generator when called with the defined arguments,
+   * early returning when an `Option.None` is propagated or returning the `OptionAsync` returned by the generator.
    *
-   * `yield*` an `OptionAsync<Value>` unwraps values and propagates `Option.None`s.
-   *
-   * If the value is `Option.None`, then it will return an `OptionAsync` that resolves to `Option.None`
-   * from the enclosing function.
-   *
-   * If applied to an `OptionAsync` that resolves to `Option.Some<U>`, then it will unwrap the value to evaluate `U`.
+   * - Each `yield*` automatically awaits and unwraps the `OptionAsync` value or propagates `None`.
+   * - If any operation resolves to `Option.None`, the entire generator exits early.
    *
    * @example
    * ```ts
    * import { OptionAsync } from 'funkcia';
    *
-   * const safeParseInt = OptionAsync.liftFun(parseInt)
+   * declare const safeReadFile: (path: string) => OptionAsync<string>;
+   * declare const safeWriteFile: (path: string, content: string) => OptionAsync<string>;
    *
-   * //       ┌─── OptionAsync<number>
-   * //       ▼
-   * const option = OptionAsync.use(async function* () {
-   *   const x: number = yield* safeParseInt('10');
-   *   const y: number = yield* safeParseInt('invalid'); // returns OptionAsync.None immediately
+   * //          ┌─── (output: string, pathA: string, pathB: string) => OptionAsync<string>
+   * //          ▼
+   * const safeMergeFiles = OptionAsync.createUse(async function* (output: string, pathA: string, pathB: string) {
+   *   const fileA: string = yield* safeReadFile(pathA);
+   *   const fileB: string = yield* safeReadFile(pathB);
    *
-   *   return OptionAsync.some(x + y); // doesn't run
+   *   return safeWriteFile(output, `${fileA}\n${fileB}`);
    * });
-   * // Output: Promise<None>
+   *
+   * const mergedContent = safeMergeFiles('output.txt', 'data.txt', 'updated-data.txt');
+   * // Output: Promise<Some('[ERROR] Failed to connect\n[INFO] Connection restored')>
    * ```
    */
   createUse<Args extends readonly unknown[], $Option extends Option<any>>(

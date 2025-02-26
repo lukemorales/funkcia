@@ -1415,34 +1415,28 @@ export interface ResultAsyncTrait {
     : never;
 
   /**
-   * Evaluates a generator early returning when a `Result.Error` is propagated
+   * Evaluates an *async* generator early returning when a `Result.Error` is propagated
    * or returning the `AsyncResult` returned by the generator.
    *
-   * `yield*` an `AsyncResult<Value, Error>` unwraps values and propagates `Result.Error`s.
-   *
-   * If the value is `FunkciaStore.Err<E>`, then it will return an `AsyncResult` that resolves to `Result.Error<E>`
-   * from the enclosing function.
-   *
-   * If applied to an `AsyncResult` that resolves to `Result.Ok<U>`, then it will unwrap the value to evaluate `U`.
+   * - Each `yield*` automatically awaits and unwraps the `ResultAsync` value or propagates `Error`.
+   * - If any operation resolves to `Result.Error`, the entire generator exits early.
    *
    * @example
    * ```ts
-   * import { AsyncResult } from 'funkcia';
+   * import { ResultAsync } from 'funkcia';
    *
-   * declare function rateLimit(clientId: ClientId, ip: IpAddress): AsyncResult<ClientId, RateLimitError>;
+   * declare const safeReadFile: (path: string) => ResultAsync<string, FileNotFoundError>;
+   * declare const safeWriteFile: (path: string, content: string) => ResultAsync<string, FailedToWriteFileError>;
    *
-   * declare function findUserByEmail(email: Email): AsyncResult<User, UserNotFoundError>;
+   * //          ┌─── ResultAsync<string, FileNotFoundError | FailedToWriteFileError>
+   * //          ▼
+   * const mergedContent = ResultAsync.use(async function* () {
+   *   const fileA: string = yield* safeReadFile('data.txt');
+   *   const fileB: string = yield* safeReadFile('non-existent-file.txt'); // returns ResultAsync.Error immediately
    *
-   * //       ┌─── AsyncResult<UserPreferences, RateLimitError | UserNotFoundError>
-   * //       ▼
-   * const result = use(async function* () {
-   *   yield* rateLimit(req.headers['x-client-id'], req.ip); // returns Error<RateLimitError> immediately
-   *
-   *   const user: User = yield* findUserByEmail('johndoe@example.com'); // doesn't run
-   *
-   *   return ok(user.preferences);
+   *   return safeWriteFile('output.txt', `${fileA}\n${fileB}`); // doesn't run
    * });
-   * // Output: Promise<Error(RateLimitError)>
+   * // Output: Promise<Error(FileNotFoundError)>
    * ```
    */
   use<$Result extends AnyResult, Error extends {}>(
@@ -1453,7 +1447,31 @@ export interface ResultAsyncTrait {
   >;
 
   /**
-   * Creates a propagator function.
+   * Returns a function that evaluates an *async* generator when called with the defined arguments,
+   * early returning when a `Result.Error` is propagated or returning the `AsyncResult` returned by the generator.
+   *
+   * - Each `yield*` automatically awaits and unwraps the `ResultAsync` value or propagates `Error`.
+   * - If any operation resolves to `Result.Error`, the entire generator exits early.
+   *
+   * @example
+   * ```ts
+   * import { ResultAsync } from 'funkcia';
+   *
+   * declare const safeReadFile: (path: string) => ResultAsync<string, NodeFSError>;
+   * declare const safeWriteFile: (path: string, content: string) => ResultAsync<string, NodeFSError>;
+   *
+   * //          ┌─── (output: string, pathA: string, pathB: string) => ResultAsync<string, NodeFSError>
+   * //          ▼
+   * const safeMergeFiles = ResultAsync.createUse(async function* (output: string, pathA: string, pathB: string) {
+   *   const fileA: string = yield* safeReadFile(pathA);
+   *   const fileB: string = yield* safeReadFile(pathB);
+   *
+   *   return safeWriteFile(output, `${fileA}\n${fileB}`);
+   * });
+   *
+   * const mergedContent = safeMergeFiles('output.txt', 'data.txt', 'updated-data.txt');
+   * // Output: Promise<Ok('[ERROR] Failed to connect\n[INFO] Connection restored')>
+   * ```
    */
   createUse<
     Args extends readonly any[],
