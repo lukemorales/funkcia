@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/method-signature-style */
+import { coerce } from './functions';
 import { Result } from './result';
 
 export interface SafeJSON {
@@ -45,6 +46,6 @@ export interface SafeJSON {
 }
 
 export const SafeJSON: SafeJSON = Object.freeze({
-  parse: Result.enhance(JSON.parse) as never,
-  stringify: Result.enhance(JSON.stringify) as never,
+  parse: Result.enhance(JSON.parse, coerce<SyntaxError>),
+  stringify: Result.enhance(JSON.stringify, coerce<TypeError>) as never,
 });

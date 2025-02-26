@@ -1,3 +1,4 @@
+import { coerce } from './functions';
 import { Result } from './result';
 
 export interface SafeURI {
@@ -39,8 +40,8 @@ export interface SafeURI {
 }
 
 export const SafeURI: SafeURI = Object.freeze({
-  encode: Result.enhance(encodeURI) as never,
-  decode: Result.enhance(decodeURI) as never,
-  encodeURIComponent: Result.enhance(encodeURIComponent) as never,
-  decodeURIComponent: Result.enhance(decodeURIComponent) as never,
+  encode: Result.enhance(encodeURI, coerce<URIError>),
+  decode: Result.enhance(decodeURI, coerce<URIError>),
+  encodeURIComponent: Result.enhance(encodeURIComponent, coerce<URIError>),
+  decodeURIComponent: Result.enhance(decodeURIComponent, coerce<URIError>),
 });

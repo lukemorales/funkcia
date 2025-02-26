@@ -1,3 +1,4 @@
+import { coerce } from './functions';
 import { Result } from './result';
 
 export interface SafeURL {
@@ -14,5 +15,6 @@ export interface SafeURL {
 export const SafeURL: SafeURL = Object.freeze({
   of: Result.enhance(
     (...args: ConstructorParameters<typeof URL>): URL => new URL(...args),
-  ) as never,
+    coerce<TypeError>,
+  ),
 });
