@@ -1,0 +1,60 @@
+---
+icon: hand-wave
+cover: >-
+  https://images.unsplash.com/photo-1617791160536-598cf32026fb?crop=entropy&cs=srgb&fm=jpg&ixid=M3wxOTcwMjR8MHwxfHNlYXJjaHwxfHxicmFpbnxlbnwwfHx8fDE3Mzk1MzgxOTN8MA&ixlib=rb-4.0.3&q=85
+coverY: 0
+layout:
+  cover:
+    visible: true
+    size: full
+  title:
+    visible: true
+  description:
+    visible: false
+  tableOfContents:
+    visible: true
+  outline:
+    visible: true
+  pagination:
+    visible: true
+---
+
+# Welcome
+
+Funkcia is a TypeScript library that provides robust error handling and functional programming primitives, heavily inspired by Rust's error handling patterns and functional programming concepts.
+
+It provides a comprehensive toolkit for writing more reliable code with better error handling and functional programming patterns, making it easier to write maintainable and type-safe applications.
+
+{% tabs %}
+{% tab title="npm" %}
+{% code fullWidth="true" %}
+```bash
+npm i funckia
+```
+{% endcode %}
+{% endtab %}
+
+{% tab title="pnpm" %}
+```bash
+pnpm add funckia
+```
+{% endtab %}
+
+{% tab title="bun" %}
+```bash
+bun add funckia
+```
+{% endtab %}
+
+{% tab title="yarn" %}
+```bash
+yarn add funkcia
+```
+{% endtab %}
+{% endtabs %}
+
+
+
+### Jump right in
+
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Option</td><td></td><td></td><td></td><td><a href="data-types/option/">option</a></td></tr><tr><td><strong>Result</strong></td><td></td><td></td><td></td><td><a href="data-types/result/">result</a></td></tr><tr><td>AsyncOption</td><td></td><td></td><td></td><td><a href="data-types/optionasync/">optionasync</a></td></tr><tr><td>AsyncResult</td><td></td><td></td><td></td><td><a href="data-types/resultasync/">resultasync</a></td></tr></tbody></table>
