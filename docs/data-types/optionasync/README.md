@@ -33,7 +33,7 @@ const option = AsyncOption.some(10);
 // Output: Promise<Some(10)>
 ```
 
-#### of&#x20;
+#### of
 
 {% hint style="info" %}
 Alias of `AsyncOption.some`
@@ -295,7 +295,7 @@ const userGreeting = await readFile('data.json')
 Rejects the promise with `UnwrapError` if the `Option` is `None`.
 {% endhint %}
 
-Returns a promise that unwraps the underlying `Option` value.&#x20;
+Returns a promise that unwraps the underlying `Option` value.
 
 ```typescript
 import { AsyncOption } from 'funkcia';

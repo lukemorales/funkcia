@@ -8,11 +8,11 @@ Initiates a `do notation` for the `Option` type.
 
 <pre class="language-typescript"><code class="lang-typescript">import { Option } from 'funkcia';
 
-declare function getUser(id: string): Option&#x3C;User>;
-declare function getUserScore(user: User): Option&#x3C;UserScore>;
+declare function getUser(id: string): Option<User>;
+declare function getUserScore(user: User): Option<UserScore>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
-//        ┌─── Option&#x3C;UserLevel>
+//        ┌─── Option<UserLevel>
 //        ▼
 const userLevel = Option.Do
   .bind('user', () => getUser('user_01'))
@@ -28,11 +28,11 @@ Initiates a `do notation` with the current `Option`, binding it to a context obj
 
 <pre class="language-typescript"><code class="lang-typescript">import { Option } from 'funkcia';
 
-declare function getUser(id: string): Option&#x3C;User>;
-declare function getUserScore(user: User): Option&#x3C;UserScore>;
+declare function getUser(id: string): Option<User>;
+declare function getUserScore(user: User): Option<UserScore>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
-//        ┌─── Option&#x3C;UserLevel>
+//        ┌─── Option<UserLevel>
 //        ▼
 const userLevel = getUser('user_01')
 <strong>  .bindTo('user')
@@ -50,11 +50,11 @@ If the `Option` is `Some`, the value is assigned to the key in the context objec
 
 <pre class="language-typescript"><code class="lang-typescript">import { Option } from 'funkcia';
 
-declare function getUser(id: string): Option&#x3C;User>;
-declare function getUserScore(user: User): Option&#x3C;UserScore>;
+declare function getUser(id: string): Option<User>;
+declare function getUserScore(user: User): Option<UserScore>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
-//        ┌─── Option&#x3C;UserLevel>
+//        ┌─── Option<UserLevel>
 //        ▼
 const userLevel = Option.Do
   .bind('user', () => getUser('user_01'))
@@ -112,7 +112,7 @@ declare function getUserPermissions(user: User): Option<Permissions>;
 declare function checkAccess(permissions: Permissions, resource: string): Option<Access>;
 
 const access = findUser('user_123')
-  .andThen(user => 
+  .andThen(user =>
     getUserPermissions(user)
       .andThen(permissions =>
         checkAccess(permissions, 'api-key')

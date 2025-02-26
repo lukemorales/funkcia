@@ -1377,7 +1377,9 @@ export interface Result<Value, Error>
    *
    * //       ┌─── Result<number, never>
    * //       ▼
-   * const result = Result.some(10).tap((value) => console.log(value)); // LOG: 10
+   * const result = Result.some(10).tap(
+   *   (value) => console.log(value), // Console output: 10
+   * );
    * ```
    */
   tap: (onOk: (value: Value) => unknown) => Result<Value, Error>;
@@ -1393,12 +1395,12 @@ export interface Result<Value, Error>
    * ```ts
    * import { Result } from 'funkcia';
    *
-   * declare function getUser(id: string): Result<User, NoValueError>;
+   * declare function findUserById(id: string): Result<User, UserNotFoundError>;
    *
-   * //       ┌─── Result<never, NoValueError>
+   * //       ┌─── Result<User, UserNotFoundError>
    * //       ▼
-   * const result = getUser('invalid_id')
-   *   .tapError((error) => console.log(error)); // LOG: NoValueError
+   * const result = findUserById('invalid_id').tapError(
+   *   .tapError((error) => console.log(error)); // LOG: UserNotFoundError
    * ```
    */
   tapError: (onError: (error: Error) => unknown) => Result<Value, Error>;
@@ -1429,12 +1431,13 @@ export interface Result<Value, Error>
    * ```ts
    * import { Result } from 'funkcia';
    *
-   * declare function findUserByEmail(email: string): Result<User, UserNotFound>;
+   * declare function findUserById(id: string): Result<User, UserNotFound>;
    *
-   * const maybeUser = findUserByEmail(data.email);
+   * const maybeUser = findUserById('invalid_id');
    *
    * if (result.isError()) {
-   *   return await createUser(data)
+   *   const error = user.unwrapError(); // `unwrapError` will not throw
+   *   // ...process error
    * }
    * ```
    */

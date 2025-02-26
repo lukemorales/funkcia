@@ -10,17 +10,17 @@ Drawing primarily from Rust's `?` operator for error propagation, and inspired b
 
 #### use
 
-Evaluates an _async_ generator early returning when an `Option.None` is propagated or returning the `OptionAsync` returned by the generator.&#x20;
+Evaluates an _async_ generator early returning when an `Option.None` is propagated or returning the `OptionAsync` returned by the generator.
 
 * Each `yield*` automatically awaits and unwraps the `OptionAsync` value or propagates `None`.
 * If any operation resolves to `Option.None`, the entire generator exits early.
 
 <pre class="language-typescript" data-overflow="wrap"><code class="lang-typescript">import { OptionAsync } from 'funkcia';
 
-declare const safeReadFile: (path: string) => OptionAsync&#x3C;string>;
-declare const safeWriteFile: (path: string, content: string) => OptionAsync&#x3C;string>;
+declare const safeReadFile: (path: string) => OptionAsync<string>;
+declare const safeWriteFile: (path: string, content: string) => OptionAsync<string>;
 
-//          ┌─── OptionAsync&#x3C;string>
+//          ┌─── OptionAsync<string>
 //          ▼
 const mergedContent = OptionAsync.use(async function* () {
   const <a data-footnote-ref href="#user-content-fn-1">fileA</a> = yield* safeReadFile('data.txt');
@@ -28,22 +28,22 @@ const mergedContent = OptionAsync.use(async function* () {
 
   return safeWriteFile('output.txt', `${fileA}\n${fileB}`); // doesn't run
 });
-// Output: Promise&#x3C;None>
+// Output: Promise<None>
 </code></pre>
 
 #### createUse
 
-Returns a function that evaluates an _async_ generator when called with the defined arguments, early returning when an `Option.None` is propagated or returning the `OptionAsync` returned by the generator.&#x20;
+Returns a function that evaluates an _async_ generator when called with the defined arguments, early returning when an `Option.None` is propagated or returning the `OptionAsync` returned by the generator.
 
 * Each `yield*` automatically awaits and unwraps the `OptionAsync` value or propagates `None`.
 * If any operation resolves to `Option.None`, the entire generator exits early.
 
 <pre class="language-typescript"><code class="lang-typescript">import { OptionAsync } from 'funkcia';
 
-declare const safeReadFile: (path: string) => OptionAsync&#x3C;string>;
-declare const safeWriteFile: (path: string, content: string) => OptionAsync&#x3C;string>;
+declare const safeReadFile: (path: string) => OptionAsync<string>;
+declare const safeWriteFile: (path: string, content: string) => OptionAsync<string>;
 
-//          ┌─── (output: string, pathA: string, pathB: string) => OptionAsync&#x3C;string>
+//          ┌─── (output: string, pathA: string, pathB: string) => OptionAsync<string>
 //          ▼
 const safeMergeFiles = OptionAsync.createUse(async function* (output: string, pathA: string, pathB: string) {
   const <a data-footnote-ref href="#user-content-fn-1">fileA</a> = yield* safeReadFile(pathA);
@@ -53,7 +53,7 @@ const safeMergeFiles = OptionAsync.createUse(async function* (output: string, pa
 });
 
 const mergedContent = safeMergeFiles('output.txt', 'data.txt', 'updated-data.txt');
-// Output: Promise&#x3C;Some('[ERROR] Failed to connect\n[INFO] Connection restored')>
+// Output: Promise<Some('[ERROR] Failed to connect\n[INFO] Connection restored')>
 </code></pre>
 
 ### Understanding the use method
@@ -76,7 +76,7 @@ const access = Option.relay(function* () {
   const user = yield* findUser('user_123');
   // If user is found (`findUser` returns `Option.Some(User)`, get their permissions
   const permissions = yield* getUserPermissions(user);
-  
+
   // If all steps succeed, we can use the accumulated context to check access to specific resource
   return checkAccess(permissions, 'api-key');
 });
@@ -92,7 +92,7 @@ declare function getUserPermissions(user: User): Option<Permissions>;
 declare function checkAccess(permissions: Permissions, resource: string): Option<Access>;
 
 const access = findUser('user_123')
-  .andThen(user => 
+  .andThen(user =>
     getUserPermissions(user)
       .andThen(permissions =>
         checkAccess(permissions, 'api-key')

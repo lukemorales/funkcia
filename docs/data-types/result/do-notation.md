@@ -22,11 +22,11 @@ Initiates a `do notation` for the `Result` type.
 
 <pre class="language-typescript"><code class="lang-typescript">import { Result } from 'funkcia';
 
-declare function getUser(id: string): Result&#x3C;User, UserNotFoundError>;
-declare function getUserScore(user: User): Result&#x3C;UserScore, UserNotScoredError>;
+declare function getUser(id: string): Result<User, UserNotFoundError>;
+declare function getUserScore(user: User): Result<UserScore, UserNotScoredError>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
-//        ┌─── Result&#x3C;UserLevel, UserNotFoundError | UserNotScoredError>
+//        ┌─── Result<UserLevel, UserNotFoundError | UserNotScoredError>
 //        ▼
 const userLevel = Result.Do
   .bind('user', () => getUser('user_01'))
@@ -42,11 +42,11 @@ Initiates a `do notation` with the current `Result`, binding it to a context obj
 
 <pre class="language-typescript"><code class="lang-typescript">import { Result } from 'funkcia';
 
-declare function getUser(id: string): Result&#x3C;User, UserNotFoundError>;
-declare function getUserScore(user: User): Result&#x3C;UserScore, UserNotScoredError>;
+declare function getUser(id: string): Result<User, UserNotFoundError>;
+declare function getUserScore(user: User): Result<UserScore, UserNotScoredError>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
-//        ┌─── Result&#x3C;UserLevel, UserNotFoundError | UserNotScoredError>
+//        ┌─── Result<UserLevel, UserNotFoundError | UserNotScoredError>
 //        ▼
 const userLevel = getUser('user_01')
 <strong>  .bindTo('user')
@@ -64,11 +64,11 @@ If the `Result` is `Ok`, the value is assigned to the key in the context object.
 
 <pre class="language-typescript"><code class="lang-typescript">import { Result } from 'funkcia';
 
-declare function getUser(id: string): Result&#x3C;User, UserNotFoundError>;
-declare function getUserScore(user: User): Result&#x3C;UserScore, UserNotScoredError>;
+declare function getUser(id: string): Result<User, UserNotFoundError>;
+declare function getUserScore(user: User): Result<UserScore, UserNotScoredError>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
-//        ┌─── Result&#x3C;UserLevel, UserNotFoundError | UserNotScoredError>
+//        ┌─── Result<UserLevel, UserNotFoundError | UserNotScoredError>
 //        ▼
 const userLevel = Result.Do
   .bind('user', () => getUser('user_01'))
@@ -128,7 +128,7 @@ declare function getUserPermissions(user: User): Result<Permissions, MissingPerm
 declare function checkAccess(permissions: Permissions, resource: string): Result<Access, InsuficientPermissionsError>;
 
 const access = findUser('user_123')
-  .andThen(user => 
+  .andThen(user =>
     getUserPermissions(user)
       .andThen(permissions =>
         checkAccess(permissions, 'api-key')

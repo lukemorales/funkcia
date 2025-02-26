@@ -21,16 +21,16 @@ Drawing primarily from Rust's `?` operator for error propagation, and inspired b
 
 #### use
 
-Evaluates a generator early returning when a `Result.Error` is propagated or returning the `Result` returned by the generator.&#x20;
+Evaluates a generator early returning when a `Result.Error` is propagated or returning the `Result` returned by the generator.
 
 * Each `yield*` automatically unwraps the `Result` value or propagates `Error`s.
 * If any operation returns `Result.Error`, the entire generator exits early.
 
 <pre class="language-typescript" data-overflow="wrap"><code class="lang-typescript">import { Result } from 'funkcia';
 
-declare const safeParseInt: (string: string, radix?: number) => Result&#x3C;number, TypeError>;
+declare const safeParseInt: (string: string, radix?: number) => Result<number, TypeError>;
 
-//       ┌─── Result&#x3C;number, TypeError>
+//       ┌─── Result<number, TypeError>
 //       ▼
 const result = Result.use(function* () {
   const <a data-footnote-ref href="#user-content-fn-1">x</a> = yield* safeParseInt('10');
@@ -43,16 +43,16 @@ const result = Result.use(function* () {
 
 #### createUse
 
-Returns a function that evaluates a generator when called with the declared arguments, early returning when a `Result.Error` is propagated or returning the `Result` returned by the generator.&#x20;
+Returns a function that evaluates a generator when called with the declared arguments, early returning when a `Result.Error` is propagated or returning the `Result` returned by the generator.
 
 * Each `yield*` automatically unwraps the `Result` value or propagates `Error`.
 * If any operation returns `Result.Error`, the entire generator exits early.
 
 <pre class="language-typescript" data-overflow="wrap"><code class="lang-typescript">import { Result } from 'funkcia';
 
-declare const safeParseInt: (string: string, radix?: number) => Result&#x3C;number, TypeError>;
+declare const safeParseInt: (string: string, radix?: number) => Result<number, TypeError>;
 
-//           ┌─── (a: string, b: string) => Result&#x3C;number, TypeError>
+//           ┌─── (a: string, b: string) => Result<number, TypeError>
 //           ▼
 const sumParsedIntegers = Result.createUse(function* (a: string, b: string) {
   const <a data-footnote-ref href="#user-content-fn-1">x</a> = yield* safeParseInt(a);
@@ -85,7 +85,7 @@ const access = Result.use(function* () {
   const user = yield* findUser('user_123');
   // If user is found (`findUser` returns `Result.Ok(User)`, get their permissions
   const permissions = yield* getUserPermissions(user);
-  
+
   // If all steps succeed, we can use the accumulated context to check access to specific resource
   return checkAccess(permissions, 'api-key');
 });
@@ -101,7 +101,7 @@ declare function getUserPermissions(user: User): Result<Permissions, MissingPerm
 declare function checkAccess(permissions: Permissions, resource: string): Result<Access, InsuficientPermissionsError>;
 
 const access = findUser('user_123')
-  .andThen(user => 
+  .andThen(user =>
     getUserPermissions(user)
       .andThen(permissions =>
         checkAccess(permissions, 'api-key')

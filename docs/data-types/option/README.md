@@ -155,7 +155,7 @@ const ensureCircle = Option.predicate(
 declare const input: Shape;
 
 //       ┌─── Option<Circle>
-//       ▼ 
+//       ▼
 const option = ensureCircle(input);
 
 //          ┌─── (value: number) => Option<number>
@@ -251,7 +251,7 @@ declare const maybeAnOptionWithUser: unknown;
 if (Option.is(maybeAnOptionWithUser)) {
   const user = <a data-footnote-ref href="#user-content-fn-1">maybeAnOptionWithUser</a>.filter(isUser);
 //        ▲
-//        └─── Option&#x3C;User>
+//        └─── Option<User>
 }
 </code></pre>
 
@@ -430,15 +430,17 @@ Unwraps the value of the `Option` if it is a `Some`, otherwise returns `null`.
 ```typescript
 import { Option } from 'funkcia';
 
+declare const findUserById: (id: string) => Option<User>;
+
 //     ┌─── User | null
 //     ▼
-const user = Option.some(databaseUser).unwrapOrNull();
+const user = findUserById('user_123').unwrapOrNull();
 ```
 
 #### unwrapOrUndefined
 
 {% hint style="info" %}
-&#x20;Use this method at the edges of the system, when storing values in a database or serializing to JSON.
+Use this method at the edges of the system, when storing values in a database or serializing to JSON.
 {% endhint %}
 
 Unwraps the value of the `Option` if it is a `Some`, otherwise returns `undefined`.
@@ -446,9 +448,11 @@ Unwraps the value of the `Option` if it is a `Some`, otherwise returns `undefine
 ```typescript
 import { Option } from 'funkcia';
 
+declare const findUserById: (id: string) => Option<User>;
+
 //     ┌─── User | undefined
 //     ▼
-const user = Option.some(databaseUser).unwrapOrUndefined();
+const user = findUserById('user_123').unwrapOrUndefined();
 ```
 
 #### expect
@@ -626,7 +630,7 @@ return user.unwrap();
 By default, it uses referential equality to compare the values, but you can provide a custom equality function for more complex cases.
 {% endhint %}
 
-Compares the `Option` with another `Option` and returns `true` if they are equal.&#x20;
+Compares the `Option` with another `Option` and returns `true` if they are equal.
 
 ```typescript
 import { Option } from 'funkcia';

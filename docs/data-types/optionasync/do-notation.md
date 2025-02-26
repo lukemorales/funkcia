@@ -8,11 +8,11 @@ Initiates a `Do-notation` for the `AsyncOption` type.
 
 <pre class="language-typescript"><code class="lang-typescript">import { AsyncOption } from 'funkcia';
 
-declare function findUserById(id: string): AsyncOption&#x3C;User>;
-declare function computeUserScore(user: User): AsyncOption&#x3C;UserScore>;
-declare function rankUserLevel(user: User, score: UserScore): AsyncOption&#x3C;UserLevel>;
+declare function findUserById(id: string): AsyncOption<User>;
+declare function computeUserScore(user: User): AsyncOption<UserScore>;
+declare function rankUserLevel(user: User, score: UserScore): AsyncOption<UserLevel>;
 
-//        ┌─── AsyncOption&#x3C;UserLevel>
+//        ┌─── AsyncOption<UserLevel>
 //        ▼
 const userLevel = AsyncOption.Do
   .bind('user', () => findUserById('user_123'))
@@ -28,11 +28,11 @@ Initiates a `Do-notation` with the current `AsyncOption`, binding it to a contex
 
 <pre class="language-typescript"><code class="lang-typescript">import { AsyncOption } from 'funkcia';
 
-declare function findUserById(id: string): AsyncOption&#x3C;User>;
-declare function computeUserScore(user: User): AsyncOption&#x3C;UserScore>;
-declare function rankUserLevel(user: User, score: UserScore): AsyncOption&#x3C;UserLevel>;
+declare function findUserById(id: string): AsyncOption<User>;
+declare function computeUserScore(user: User): AsyncOption<UserScore>;
+declare function rankUserLevel(user: User, score: UserScore): AsyncOption<UserLevel>;
 
-//        ┌─── AsyncOption&#x3C;UserLevel>
+//        ┌─── AsyncOption<UserLevel>
 //        ▼
 const userLevel = getUser('user_123')
 <strong>  .bindTo('user')
@@ -50,11 +50,11 @@ If the `AsyncOption` resolves to `Some`, the value is assigned to the key in the
 
 <pre class="language-typescript"><code class="lang-typescript">import { AsyncOption } from 'funkcia';
 
-declare function findUserById(id: string): AsyncOption&#x3C;User>;
-declare function computeUserScore(user: User): AsyncOption&#x3C;UserScore>;
-declare function rankUserLevel(user: User, score: UserScore): AsyncOption&#x3C;UserLevel>;
+declare function findUserById(id: string): AsyncOption<User>;
+declare function computeUserScore(user: User): AsyncOption<UserScore>;
+declare function rankUserLevel(user: User, score: UserScore): AsyncOption<UserLevel>;
 
-//        ┌─── AsyncOption&#x3C;UserLevel>
+//        ┌─── AsyncOption<UserLevel>
 //        ▼
 const userLevel = AsyncOption.Do
   .bind('user', () => findUserById('user_123'))
@@ -70,7 +70,7 @@ const userLevel = AsyncOption.Do
 Ensure you know what you're doing when binding a promise using `let`, otherwise a thrown exception will not be caught and break your app
 {% endhint %}
 
-Binds a non-rejecting promise to the context object in a `do notation`.&#x20;
+Binds a non-rejecting promise to the context object in a `do notation`.
 
 If the promise resolves to a non-nullable value, the value is assigned to the key in the context object. If the promise resolves to `null` or `undefined`, the parent `AsyncOption` running the `Do` simulation becomes a `None`.
 
@@ -116,7 +116,7 @@ declare function getUserPermissions(user: User): AsyncOption<Permissions>;
 declare function checkAccess(permissions: Permissions, resource: string): AsyncOption<Access>;
 
 const access = findUser('user_123')
-  .andThen(user => 
+  .andThen(user =>
     getUserPermissions(user)
       .andThen(permissions =>
         checkAccess(permissions, 'api-key')

@@ -22,11 +22,11 @@ Initiates a `do notation` for the `Result` type.
 
 <pre class="language-typescript"><code class="lang-typescript">import { AsyncResult } from 'funkcia';
 
-declare function findUserById(id: string): AsyncResult&#x3C;User, UserNotFoundError>;
-declare function computeUserScore(user: User): AsyncResult&#x3C;UserScore, UserNotScoredError>;
-declare function rankUserLevel(user: User, score: UserScore): AsyncResult&#x3C;UserLevel, InvalidRankingError>;
+declare function findUserById(id: string): AsyncResult<User, UserNotFoundError>;
+declare function computeUserScore(user: User): AsyncResult<UserScore, UserNotScoredError>;
+declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRankingError>;
 
-//        ┌─── AsyncResult&#x3C;UserLevel, UserNotFoundError | UserNotScoredError>
+//        ┌─── AsyncResult<UserLevel, UserNotFoundError | UserNotScoredError>
 //        ▼
 const userLevel = AsyncResult.Do
   .bind('user', () => findUserById('user_123'))
@@ -42,11 +42,11 @@ Initiates a `do notation` with the current `AsyncResult`, binding it to a contex
 
 <pre class="language-typescript"><code class="lang-typescript">import { AsyncResult } from 'funkcia';
 
-declare function findUserById(id: string): AsyncResult&#x3C;User, UserNotFoundError>;
-declare function computeUserScore(user: User): AsyncResult&#x3C;UserScore, UserNotScoredError>;
-declare function rankUserLevel(user: User, score: UserScore): AsyncResult&#x3C;UserLevel, InvalidRankingError>;
+declare function findUserById(id: string): AsyncResult<User, UserNotFoundError>;
+declare function computeUserScore(user: User): AsyncResult<UserScore, UserNotScoredError>;
+declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRankingError>;
 
-//        ┌─── AsyncResult&#x3C;UserLevel, UserNotFoundError | UserNotScoredError>
+//        ┌─── AsyncResult<UserLevel, UserNotFoundError | UserNotScoredError>
 //        ▼
 const userLevel = findUserById('user_123')
 <strong>  .bindTo('user')
@@ -64,11 +64,11 @@ If the `Result` is `Ok`, the value is assigned to the key in the context object.
 
 <pre class="language-typescript"><code class="lang-typescript">import { AsyncResult } from 'funkcia';
 
-declare function findUserById(id: string): AsyncResult&#x3C;User, UserNotFoundError>;
-declare function computeUserScore(user: User): AsyncResult&#x3C;UserScore, UserNotScoredError>;
-declare function rankUserLevel(user: User, score: UserScore): AsyncResult&#x3C;UserLevel, InvalidRankingError>;
+declare function findUserById(id: string): AsyncResult<User, UserNotFoundError>;
+declare function computeUserScore(user: User): AsyncResult<UserScore, UserNotScoredError>;
+declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRankingError>;
 
-//        ┌─── Result&#x3C;UserLevel, UserNotFoundError | UserNotScoredError>
+//        ┌─── Result<UserLevel, UserNotFoundError | UserNotScoredError>
 //        ▼
 const userLevel = AsyncResult.Do
   .bind('user', () => findUserById('user_123'))
@@ -88,7 +88,7 @@ Binds non-rejecting promise to the context object in a `do notation`.
 
 <pre class="language-typescript"><code class="lang-typescript">import { AsyncResult } from 'funkcia';
 
-//      ┌─── AsyncResult&#x3C;number, never>
+//      ┌─── AsyncResult<number, never>
 //      ▼
 const result = AsyncResult.Do
   .let('a', () => Promise.resolve(10))
@@ -130,7 +130,7 @@ declare function getUserPermissions(user: User): AsyncResult<Permissions, Missin
 declare function checkAccess(permissions: Permissions, resource: string): AsyncResult<Access, InsuficientPermissionsError>;
 
 const access = findUser('user_123')
-  .andThen(user => 
+  .andThen(user =>
     getUserPermissions(user)
       .andThen(permissions =>
         checkAccess(permissions, 'api-key')

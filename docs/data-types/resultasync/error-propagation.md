@@ -21,17 +21,17 @@ Drawing primarily from Rust's `?` operator for error propagation, and inspired b
 
 #### use
 
-Evaluates an _async_ generator early returning when a `Result.Error` is propagated or returning the `ResultAsync` returned by the generator.&#x20;
+Evaluates an _async_ generator early returning when a `Result.Error` is propagated or returning the `ResultAsync` returned by the generator.
 
 * Each `yield*` automatically awaits and unwraps the `ResultAsync` value or propagates `Error`.
 * If any operation resolves to `Result.Error`, the entire generator exits early.
 
 <pre class="language-typescript" data-overflow="wrap"><code class="lang-typescript">import { ResultAsync } from 'funkcia';
 
-declare const safeReadFile: (path: string) => ResultAsync&#x3C;string, NodeFSError>;
-declare const safeWriteFile: (path: string, content: string) => ResultAsync&#x3C;string, NodeFSError>;
+declare const safeReadFile: (path: string) => ResultAsync<string, NodeFSError>;
+declare const safeWriteFile: (path: string, content: string) => ResultAsync<string, NodeFSError>;
 
-//          ┌─── ResultAsync&#x3C;string, NodeFSError>
+//          ┌─── ResultAsync<string, NodeFSError>
 //          ▼
 const mergedContent = ResultAsync.use(async function* () {
   const <a data-footnote-ref href="#user-content-fn-1">fileA</a> = yield* safeReadFile('data.txt');
@@ -39,22 +39,22 @@ const mergedContent = ResultAsync.use(async function* () {
 </strong>
   return safeWriteFile('output.txt', `${fileA}\n${fileB}`); // doesn't run
 });
-// Output: Promise&#x3C;Error(NodeFSError)>
+// Output: Promise<Error(NodeFSError)>
 </code></pre>
 
 #### createUse
 
-Returns a function that evaluates an _async_ generator when called with the defined arguments, early returning when a `Result.Error` is propagated or returning the `ResultAsync` returned by the generator.&#x20;
+Returns a function that evaluates an _async_ generator when called with the defined arguments, early returning when a `Result.Error` is propagated or returning the `ResultAsync` returned by the generator.
 
 * Each `yield*` automatically awaits and unwraps the `ResultAsync` value or propagates `Error`.
 * If any operation resolves to `Result.Error`, the entire generator exits early.
 
 <pre class="language-typescript"><code class="lang-typescript">import { ResultAsync } from 'funkcia';
 
-declare const safeReadFile: (path: string) => ResultAsync&#x3C;string, NodeFSError>;
-declare const safeWriteFile: (path: string, content: string) => ResultAsync&#x3C;string, NodeFSError>;
+declare const safeReadFile: (path: string) => ResultAsync<string, NodeFSError>;
+declare const safeWriteFile: (path: string, content: string) => ResultAsync<string, NodeFSError>;
 
-//          ┌─── (output: string, pathA: string, pathB: string) => ResultAsync&#x3C;string, NodeFSError>
+//          ┌─── (output: string, pathA: string, pathB: string) => ResultAsync<string, NodeFSError>
 //          ▼
 const safeMergeFiles = ResultAsync.createUse(async function* (output: string, pathA: string, pathB: string) {
   const <a data-footnote-ref href="#user-content-fn-1">fileA</a> = yield* safeReadFile(pathA);
@@ -64,7 +64,7 @@ const safeMergeFiles = ResultAsync.createUse(async function* (output: string, pa
 });
 
 const mergedContent = safeMergeFiles('output.txt', 'data.txt', 'updated-data.txt');
-// Output: Promise&#x3C;Ok('[ERROR] Failed to connect\n[INFO] Connection restored')>
+// Output: Promise<Ok('[ERROR] Failed to connect\n[INFO] Connection restored')>
 
 </code></pre>
 
@@ -85,9 +85,9 @@ declare function findUserByEmail(email: Email): ResultAsync<User, UserNotFoundEr
 const userPreferences = ResultAsync.use(function* () {
   // First, check if API rate limit is allowed
   yield* rateLimit(req.headers['x-client-id'], req.ip);
-  // If rate-limit is not blocked, get the user 
+  // If rate-limit is not blocked, get the user
   const user = yield* findUserByEmail(req.query.email);
-  
+
   // If all steps succeed, we can use the accumulated context to get user preferences
   return ResultAsync.ok(user.preferences);
 });
@@ -102,7 +102,7 @@ declare function rateLimit(clientId: ClientId, ip: IpAddress): ResultAsync<Clien
 declare function findUserByEmail(email: Email): ResultAsync<User, UserNotFoundError>;
 
 const userPreferences = rateLimit(req.headers['x-client-id'], req.ip)
-  .andThen(() => 
+  .andThen(() =>
     findUserByEmail(req.query.email)
       .map(user => user.preferences)
   );

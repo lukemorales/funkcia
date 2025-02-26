@@ -30,7 +30,7 @@ import { Result } from 'funkcia';
 const result = Result.ok(10);
 ```
 
-#### of&#x20;
+#### of
 
 {% hint style="info" %}
 Alias of `Result.ok`
@@ -64,7 +64,7 @@ function divide(dividend: number, divisor: number): Result<number, InvalidDiviso
 
 #### fromNullable
 
-Constructs a `Result` from a nullable value.&#x20;
+Constructs a `Result` from a nullable value.
 
 If the value is `null` or `undefined`, it returns a `Result.Error` with a `NoValueError` error, or with the value returned by the  provided `onNullable` callback. Otherwise, it returns a `Result.Ok`.
 
@@ -77,9 +77,9 @@ declare const user: User | null;
 //      ▼
 const result = Result.fromNullable(user);
 
-//      ┌─── Result<string, UserNotFoundError>
-//      ▼
-const result = Result.fromNullable(
+//            ┌─── Result<string, UserNotFoundError>
+//            ▼
+const resultWithCustomError = Result.fromNullable(
   user,
   () => new UserNotFoundError(),
 );
@@ -104,8 +104,8 @@ interface User {
 //      ▼
 const result = Result.fromFalsy(user.lastName?.trim());
 
-//      ┌─── Result<string, Error>
-//      ▼
+//            ┌─── Result<string, Error>
+//            ▼
 const resultWithCustomError = Result.fromFalsy(
   user.lastName?.trim(),
   () => new Error('User missing last name'),
@@ -114,7 +114,7 @@ const resultWithCustomError = Result.fromFalsy(
 
 #### try
 
-Constructs a `Result` from a function that may throw.&#x20;
+Constructs a `Result` from a function that may throw.
 
 If the function executes successfully, it returns a `Result.Ok`. Otherwise, it returns a `Result.Error` containing an `UnknownError` with the thrown exception, or with the value returned by the  provided `onThrow` callback.
 
@@ -144,7 +144,7 @@ If the test fails, returns a `Result.Error` with a `FailedPredicateError` instea
 <pre class="language-typescript"><code class="lang-typescript">import { Result } from 'funkcia';
 
 // With type guard
-//          ┌─── (shape: Shape) => Result&#x3C;Circle, InvalidShapeError>
+//          ┌─── (shape: Shape) => Result<Circle, InvalidShapeError>
 //          ▼
 const ensureCircle = Result.predicate(
   (shape: Shape): shape is Circle => shape.kind === 'circle',
@@ -152,13 +152,48 @@ const ensureCircle = Result.predicate(
 );
 
 // With regular predicate
-//          ┌─── (value: number) => Result&#x3C;number, InvalidNumberError>
+//          ┌─── (value: number) => Result<number, InvalidNumberError>
 //          ▼
 const ensurePositive = Result.predicate(
   (value: number) => value > 0,
   (value) => new InvalidNumberError(value),
 );
 </code></pre>
+
+#### fun
+
+{% hint style="success" %}
+This method improves the inference of the function's return value and guarantees that it will always return a `Result`. It is extremely useful when your function can return multiple errors.
+{% endhint %}
+
+Declare a function that always returns a `Result`.
+
+```typescript
+import { Result } from 'funkcia';
+
+// When defining a normal function allowing typescript to infer the return type,
+// the return type is always a union of `Result<T, never>` and `Result<never, E>`
+function hasAcceptedTermsOfService(user: User) {
+  if (typeof user.termsOfService !== 'boolean') {
+    return Result.error('NOT ACCEPTED' as const);
+  }
+
+  return user.termsOfService ?
+      Result.ok('ACCEPTED' as const)
+    : Result.error('REJECTED' as cons);
+}
+
+//       ┌─── Result<'ACCEPTED', never> | Result<never, 'REJECTED'> | Result<never, 'NOT ACCEPTED'>
+//       ▼
+const result = hasAcceptedTermsOfService(user);
+
+// When using the `fun` method, the return type is always `Result<T, E>`
+const improvedHasAcceptedTermsOfService = Result.fun(hasAcceptedTermsOfService);
+
+//       ┌─── Result<'ACCEPTED', 'REJECTED' | 'NOT ACCEPTED'>
+//       ▼
+const result = improvedHasAcceptedTermsOfService(user);
+```
 
 #### enhance
 
@@ -180,8 +215,6 @@ const result = safeJsonParse('{ "name": "John Doe" }');
 // Output: Ok({ name: 'John Doe' })
 ```
 
-### Combinators
-
 #### values
 
 Given an array of `Result`s, returns an array containing only the values inside `Result.Ok`.
@@ -199,263 +232,25 @@ const output = Result.values([
 // Output: [1, 3]
 ```
 
-#### zip
+#### is
 
-Combines two `Result`s into a single `Result` containing a tuple of their values, if both `Result`s are `Ok` variants, otherwise, returns `Result.Error`.
-
-```typescript
-import { Result } from 'funkcia';
-
-const first = Result.some('hello');
-const second = Result.some('world');
-
-//       ┌─── Result<[string, string], never>
-//       ▼
-const strings = first.zip(second);
-// Output: Ok(['hello', 'world'])
-```
-
-#### zipWith
-
-Combines two `Result`s into a single `Result`. The new value is produced by applying the given function to both values, if both `Result`s are `Ok` variants, otherwise, returns `Error`.
+Asserts that an _unknown_ value is a `Result`.
 
 ```typescript
 import { Result } from 'funkcia';
 
-const first = Result.some('hello');
-const second = Result.some('world');
+declare const maybeAResultWithUser: unknown;
 
-//        ┌─── Result<string, never>
-//        ▼
-const greeting = first.zipWith(second, (a, b) => `${a} ${b}`);
-// Output: Ok('hello world')
-```
-
-### Conversions
-
-#### match
-
-Compare the `Result` against the possible patterns and then execute code based on which pattern matches.
-
-```typescript
-import { Result } from 'funkcia';
-
-declare function readFile(path: string): Result<string, FileNotFoundError | FileReadError>;
-declare function parseJsonFile(contents: string): Result<FileContent, InvalidJsonError>;
-
-//     ┌─── string
-//     ▼
-const data = readFile('data.json')
-  .andThen(parseJsonFile)
-  .match({
-    Ok(contents) {
-      return 'File is valid JSON';
-    },
-//          ┌─── FileNotFoundError | FileReadError | InvalidJsonError
-//          ▼
-    Error(error) {
-      return 'File is invalid JSON';
-    },
-  });
-```
-
-#### unwrap
-
-{% hint style="danger" %}
-Throws `UnwrapError` if the `Result` is `Error`.
-{% endhint %}
-
-Unwraps the `Result` value.
-
-```typescript
-import { Result } from 'funkcia';
-
-//     ┌─── User
-//     ▼
-const user = Result.ok(databaseUser).unwrap();
-
-const team = Result.error(new TeamNotFound()).unwrap();
-// Output: Uncaught exception: 'called "Result.unwrap()" on an "Error" value'
-```
-
-#### unwrapError
-
-{% hint style="danger" %}
-Throws `UnwrapError` if the `Result` is `Ok`.
-{% endhint %}
-
-Unwraps the `Result` error.&#x20;
-
-```typescript
-import { Result } from 'funkcia';
-
-const result = Result.error(new UserNotFound());
-
-if (result.isError()) {
-  const error = result.unwrapError();
+if (Result.is(maybeAResultWithUser)) {
+//                     ┌─── Result<unknown, unknown>
+//                     ▼
+  const user = maybeAResultWithUser.filter(isUser);
 //        ▲
-//        └─── UserNotFound
+//        └─── Result<User, FailedPredicateError<unknown>>
 }
 ```
 
-#### unwrapOr
-
-Returns the value of the `Result`. If the `Result` is `Error`, returns the fallback value.
-
-```typescript
-import { Result } from 'funkcia';
-
-//       ┌─── string
-//       ▼
-const baseUrl = Result.ok(process.env.BASE_URL)
-  .unwrapOr(() => 'http://localhost:3000');
-// Output: 'https://funkcia.lukemorales.io'
-
-const apiKey = Result.error('Missing API key')
-  .unwrapOr(() => 'sk_test_9FK7CiUnKaU');
-// Output: 'sk_test_9FK7CiUnKaU'
-```
-
-#### unwrapOrNull / unwrapOrUndefined
-
-Unwraps the value of the `Result` if it is an `Ok`, otherwise returns `null`/`undefined`.
-
-```typescript
-import { Result } from 'funkcia';
-
-//     ┌─── User | null
-//     ▼
-const user = Result.ok(databaseUser).unwrapOrNull();
-
-//     ┌─── User | undefined
-//     ▼
-const user = Result.ok(databaseUser).unwrapOrUndefined();
-```
-
-#### expect
-
-{% hint style="danger" %}
-Throws the provided Error if the `Result` is `Error`.
-{% endhint %}
-
-Unwraps the `Result` value.&#x20;
-
-```typescript
-import { Result } from 'funkcia';
-
-declare function findUserById(id: string): Result<User, NoValueError>;
-
-//     ┌─── User
-//     ▼
-const user = findUserById(userId).expect(
-  (error) => new UserNotFoundError(userId)
-//   ▲
-//   └─── NoValueError
-);
-```
-
-#### merge
-
-Returns the value inside the `Result`. If `Ok`, returns the value; if `Error`, returns the error.
-
-```typescript
-import { Result } from 'funkcia';
-
-declare function getCachedUser(email: Email): Result<User, CacheMissError<Email>>;
-declare function getOrCreateUserByEmail(email: Email): User;
-
-//       ┌─── User
-//       ▼
-const result = getCachedUser('johndoe@example.com')
-  .swap() // Result<CacheMissError<Email>, User>
-  .map((cacheMiss) => getOrCreateUserByEmail(cacheMiss.input)) // Result<User, User>
-  .merge();
-// Output: { id: 'user_01', email: 'johndoe@example.com' }
-```
-
-#### contains
-
-Returns `true` if the predicate is fulfilled by the wrapped value. If the predicate is not fulfilled or the `Result` is `Error`, it returns `false`.
-
-```typescript
-import { Result } from 'funkcia';
-
-//         ┌─── boolean
-//         ▼
-const isPositive = Result.ok(10).contains(num => num > 0);
-// Output: true
-
-const isNegative = Result.error(10).contains(num => num > 0);
-// Output: false
-```
-
-#### toOption
-
-Converts a `Result` to an `Option`. If `Result` is `Ok`, returns an `Option.Some`. If `Result` is `Error`, returns an `Option.None`.
-
-```typescript
-import { Result } from 'funkcia';
-
-declare function readFile(path: string): Result<string, FileNotFoundError | FileReadError>;
-declare function parseJsonFile(contents: string): Result<FileContent, InvalidJsonError>;
-
-//          ┌─── Option<FileContent>
-//          ▼
-const fileContents = readFile('data.json')
-  .andThen(parseJsonFile)
-  .toOption();
-```
-
-#### toAsyncOption
-
-Converts the `Result` to an `AsyncOption`.
-
-```typescript
-import { Result } from 'funkcia';
-
-declare function readFile(path: string): Result<string, FileNotFound>;
-declare function parseJsonFile(contents: string): Result<FileContent, ParseError>;
-
-//       ┌─── AsyncOption<FileContent>
-//       ▼
-const asyncFile = readFile('data.json')
-  .andThen(parseJsonFile)
-  .toAsyncOption();
-// Output: Promise<Some(FileContent)>
-```
-
-#### toAsyncResult
-
-Converts the `Result` to an `AsyncResult`.
-
-```typescript
-import { Result } from 'funkcia';
-
-declare function readFile(path: string): Result<string, FileNotFound>;
-declare function parseJsonFile(contents: string): Result<FileContent, ParseError>;
-
-//       ┌─── AsyncResult<FileContent, FileNotFound | ParseError>
-//       ▼
-const asyncFile = readFile('data.json')
-  .andThen(parseJsonFile)
-  .toAsyncResult();
-// Output: Promise<Ok(FileContent)>
-```
-
-#### toArray
-
-Converts a `Result` to an array. If `Result` is `Ok`, returns an array with the value. If `Result` is `Error`, returns an empty array.
-
-```typescript
-import { Result } from 'funkcia';
-
-//       ┌─── number[]
-//       ▼
-const output = Result.ok(10).toArray();
-// Output: [10]
-```
-
-### Transformations
+### Instance methods
 
 #### map
 
@@ -543,8 +338,6 @@ const result = Result.of(input).filter(
 );
 ```
 
-### Fallbacks
-
 #### or
 
 Replaces the current `Result` with the provided fallback `Result` when it is `Error`.
@@ -584,46 +377,347 @@ const result = getCachedUser('johndoe@example.com')
 //         └─── CacheMissError<Email>
 ```
 
-### Comparisons
+#### zip
 
-#### is
-
-Asserts that an _unknown_ value is a `Result`.
+Combines two `Result`s into a single `Result` containing a tuple of their values, if both `Result`s are `Ok` variants, otherwise, returns `Result.Error`.
 
 ```typescript
 import { Result } from 'funkcia';
 
-declare const maybeAResultWithUser: unknown;
+const first = Result.some('hello');
+const second = Result.some('world');
 
-if (Result.is(maybeAResultWithUser)) {
-//                     ┌─── Result<unknown, unknown>
-//                     ▼
-  const user = maybeAResultWithUser.filter(isUser);
+//       ┌─── Result<[string, string], never>
+//       ▼
+const strings = first.zip(second);
+// Output: Ok(['hello', 'world'])
+```
+
+#### zipWith
+
+Combines two `Result`s into a single `Result`. The new value is produced by applying the given function to both values, if both `Result`s are `Ok` variants, otherwise, returns `Error`.
+
+```typescript
+import { Result } from 'funkcia';
+
+const first = Result.some('hello');
+const second = Result.some('world');
+
+//        ┌─── Result<string, never>
+//        ▼
+const greeting = first.zipWith(second, (a, b) => `${a} ${b}`);
+// Output: Ok('hello world')
+```
+
+#### match
+
+Compare the `Result` against the possible patterns and then execute code based on which pattern matches.
+
+```typescript
+import { Result } from 'funkcia';
+
+declare function readFile(path: string): Result<string, FileNotFoundError | FileReadError>;
+declare function parseJsonFile(contents: string): Result<FileContent, InvalidJsonError>;
+
+//     ┌─── string
+//     ▼
+const data = readFile('data.json')
+  .andThen(parseJsonFile)
+  .match({
+    Ok(contents) {
+      return 'File is valid JSON';
+    },
+//          ┌─── FileNotFoundError | FileReadError | InvalidJsonError
+//          ▼
+    Error(error) {
+      return 'File is invalid JSON';
+    },
+  });
+```
+
+#### unwrap
+
+{% hint style="danger" %}
+Throws `UnwrapError` if the `Result` is `Error`.
+{% endhint %}
+
+Unwraps the `Result` value.
+
+```typescript
+import { Result } from 'funkcia';
+
+//     ┌─── User
+//     ▼
+const user = Result.ok(databaseUser).unwrap();
+
+const team = Result.error(new TeamNotFound()).unwrap();
+// Output: Uncaught exception: 'called "Result.unwrap()" on an "Error" value'
+```
+
+#### unwrapError
+
+{% hint style="danger" %}
+Throws `UnwrapError` if the `Result` is `Ok`.
+{% endhint %}
+
+Unwraps the `Result` error.
+
+```typescript
+import { Result } from 'funkcia';
+
+const result = Result.error(new UserNotFound());
+
+if (result.isError()) {
+  const error = result.unwrapError();
 //        ▲
-//        └─── Result<User, FailedPredicateError<unknown>>
+//        └─── UserNotFound
 }
 ```
 
-#### isOk / isError
+#### unwrapOr
 
-Type guards for checking the variant of a `Result`.
+Returns the value of the `Result`. If the `Result` is `Error`, returns the fallback value.
 
 ```typescript
 import { Result } from 'funkcia';
 
-declare function findUserById(id: string): Result<User, UserNotFound>;
+//       ┌─── string
+//       ▼
+const baseUrl = Result.ok(process.env.BASE_URL)
+  .unwrapOr(() => 'http://localhost:3000');
+// Output: 'https://funkcia.lukemorales.io'
 
-const maybeUser = findUserById('user_01');
+const apiKey = Result.error('Missing API key')
+  .unwrapOr(() => 'sk_test_9FK7CiUnKaU');
+// Output: 'sk_test_9FK7CiUnKaU'
+```
 
-if (maybeUser.isOk()) {
-  // Type narrowed to Result.Ok<User>
-  const user = maybeUser.unwrap();
+#### unwrapOrNull
+
+{% hint style="info" %}
+Use this method at the edges of the system, when storing values in a database or serializing to JSON.
+{% endhint %}
+
+Unwraps the value of the `Result` if it is a `Ok`, otherwise returns `null`.
+
+```typescript
+import { Result } from 'funkcia';
+
+declare const findUserById: (id: string) => Result<User, UserNotFoundError>;
+
+//     ┌─── User | null
+//     ▼
+const user = findUserById('user_123').unwrapOrNull();
+```
+
+#### unwrapOrUndefined
+
+{% hint style="info" %}
+Use this method at the edges of the system, when storing values in a database or serializing to JSON.
+{% endhint %}
+
+Unwraps the value of the `Result` if it is a `Ok`, otherwise returns `undefined`.
+
+```typescript
+import { Result } from 'funkcia';
+
+declare const findUserById: (id: string) => Result<User, UserNotFoundError>;
+
+//     ┌─── User | undefined
+//     ▼
+const user = findUserById('user_123').unwrapOrUndefined();
+```
+
+#### expect
+
+{% hint style="danger" %}
+Throws the provided Error if the `Result` is `Error`.
+{% endhint %}
+
+Unwraps the `Result` value.
+
+```typescript
+import { Result } from 'funkcia';
+
+declare function findUserById(id: string): Result<User, NoValueError>;
+
+//     ┌─── User
+//     ▼
+const user = findUserById(userId).expect(
+  (error) => new UserNotFoundError(userId)
+//   ▲
+//   └─── NoValueError
+);
+```
+
+#### merge
+
+Returns the value inside the `Result`. If `Ok`, returns the value; if `Error`, returns the error.
+
+```typescript
+import { Result } from 'funkcia';
+
+declare function getCachedUser(email: Email): Result<User, CacheMissError<Email>>;
+declare function getOrCreateUserByEmail(email: Email): User;
+
+//       ┌─── User
+//       ▼
+const result = getCachedUser('johndoe@example.com')
+  .swap() // Result<CacheMissError<Email>, User>
+  .map((cacheMiss) => getOrCreateUserByEmail(cacheMiss.input)) // Result<User, User>
+  .merge();
+// Output: { id: 'user_01', email: 'johndoe@example.com' }
+```
+
+#### contains
+
+Returns `true` if the predicate is fulfilled by the wrapped value. If the predicate is not fulfilled or the `Result` is `Error`, it returns `false`.
+
+```typescript
+import { Result } from 'funkcia';
+
+//         ┌─── boolean
+//         ▼
+const isPositive = Result.ok(10).contains(num => num > 0);
+// Output: true
+
+const isNegative = Result.error(10).contains(num => num > 0);
+// Output: false
+```
+
+#### toArray
+
+Converts a `Result` to an array. If `Result` is `Ok`, returns an array with the value. If `Result` is `Error`, returns an empty array.
+
+```typescript
+import { Result } from 'funkcia';
+
+//       ┌─── number[]
+//       ▼
+const output = Result.ok(10).toArray();
+// Output: [10]
+```
+
+#### toOption
+
+Converts a `Result` to an `Option`. If `Result` is `Ok`, returns an `Option.Some`. If `Result` is `Error`, returns an `Option.None`.
+
+```typescript
+import { Result } from 'funkcia';
+
+declare function readFile(path: string): Result<string, FileNotFoundError | FileReadError>;
+declare function parseJsonFile(contents: string): Result<FileContent, InvalidJsonError>;
+
+//          ┌─── Option<FileContent>
+//          ▼
+const fileContents = readFile('data.json')
+  .andThen(parseJsonFile)
+  .toOption();
+```
+
+#### toAsyncOption
+
+Converts the `Result` to an `AsyncOption`.
+
+```typescript
+import { Result } from 'funkcia';
+
+declare function readFile(path: string): Result<string, FileNotFound>;
+declare function parseJsonFile(contents: string): Result<FileContent, ParseError>;
+
+//       ┌─── AsyncOption<FileContent>
+//       ▼
+const asyncFile = readFile('data.json')
+  .andThen(parseJsonFile)
+  .toAsyncOption();
+// Output: Promise<Some(FileContent)>
+```
+
+#### toAsyncResult
+
+Converts the `Result` to an `AsyncResult`.
+
+```typescript
+import { Result } from 'funkcia';
+
+declare function readFile(path: string): Result<string, FileNotFound>;
+declare function parseJsonFile(contents: string): Result<FileContent, ParseError>;
+
+//       ┌─── AsyncResult<FileContent, FileNotFound | ParseError>
+//       ▼
+const asyncFile = readFile('data.json')
+  .andThen(parseJsonFile)
+  .toAsyncResult();
+// Output: Promise<Ok(FileContent)>
+```
+
+#### tap
+
+Calls the function with the `Result` value, then returns the `Result` itself, ignoring the returned value of the provided function.
+
+This allows "tapping into" a function sequence in a pipe, to perform side effects on intermediate results.
+
+```typescript
+import { Result } from 'funkcia';
+
+//       ┌─── Result<number, never>
+//       ▼
+const result = Result.some(10).tap(
+  (value) => console.log(value), // Console output: 10
+);
+```
+
+#### tapError
+
+Calls the function with the `Result` error, then returns the `Result` itself, ignoring the returned value of the provided function.
+
+This allows "tapping into" a function sequence in a pipe, to perform side effects on intermediate results.
+
+```typescript
+import { Result } from 'funkcia';
+
+declare function findUserById(id: string): Result<User, UserNotFoundError>;
+
+//       ┌─── Result<User, UserNotFoundError>
+//       ▼
+const result = findUserById('invalid_id').tapError(
+  (error) => console.log(error), // Console output: UserNotFoundError
+);
+```
+
+#### isOk
+
+Returns `true` if the `Result` contains a value.
+
+```typescript
+import { Option } from 'funkcia';
+
+declare function findUserById(id: string): Result<User, UserNotFoundError>;
+
+const user = findUserById('user_01');
+
+if (user.isOk()) {
+  return user.unwrap(); // `unwrap` will not throw
+}
+```
+
+#### isError
+
+Returns `true` if the `Result` contains an error.
+
+```typescript
+import { Option } from 'funkcia';
+
+declare function findUserById(id: string): Result<User, UserNotFoundError>;
+
+const user = findUserById('invalid_id');
+
+if (user.isError()) {
+  const error = user.unwrapError(); // `unwrapError` will not throw
+  // ...process error
 }
 
-if (maybeUser.isError()) {
-  // Type narrowed to Result.Error<UserNotFound>
-  const error = maybeUser.unwrapError();
-}
+return user.unwrap();
 ```
 
 #### equals
@@ -635,63 +729,6 @@ import { Result } from 'funkcia';
 
 const result = Result.of(10).equals(Result.ok(10));
 // Output: true
-```
-
-### Other
-
-#### tap / tapError
-
-Calls a function with the `Result` value/error for side effects, then returns the `Result` itself.
-
-```typescript
-import { Result } from 'funkcia';
-
-//       ┌─── Result<number, never>
-//       ▼
-const result = Result.ok(10).tap((value) => console.log(value)); // LOG: 10
-
-declare function getUser(id: string): Result<User, NoValueError>;
-
-//       ┌─── Result<never, NoValueError>
-//       ▼
-const result = getUser('invalid_id')
-  .tapError((error) => console.log(error)); // LOG: NoValueError
-```
-
-#### fun
-
-{% hint style="success" %}
-This method improves the inference of the function's return value and guarantees that it will always return a `Result`. It is extremely useful when your function can return multiple errors.
-{% endhint %}
-
-Declare a function that always returns a `Result`.
-
-```typescript
-import { Result } from 'funkcia';
-
-// When defining a normal function allowing typescript to infer the return type,
-// the return type is always a union of `Result<T, never>` and `Result<never, E>`
-function hasAcceptedTermsOfService(user: User) {
-  if (typeof user.termsOfService !== 'boolean') {
-    return Result.error('NOT ACCEPTED' as const);
-  }
-
-  return user.termsOfService ?
-      Result.ok('ACCEPTED' as const)
-    : Result.error('REJECTED' as cons);
-}
-
-//       ┌─── Result<'ACCEPTED', never> | Result<never, 'REJECTED'> | Result<never, 'NOT ACCEPTED'>
-//       ▼
-const result = hasAcceptedTermsOfService(user);
-
-// When using the `fun` method, the return type is always `Result<T, E>`
-
-const improvedHasAcceptedTermsOfService = Result.fun(hasAcceptedTermsOfService);
-
-//       ┌─── Result<'ACCEPTED', 'REJECTED' | 'NOT ACCEPTED'>
-//       ▼
-const result = improvedHasAcceptedTermsOfService(user);
 ```
 
 [^1]: (parameter) shape: Square
