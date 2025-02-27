@@ -191,11 +191,11 @@ interface ResultTrait {
    *
    * declare const user: User | null;
    *
-   * //      ┌─── Result<string, UserNotFoundError>
+   * //      ┌─── Result<string, UserNotFound>
    * //      ▼
    * const result = Result.fromNullable(
    *   user,
-   *   () => new UserNotFoundError(),
+   *   () => new UserNotFound(),
    * );
    * ```
    */
@@ -813,10 +813,12 @@ export interface Result<Value, Error>
    * ```ts
    * import { Result } from 'funkcia';
    *
-   * //       ┌─── Result<string, UserMissingInformationError>
+   * declare const user: User | null;
+   *
+   * //       ┌─── Result<User, UserNotFound>
    * //       ▼
-   * const result = Result.fromNullable(user.lastName).mapError(
-   *   (error) => new UserMissingInformationError()
+   * const result = Result.fromNullable(user).mapError(
+   *   (error) => new UserNotFound()
    * //   ▲
    * //   └─── NoValueError
    * );
@@ -992,17 +994,15 @@ export interface Result<Value, Error>
    * ```ts
    * import { Result } from 'funkcia';
    *
-   *  //       ┌─── string
-   *  //       ▼
-   * const option = Result.ok('Smith')
-   *   .or(() => Result.ok('John'))
+   * const personalEmail = Result.ok('johndoe@gmail.com')
+   *   .or(() => Result.ok('johndoe@example.com'))
    *   .unwrap();
-   * // Output: 'Smith'
+   * // Output: 'johndoe@gmail.com'
    *
-   * const greeting = Result.error(new Error('Missing user'))
-   *   .or(() => Result.ok('John'))
+   * const workEmail = Result.error(new Error('Missing personal email'))
+   *   .or(() => Result.ok('johndoe@example.com'))
    *   .unwrap();
-   * // Output: 'John'
+   * // Output: 'johndoe@example.com'
    * ```
    */
   or: <NewValue, NewError>(
@@ -1021,13 +1021,13 @@ export interface Result<Value, Error>
    *
    * declare function getCachedUser(email: Email): Result<User, CacheMissError<Email>>;
    *
-   * declare function getOrCreateUserByEmail(email: Email): User;
+   * declare function findOrCreateUserByEmail(email: Email): User;
    *
    * //       ┌─── Result<User, User>
    * //       ▼
    * const result = getCachedUser('johndoe@example.com')
    *   .swap() // Result<CacheMissError<Email>, User>
-   *   .map((cacheMiss) => getOrCreateUserByEmail(cacheMiss.input));
+   *   .map((cacheMiss) => findOrCreateUserByEmail(cacheMiss.input));
    * //         ▲
    * //         └─── CacheMissError<Email>
    * ```
@@ -1091,24 +1091,23 @@ export interface Result<Value, Error>
    * @example
    * ```ts
    * import { Result } from 'funkcia';
-   * import { readFileSync } from 'node:fs';
    *
    * declare function readFile(path: string): Result<string, FileNotFoundError | FileReadError>;
+   * declare function parseSalesRecords(content: string): Result<SalesRecord[], InvalidSalesRecordFileError>;
+   * declare function aggregateSales(salesRecords: SalesRecord[]): AggregatedSaleRecord[];
    *
-   * declare function parseJsonFile(contents: string): Result<FileContent, InvalidJsonError>;
-   *
-   * //     ┌─── string
+   * //     ┌─── AggregatedSaleRecord[]
    * //     ▼
    * const data = readFile('data.json')
-   *   .andThen(parseJsonFile)
+   *   .andThen(parseSalesRecords)
    *   .match({
    *     Ok(contents) {
-   *       return 'File is valid JSON';
+   *       return aggregateSales(contents)
    *     },
-   * //          ┌─── FileNotFoundError | FileReadError | InvalidJsonError
+   * //          ┌─── FileNotFoundError | FileReadError | InvalidSalesRecordFileError
    * //          ▼
    *     Error(error) {
-   *       return 'File is invalid JSON';
+   *       return []
    *     },
    *   });
    * ```
@@ -1126,11 +1125,11 @@ export interface Result<Value, Error>
    * ```ts
    * import { Result } from 'funkcia';
    *
-   * //     ┌─── User
-   * //     ▼
-   * const user = Result.ok(databaseUser).unwrap();
+   * //      ┌─── number
+   * //      ▼
+   * const number = Result.ok(10).unwrap();
    *
-   * const team = Result.error(new TeamNotFound()).unwrap();
+   * Result.error(new Error('¯\_(ツ)_/¯')).unwrap();
    * // Output: Uncaught exception: 'called "Result.unwrap()" on an "Error" value'
    * ```
    */
@@ -1166,7 +1165,7 @@ export interface Result<Value, Error>
    *
    * //       ┌─── string
    * //       ▼
-   * const baseUrl = Result.ok(process.env.BASE_URL)
+   * const baseUrl = Result.ok('https://funkcia.lukemorales.io')
    *   .unwrapOr(() => 'http://localhost:3000');
    * // Output: 'https://funkcia.lukemorales.io'
    *
@@ -1227,7 +1226,7 @@ export interface Result<Value, Error>
    * //     ┌─── User
    * //     ▼
    * const user = findUserById(userId).expect(
-   *   (error) => new UserNotFoundError(userId)
+   *   (error) => new UserNotFound(userId)
    * //   ▲
    * //   └─── NoValueError
    * );
@@ -1276,7 +1275,7 @@ export interface Result<Value, Error>
    * const isPositive = Result.ok(10).contains(num => num > 0);
    * // Output: true
    *
-   * const isNegative = Result.error(10).contains(num => num > 0);
+   * const isNegative = Result.error(10).contains(num => num < 0);
    * // Output: false
    * ```
    */
@@ -1313,13 +1312,12 @@ export interface Result<Value, Error>
    * import { Result } from 'funkcia';
    *
    * declare function readFile(path: string): Result<string, FileNotFoundError | FileReadError>;
+   * declare function parseSalesRecords(content: string): Result<SalesRecord[], InvalidSalesRecordFileError>;
    *
-   * declare function parseJsonFile(contents: string): Result<FileContent, InvalidJsonError>;
-   *
-   * //          ┌─── Option<FileContent>
+   * //          ┌─── Option<SalesRecord[]>
    * //          ▼
    * const fileContents = readFile('data.json')
-   *   .andThen(parseJsonFile)
+   *   .andThen(parseSalesRecords)
    *   .toOption();
    */
   toOption: () => Option<NonNullable<Value>>;
@@ -1330,16 +1328,15 @@ export interface Result<Value, Error>
    * @example
    * import { Result } from 'funkcia';
    *
-   * declare function readFile(path: string): Result<string, FileNotFound>;
+   * declare function readFile(path: string): Result<string, FileNotFoundError | FileReadError>;
+   * declare function parseSalesRecords(content: string): Result<SalesRecord[], InvalidSalesRecordFileError>;
    *
-   * declare function parseJsonFile(contents: string): Result<FileContent, ParseError>;
-   *
-   * //       ┌─── AsyncOption<FileContent>
+   * //       ┌─── AsyncOption<SalesRecord[]>
    * //       ▼
    * const asyncFile = readFile('data.json')
-   *   .andThen(parseJsonFile)
+   *   .andThen(parseSalesRecords)
    *   .toAsyncOption();
-   * // Output: Promise<Some(FileContent)>
+   * // Output: Promise<Some(SalesRecord[])>
    */
   toAsyncOption: () => OptionAsync<NonNullable<Value>>;
 
@@ -1350,16 +1347,15 @@ export interface Result<Value, Error>
    * ```ts
    * import { Result } from 'funkcia';
    *
-   * declare function readFile(path: string): Result<string, FileNotFound>;
+   * declare function readFile(path: string): Result<string, FileNotFoundError | FileReadError>;
+   * declare function parseSalesRecords(content: string): Result<SalesRecord[], InvalidSalesRecordFileError>;
    *
-   * declare function parseJsonFile(contents: string): Result<FileContent, ParseError>;
-   *
-   * //       ┌─── AsyncResult<FileContent, FileNotFound | ParseError>
+   * //       ┌─── AsyncResult<SalesRecord[], FileNotFoundError | FileReadError | InvalidSalesRecordFileError>
    * //       ▼
    * const asyncFile = readFile('data.json')
-   *   .andThen(parseJsonFile)
+   *   .andThen(parseSalesRecords)
    *   .toAsyncResult();
-   * // Output: Promise<Ok(FileContent)>
+   * // Output: Promise<Ok(SalesRecord[])>
    * ```
    */
   toAsyncResult: () => ResultAsync<Value, Error>;
@@ -1395,12 +1391,12 @@ export interface Result<Value, Error>
    * ```ts
    * import { Result } from 'funkcia';
    *
-   * declare function findUserById(id: string): Result<User, UserNotFoundError>;
+   * declare function findUserById(id: string): Result<User, UserNotFound>;
    *
-   * //       ┌─── Result<User, UserNotFoundError>
+   * //       ┌─── Result<User, UserNotFound>
    * //       ▼
    * const result = findUserById('invalid_id').tapError(
-   *   .tapError((error) => console.log(error)); // LOG: UserNotFoundError
+   *   .tapError((error) => console.log(error)); // LOG: UserNotFound
    * ```
    */
   tapError: (onError: (error: Error) => unknown) => Result<Value, Error>;

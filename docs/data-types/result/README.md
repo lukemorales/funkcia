@@ -77,11 +77,11 @@ declare const user: User | null;
 //      ▼
 const result = Result.fromNullable(user);
 
-//            ┌─── Result<string, UserNotFoundError>
+//            ┌─── Result<string, UserNotFound>
 //            ▼
 const resultWithCustomError = Result.fromNullable(
   user,
-  () => new UserNotFoundError(),
+  () => new UserNotFound(),
 );
 ```
 
@@ -126,8 +126,8 @@ import { Result } from 'funkcia';
 const url = Result.try(() => new URL('example.com'));
 // Output: Error(UnknownError)
 
-//     ┌─── Result<URL, Error>
-//     ▼
+//          ┌─── Result<URL, Error>
+//          ▼
 const urlWithCustomError = Result.try(
   () => new URL('example.com'),
   (error) => new Error('Invalid URL'),
@@ -272,10 +272,12 @@ Applies a callback function to the value of the `Result` when it is `Error`, ret
 ```typescript
 import { Result } from 'funkcia';
 
-//       ┌─── Result<string, UserMissingInformationError>
+declare const user: User | null;
+
+//       ┌─── Result<User, UserNotFound>
 //       ▼
-const result = Result.fromNullable(user.lastName).mapError(
-  (error) => new UserMissingInformationError()
+const result = Result.fromNullable(user).mapError(
+  (error) => new UserNotFound()
 //   ▲
 //   └─── NoValueError
 );
@@ -328,9 +330,9 @@ const result = Result.of(input).filter(
   (shape): shape is Circle => shape.kind === 'CIRCLE',
 );
 
-//       ┌─── Result<Circle, Error>
-//       ▼
-const result = Result.of(input).filter(
+//            ┌─── Result<Circle, Error>
+//            ▼
+const resultWithCustomError = Result.of(input).filter(
   (shape): shape is Circle => shape.kind === 'CIRCLE',
   (shape) => new Error(`Expected Circle, received ${shape.kind}`),
 //   ▲
@@ -345,17 +347,15 @@ Replaces the current `Result` with the provided fallback `Result` when it is `Er
 ```typescript
 import { Result } from 'funkcia';
 
-//       ┌─── string
-//       ▼
-const option = Result.ok('Smith')
-  .or(() => Result.ok('John'))
+const personalEmail = Result.ok('johndoe@gmail.com')
+  .or(() => Result.ok('johndoe@example.com'))
   .unwrap();
-// Output: 'Smith'
+// Output: 'johndoe@gmail.com'
 
-const greeting = Result.error(new Error('Missing user'))
-  .or(() => Result.ok('John'))
+const workEmail = Result.error(new Error('Missing personal email'))
+  .or(() => Result.ok('johndoe@example.com'))
   .unwrap();
-// Output: 'John'
+// Output: 'johndoe@example.com'
 ```
 
 #### swap
@@ -366,13 +366,13 @@ Swaps the `Result` value and error. If `Ok`, returns `Error` with the value. If 
 import { Result } from 'funkcia';
 
 declare function getCachedUser(email: Email): Result<User, CacheMissError<Email>>;
-declare function getOrCreateUserByEmail(email: Email): User;
+declare function findOrCreateUserByEmail(email: Email): User;
 
 //       ┌─── Result<User, User>
 //       ▼
 const result = getCachedUser('johndoe@example.com')
   .swap() // Result<CacheMissError<Email>, User>
-  .map((cacheMiss) => getOrCreateUserByEmail(cacheMiss.input));
+  .map((cacheMiss) => findOrCreateUserByEmail(cacheMiss.input));
 //         ▲
 //         └─── CacheMissError<Email>
 ```
@@ -417,20 +417,21 @@ Compare the `Result` against the possible patterns and then execute code based o
 import { Result } from 'funkcia';
 
 declare function readFile(path: string): Result<string, FileNotFoundError | FileReadError>;
-declare function parseJsonFile(contents: string): Result<FileContent, InvalidJsonError>;
+declare function parseSalesRecords(content: string): Result<SalesRecord[], InvalidSalesRecordFileError>;
+declare function aggregateSales(salesRecords: SalesRecord[]): AggregatedSaleRecord[];
 
-//     ┌─── string
+//     ┌─── AggregatedSaleRecord[]
 //     ▼
 const data = readFile('data.json')
-  .andThen(parseJsonFile)
+  .andThen(parseSalesRecords)
   .match({
     Ok(contents) {
-      return 'File is valid JSON';
+      return aggregateSales(contents);
     },
-//          ┌─── FileNotFoundError | FileReadError | InvalidJsonError
+//          ┌─── FileNotFoundError | FileReadError | InvalidSalesRecordFileError
 //          ▼
     Error(error) {
-      return 'File is invalid JSON';
+      return []
     },
   });
 ```
@@ -446,11 +447,11 @@ Unwraps the `Result` value.
 ```typescript
 import { Result } from 'funkcia';
 
-//     ┌─── User
-//     ▼
-const user = Result.ok(databaseUser).unwrap();
+//      ┌─── number
+//      ▼
+const number = Result.ok(10).unwrap();
 
-const team = Result.error(new TeamNotFound()).unwrap();
+Result.error(new Error('¯\_(ツ)_/¯')).unwrap();
 // Output: Uncaught exception: 'called "Result.unwrap()" on an "Error" value'
 ```
 
@@ -483,7 +484,7 @@ import { Result } from 'funkcia';
 
 //       ┌─── string
 //       ▼
-const baseUrl = Result.ok(process.env.BASE_URL)
+const baseUrl = Result.ok('https://funkcia.lukemorales.io')
   .unwrapOr(() => 'http://localhost:3000');
 // Output: 'https://funkcia.lukemorales.io'
 
@@ -503,7 +504,7 @@ Unwraps the value of the `Result` if it is a `Ok`, otherwise returns `null`.
 ```typescript
 import { Result } from 'funkcia';
 
-declare const findUserById: (id: string) => Result<User, UserNotFoundError>;
+declare const findUserById: (id: string) => Result<User, UserNotFound>;
 
 //     ┌─── User | null
 //     ▼
@@ -521,7 +522,7 @@ Unwraps the value of the `Result` if it is a `Ok`, otherwise returns `undefined`
 ```typescript
 import { Result } from 'funkcia';
 
-declare const findUserById: (id: string) => Result<User, UserNotFoundError>;
+declare const findUserById: (id: string) => Result<User, UserNotFound>;
 
 //     ┌─── User | undefined
 //     ▼
@@ -544,7 +545,7 @@ declare function findUserById(id: string): Result<User, NoValueError>;
 //     ┌─── User
 //     ▼
 const user = findUserById(userId).expect(
-  (error) => new UserNotFoundError(userId)
+  (error) => new UserNotFound(userId)
 //   ▲
 //   └─── NoValueError
 );
@@ -581,7 +582,7 @@ import { Result } from 'funkcia';
 const isPositive = Result.ok(10).contains(num => num > 0);
 // Output: true
 
-const isNegative = Result.error(10).contains(num => num > 0);
+const isNegative = Result.error(10).contains(num => num < 0);
 // Output: false
 ```
 
@@ -606,12 +607,12 @@ Converts a `Result` to an `Option`. If `Result` is `Ok`, returns an `Option.Some
 import { Result } from 'funkcia';
 
 declare function readFile(path: string): Result<string, FileNotFoundError | FileReadError>;
-declare function parseJsonFile(contents: string): Result<FileContent, InvalidJsonError>;
+declare function parseSalesRecords(content: string): Result<SalesRecord[], InvalidSalesRecordFileError>;
 
-//          ┌─── Option<FileContent>
+//          ┌─── Option<SalesRecord[]>
 //          ▼
 const fileContents = readFile('data.json')
-  .andThen(parseJsonFile)
+  .andThen(parseSalesRecords)
   .toOption();
 ```
 
@@ -622,15 +623,15 @@ Converts the `Result` to an `AsyncOption`.
 ```typescript
 import { Result } from 'funkcia';
 
-declare function readFile(path: string): Result<string, FileNotFound>;
-declare function parseJsonFile(contents: string): Result<FileContent, ParseError>;
+declare function readFile(path: string): Result<string, FileNotFoundError | FileReadError>;
+declare function parseSalesRecords(content: string): Result<SalesRecord[], InvalidSalesRecordFileError>;
 
-//       ┌─── AsyncOption<FileContent>
+//       ┌─── AsyncOption<SalesRecord[]>
 //       ▼
 const asyncFile = readFile('data.json')
-  .andThen(parseJsonFile)
+  .andThen(parseSalesRecords)
   .toAsyncOption();
-// Output: Promise<Some(FileContent)>
+// Output: Promise<Some(SalesRecord[])>
 ```
 
 #### toAsyncResult
@@ -640,15 +641,15 @@ Converts the `Result` to an `AsyncResult`.
 ```typescript
 import { Result } from 'funkcia';
 
-declare function readFile(path: string): Result<string, FileNotFound>;
-declare function parseJsonFile(contents: string): Result<FileContent, ParseError>;
+declare function readFile(path: string): Result<string, FileNotFoundError | FileReadError>;
+declare function parseSalesRecords(content: string): Result<SalesRecord[], InvalidSalesRecordFileError>;
 
-//       ┌─── AsyncResult<FileContent, FileNotFound | ParseError>
+//       ┌─── AsyncResult<SalesRecord[], FileNotFoundError | FileReadError | InvalidSalesRecordFileError>
 //       ▼
 const asyncFile = readFile('data.json')
-  .andThen(parseJsonFile)
+  .andThen(parseSalesRecords)
   .toAsyncResult();
-// Output: Promise<Ok(FileContent)>
+// Output: Promise<Ok(SalesRecord[])>
 ```
 
 #### tap
@@ -676,12 +677,12 @@ This allows "tapping into" a function sequence in a pipe, to perform side effect
 ```typescript
 import { Result } from 'funkcia';
 
-declare function findUserById(id: string): Result<User, UserNotFoundError>;
+declare function findUserById(id: string): Result<User, UserNotFound>;
 
-//       ┌─── Result<User, UserNotFoundError>
+//       ┌─── Result<User, UserNotFound>
 //       ▼
 const result = findUserById('invalid_id').tapError(
-  (error) => console.log(error), // Console output: UserNotFoundError
+  (error) => console.log(error), // Console output: UserNotFound
 );
 ```
 
@@ -692,7 +693,7 @@ Returns `true` if the `Result` contains a value.
 ```typescript
 import { Option } from 'funkcia';
 
-declare function findUserById(id: string): Result<User, UserNotFoundError>;
+declare function findUserById(id: string): Result<User, UserNotFound>;
 
 const user = findUserById('user_01');
 
@@ -708,7 +709,7 @@ Returns `true` if the `Result` contains an error.
 ```typescript
 import { Option } from 'funkcia';
 
-declare function findUserById(id: string): Result<User, UserNotFoundError>;
+declare function findUserById(id: string): Result<User, UserNotFound>;
 
 const user = findUserById('invalid_id');
 
