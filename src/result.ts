@@ -279,10 +279,10 @@ interface ResultTrait {
    * import { Result } from 'funkcia';
    *
    * declare function getUser(id: string): Result<User, UserNotFound>;
-   * declare function getUserScore(user: User): Result<UserScore, UserNotScoredError>;
+   * declare function getUserScore(user: User): Result<UserScore, UserNotScored>;
    * declare function getUserLevel(user: User, score: UserScore): UserLevel;
    *
-   * //        ┌─── Result<UserLevel, UserNotFound | UserNotScoredError>
+   * //        ┌─── Result<UserLevel, UserNotFound | UserNotScored>
    * //        ▼
    * const userLevel = Result.Do
    *   .bind('user', () => getUser('user_123'))
@@ -686,13 +686,13 @@ export interface Result<Value, Error>
    * ```ts
    * import { Result } from 'funkcia';
    *
-   * declare function getUserScore(user: User): Result<UserScore, UserNotScoredError>;
+   * declare function getUserScore(user: User): Result<UserScore, UserNotScored>;
    *
    * declare function getUserLevel(user: User, score: UserScore): UserLevel;
    *
    * declare const user: Result<User, UserNotFound>;
    *
-   * //        ┌─── Result<UserLevel, UserNotFound | UserNotScoredError>
+   * //        ┌─── Result<UserLevel, UserNotFound | UserNotScored>
    * //        ▼
    * const userLevel = user
    *   .bindTo('user')
@@ -719,12 +719,10 @@ export interface Result<Value, Error>
    * import { Result } from 'funkcia';
    *
    * declare function getUser(id: string): Result<User, UserNotFound>;
-   *
-   * declare function getUserScore(user: User): Result<UserScore, UserNotScoredError>;
-   *
+   * declare function getUserScore(user: User): Result<UserScore, UserNotScored>;
    * declare function getUserLevel(user: User, score: UserScore): UserLevel;
    *
-   * //        ┌─── Result<UserLevel, UserNotFound | UserNotScoredError>
+   * //        ┌─── Result<UserLevel, UserNotFound | UserNotScored>
    * //        ▼
    * const userLevel = Result.Do
    *   .bind('user', () => getUser('user_123'))

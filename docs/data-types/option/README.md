@@ -470,14 +470,14 @@ declare function findUserById(id: string): Option<User>;
 
 //     ┌─── User
 //     ▼
-const user = findUserById('user_01').expect(
+const user = findUserById('user_123').expect(
   () => new UserNotFound(userId),
 );
 
 const anotherUser = findUserById('invalid_id').expect(
   () => new UserNotFound('invalid_id'),
 );
-// Output: Uncaught exception: 'User not found: "user_01"'
+// Output: Uncaught exception: 'User not found: "user_123"'
 ```
 
 #### contains
@@ -509,12 +509,12 @@ declare function findUserById(id: string): Option<User>;
 
 //          ┌─── Result<User, NoValueError>
 //          ▼
-const authorizedUser = findUserById('user_01').toResult();
+const authorizedUser = findUserById('user_123').toResult();
 
 //          ┌─── Result<User, UserNotFound>
 //          ▼
-const authorizedUser = findUserById('user_01')
-  .toResult(() => new UserNotFound('user_01'));
+const authorizedUser = findUserById('user_123')
+  .toResult(() => new UserNotFound('user_123'));
 ```
 
 #### toAsyncOption
@@ -599,7 +599,7 @@ import { Option } from 'funkcia';
 
 declare function findUserById(id: string): Option<User>;
 
-const user = findUserById('user_01');
+const user = findUserById('user_123');
 
 if (user.isSome()) {
   return user.unwrap(); // `unwrap` will not throw

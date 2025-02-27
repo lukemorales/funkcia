@@ -9,14 +9,14 @@ Initiates a `Do-notation` for the `AsyncOption` type.
 <pre class="language-typescript"><code class="lang-typescript">import { AsyncOption } from 'funkcia';
 
 declare function findUserById(id: string): AsyncOption<User>;
-declare function computeUserScore(user: User): AsyncOption<UserScore>;
+declare function calculateUserScore(user: User): AsyncOption<UserScore>;
 declare function rankUserLevel(user: User, score: UserScore): AsyncOption<UserLevel>;
 
 //        ┌─── AsyncOption<UserLevel>
 //        ▼
 const userLevel = AsyncOption.Do
   .bind('user', () => findUserById('user_123'))
-  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => computeUserScore(ctx.user))
+  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => calculateUserScore(ctx.user))
   .andThen((ctx) => rankUserLevel(ctx.user, ctx.score));
 //           ▲
 //           └─── { user: User; score: UserScore }
@@ -29,12 +29,12 @@ Initiates a `Do-notation` with the current `AsyncOption`, binding it to a contex
 <pre class="language-typescript"><code class="lang-typescript">import { AsyncOption } from 'funkcia';
 
 declare function findUserById(id: string): AsyncOption<User>;
-declare function computeUserScore(user: User): AsyncOption<UserScore>;
+declare function calculateUserScore(user: User): AsyncOption<UserScore>;
 declare function rankUserLevel(user: User, score: UserScore): AsyncOption<UserLevel>;
 
 //        ┌─── AsyncOption<UserLevel>
 //        ▼
-const userLevel = getUser('user_123')
+const userLevel = findUserById('user_123')
 <strong>  .bindTo('user')
 </strong>  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => getUserScore(ctx.user))
   .andThen((ctx) => getUserLevel(ctx.user, ctx.score));
@@ -51,14 +51,14 @@ If the `AsyncOption` resolves to `Some`, the value is assigned to the key in the
 <pre class="language-typescript"><code class="lang-typescript">import { AsyncOption } from 'funkcia';
 
 declare function findUserById(id: string): AsyncOption<User>;
-declare function computeUserScore(user: User): AsyncOption<UserScore>;
+declare function calculateUserScore(user: User): AsyncOption<UserScore>;
 declare function rankUserLevel(user: User, score: UserScore): AsyncOption<UserLevel>;
 
 //        ┌─── AsyncOption<UserLevel>
 //        ▼
 const userLevel = AsyncOption.Do
   .bind('user', () => findUserById('user_123'))
-  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => computeUserScore(ctx.user))
+  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => calculateUserScore(ctx.user))
   .andThen((ctx) => rankUserLevel(ctx.user, ctx.score));
 //           ▲
 //           └─── { user: User; score: UserScore }

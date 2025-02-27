@@ -162,7 +162,7 @@ export interface OptionAsync<Value>
    * ```ts
    * import { OptionAsync } from 'funkcia';
    *
-   * declare function getUser(id: string): OptionAsync<User>;
+   * declare function findUserById(id: string): OptionAsync<User>;
    *
    * declare function getUserScore(user: User): OptionAsync<UserScore>;
    *
@@ -171,7 +171,7 @@ export interface OptionAsync<Value>
    * //        ┌─── OptionAsync<UserLevel>
    * //        ▼
    * const userLevel = OptionAsync.Do
-   *   .bind('user', () => getUser('user_123'))
+   *   .bind('user', () => findUserById('user_123'))
    * //                 ┌─── { user: User }
    * //                 ▼
    *   .bind('score', (ctx) => getUserScore(ctx.user))
@@ -401,7 +401,7 @@ export interface OptionAsync<Value>
    * );
    *
    * const anotherUser = await findUserById('invalid_id').expect(
-   *   () => new UserNotFound('team_01'),
+   *   () => new UserNotFound('team_123'),
    * );
    * // Output: Uncaught exception: 'User not found: "user_123"'
    * ```
@@ -1028,7 +1028,7 @@ interface OptionAsyncTrait {
    * ```ts
    * import { OptionAsync } from 'funkcia';
    *
-   * declare function getUser(id: string): OptionAsync<User>;
+   * declare function findUserById(id: string): OptionAsync<User>;
    *
    * declare function getUserScore(user: User): OptionAsync<UserScore>;
    *
@@ -1037,10 +1037,10 @@ interface OptionAsyncTrait {
    * //        ┌─── OptionAsync<UserLevel>
    * //        ▼
    * const userLevel = OptionAsync.Do
-   *   .bind('user', () => getUser('user_123'))
+   *   .bind('user', () => findUserById('user_123'))
    * //                 ┌─── { user: User }
    * //                 ▼
-   *   .bind('score', (ctx) => getUserScore(ctx.user)) // getUserScore is dependent on getUser result
+   *   .bind('score', (ctx) => getUserScore(ctx.user)) // getUserScore is dependent on findUserById result
    *   .map((ctx) => getUserLevel(ctx.user, ctx.score));
    * //       ▲
    * //       └─── { user: User; score: UserScore }

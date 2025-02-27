@@ -76,7 +76,7 @@ Here's a practical example:
 ```typescript
 import { Result } from 'funkcia';
 
-declare function findUser(id: string): Result<User, UserNotFoundError>;
+declare function findUser(id: string): Result<User, UserNotFound>;
 declare function getUserPermissions(user: User): Result<Permissions, MissingPermissionsError>;
 declare function checkAccess(permissions: Permissions, resource: string): Result<Access, InsuficientPermissionsError>;
 
@@ -96,7 +96,7 @@ The equivalent code without `use` would be much more nested:
 ```typescript
 import { Result } from 'funkcia';
 
-declare function findUser(id: string): Result<User, UserNotFoundError>;
+declare function findUser(id: string): Result<User, UserNotFound>;
 declare function getUserPermissions(user: User): Result<Permissions, MissingPermissionsError>;
 declare function checkAccess(permissions: Permissions, resource: string): Result<Access, InsuficientPermissionsError>;
 
@@ -115,7 +115,7 @@ Or with intermediate variables:
 ```typescript
 import { Result } from 'funkcia';
 
-declare function findUser(id: string): Result<User, UserNotFoundError>;
+declare function findUser(id: string): Result<User, UserNotFound>;
 declare function getUserPermissions(user: User): Result<Permissions, MissingPermissionsError>;
 declare function checkAccess(permissions: Permissions, resource: string): Result<Access, InsuficientPermissionsError>;
 

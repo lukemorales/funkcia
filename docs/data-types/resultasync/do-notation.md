@@ -22,15 +22,15 @@ Initiates a `do notation` for the `Result` type.
 
 <pre class="language-typescript"><code class="lang-typescript">import { AsyncResult } from 'funkcia';
 
-declare function findUserById(id: string): AsyncResult<User, UserNotFoundError>;
-declare function computeUserScore(user: User): AsyncResult<UserScore, UserNotScoredError>;
-declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRankingError>;
+declare function findUserById(id: string): AsyncResult<User, UserNotFound>;
+declare function calculateUserScore(user: User): AsyncResult<UserScore, UserNotScored>;
+declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRanking>;
 
-//        ┌─── AsyncResult<UserLevel, UserNotFoundError | UserNotScoredError>
+//        ┌─── AsyncResult<UserLevel, UserNotFound | UserNotScored>
 //        ▼
 const userLevel = AsyncResult.Do
   .bind('user', () => findUserById('user_123'))
-  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => computeUserScore(ctx.user))
+  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => calculateUserScore(ctx.user))
   .map((ctx) => rankUserLevel(ctx.user, ctx.score));
 //       ▲
 //       └─── { user: User; score: UserScore }
@@ -42,15 +42,15 @@ Initiates a `do notation` with the current `AsyncResult`, binding it to a contex
 
 <pre class="language-typescript"><code class="lang-typescript">import { AsyncResult } from 'funkcia';
 
-declare function findUserById(id: string): AsyncResult<User, UserNotFoundError>;
-declare function computeUserScore(user: User): AsyncResult<UserScore, UserNotScoredError>;
-declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRankingError>;
+declare function findUserById(id: string): AsyncResult<User, UserNotFound>;
+declare function calculateUserScore(user: User): AsyncResult<UserScore, UserNotScored>;
+declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRanking>;
 
-//        ┌─── AsyncResult<UserLevel, UserNotFoundError | UserNotScoredError>
+//        ┌─── AsyncResult<UserLevel, UserNotFound | UserNotScored>
 //        ▼
 const userLevel = findUserById('user_123')
 <strong>  .bindTo('user')
-</strong>  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => computeUserScore(ctx.user))
+</strong>  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => calculateUserScore(ctx.user))
   .map((ctx) => rankUserLevel(ctx.user, ctx.score));
 //       ▲
 //       └─── { user: User; score: UserScore }
@@ -64,15 +64,15 @@ If the `Result` is `Ok`, the value is assigned to the key in the context object.
 
 <pre class="language-typescript"><code class="lang-typescript">import { AsyncResult } from 'funkcia';
 
-declare function findUserById(id: string): AsyncResult<User, UserNotFoundError>;
-declare function computeUserScore(user: User): AsyncResult<UserScore, UserNotScoredError>;
-declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRankingError>;
+declare function findUserById(id: string): AsyncResult<User, UserNotFound>;
+declare function calculateUserScore(user: User): AsyncResult<UserScore, UserNotScored>;
+declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRanking>;
 
-//        ┌─── Result<UserLevel, UserNotFoundError | UserNotScoredError>
+//        ┌─── Result<UserLevel, UserNotFound | UserNotScored>
 //        ▼
 const userLevel = AsyncResult.Do
   .bind('user', () => findUserById('user_123'))
-  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => computeUserScore(ctx.user))
+  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => calculateUserScore(ctx.user))
   .map((ctx) => rankUserLevel(ctx.user, ctx.score));
 //       ▲
 //       └─── { user: User; score: UserScore }
@@ -107,7 +107,7 @@ Here's a practical example:
 ```typescript
 import { AsyncResult } from 'funkcia';
 
-declare function findUser(id: string): AsyncResult<User, UserNotFoundError>;
+declare function findUser(id: string): AsyncResult<User, UserNotFound>;
 declare function getUserPermissions(user: User): AsyncResult<Permissions, MissingPermissionsError>;
 declare function checkAccess(permissions: Permissions, resource: string): AsyncResult<Access, InsuficientPermissionsError>;
 
@@ -125,7 +125,7 @@ The equivalent code would be much more nested:
 ```typescript
 import { AsyncResult } from 'funkcia';
 
-declare function findUser(id: string): AsyncResult<User, UserNotFoundError>;
+declare function findUser(id: string): AsyncResult<User, UserNotFound>;
 declare function getUserPermissions(user: User): AsyncResult<Permissions, MissingPermissionsError>;
 declare function checkAccess(permissions: Permissions, resource: string): AsyncResult<Access, InsuficientPermissionsError>;
 
@@ -143,7 +143,7 @@ Or with intermediate variables:
 ```typescript
 import { AsyncResult } from 'funkcia';
 
-declare function findUser(id: string): AsyncResult<User, UserNotFoundError>;
+declare function findUser(id: string): AsyncResult<User, UserNotFound>;
 declare function getUserPermissions(user: User): AsyncResult<Permissions, MissingPermissionsError>;
 declare function checkAccess(permissions: Permissions, resource: string): AsyncResult<Access, InsuficientPermissionsError>;
 

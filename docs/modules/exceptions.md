@@ -15,8 +15,8 @@ An abstract base class for errors that require a tag for identification.
 ```typescript
 import { TaggedError } from 'funkcia/exceptions';
 
-class UserNotFoundError extends TaggedError {
-  readonly _tag: 'UserNotFoundError'
+class UserNotFound extends TaggedError {
+  readonly _tag: 'UserNotFound'
 }
 ```
 
@@ -37,6 +37,3 @@ Error used when a nullable value is converted to a Result and is `null | undefin
 #### FailedPredicateError
 
 Error used when a predicate check fails in a Result chain.
-
-
-

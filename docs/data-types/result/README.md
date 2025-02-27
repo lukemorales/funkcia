@@ -567,7 +567,7 @@ const result = getCachedUser('johndoe@example.com')
   .swap() // Result<CacheMissError<Email>, User>
   .map((cacheMiss) => getOrCreateUserByEmail(cacheMiss.input)) // Result<User, User>
   .merge();
-// Output: { id: 'user_01', email: 'johndoe@example.com' }
+// Output: { id: 'user_123', email: 'johndoe@example.com' }
 ```
 
 #### contains
@@ -695,7 +695,7 @@ import { Option } from 'funkcia';
 
 declare function findUserById(id: string): Result<User, UserNotFound>;
 
-const user = findUserById('user_01');
+const user = findUserById('user_123');
 
 if (user.isOk()) {
   return user.unwrap(); // `unwrap` will not throw

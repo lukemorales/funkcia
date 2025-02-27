@@ -134,11 +134,11 @@ const url = AsyncResult.try(() => findUserByIdOrThrow('user_123'));
 // Output: Promise<Error(UnknownError)>
 
 // With custom error handling
-//     ┌─── AsyncResult<User, UserNotFoundError | DatabaseFailureError>
+//     ┌─── AsyncResult<User, UserNotFound | DatabaseFailureError>
 //     ▼
 const url = AsyncResult.try(
   () => findUserByIdOrThrow('user_123'),
-  (error) => UserNotFoundError.is(error) ? error : new DatabaseFailureError(error),
+  (error) => UserNotFound.is(error) ? error : new DatabaseFailureError(error),
 );
 // Output: Promise<Error(DatabaseFailureError('Error: Failed to connect to the database'))>
 ```
@@ -180,11 +180,11 @@ declare async function findUserByIdOrThrow(id: string): Promise<User>;
 const safeFindUserById = AsyncResult.liftPromise(findUserByIdOrThrow);
 
 // With custom error handling
-//           ┌─── (id: string) => AsyncResult<User, UserNotFoundError | DatabaseFailureError>
+//           ┌─── (id: string) => AsyncResult<User, UserNotFound | DatabaseFailureError>
 //           ▼
 const safeFindUserById = AsyncResult.liftPromise(
   findUserByIdOrThrow,
-  (error) => UserNotFoundError.is(error) ? error : new DatabaseFailureError(error),
+  (error) => UserNotFound.is(error) ? error : new DatabaseFailureError(error),
 );
 ```
 
@@ -402,7 +402,7 @@ const user = await findUserById('user_123').expect(
 );
 
 const anotherUser = await findUserById('invalid_id').expect(
-  (error) => new UserNotFound('team_01'),
+  (error) => new UserNotFound('team_123'),
 //   ▲
 //   └─── DatabaseFailureError
 );
@@ -612,10 +612,10 @@ Calls the function with `Result` value, then returns the `Result` itself. The re
 ```typescript
 import { AsyncResult } from 'funkcia';
 
-declare function authenticateUser(credentials: AuthCredentials): AsyncResult<User, UserNotFound | InvalidCredentialsError>;
+declare function authenticateUser(credentials: AuthCredentials): AsyncResult<User, UserNotFound | InvalidCredentials>;
 declare async function registerSuccessfulLoginAttempt(user: User): Promise<{ loginAttempts: number }>;
 
-//       ┌─── AsyncResult<User, UserNotFound | InvalidCredentialsError>
+//       ┌─── AsyncResult<User, UserNotFound | InvalidCredentials>
 //       ▼
 const result = authenticateUser(req.body).tap(async (user) => {
   return await registerSuccessfulLoginAttempt(user);
@@ -630,15 +630,15 @@ Calls the function with the underlying `Result` error, then returns the `AsyncRe
 ```typescript
 import { AsyncResult } from 'funkcia';
 
-declare function authenticateUser(credentials: AuthCredentials): AsyncResult<User, UserNotFound | InvalidCredentialsError>;
+declare function authenticateUser(credentials: AuthCredentials): AsyncResult<User, UserNotFound | InvalidCredentials>;
 declare async function registerLoginAttempt(user: User): Promise<{ loginAttempts: number }>;
 
-//       ┌─── AsyncResult<User, UserNotFound | InvalidCredentialsError>
+//       ┌─── AsyncResult<User, UserNotFound | InvalidCredentials>
 //       ▼
 const result = authenticateUser(req.body).tapError(async (error) => {
-  if (InvalidCredentialsError.is(error)) {
+  if (InvalidCredentials.is(error)) {
     return await registerLoginAttempt(error.email);
   }
 });
-// Output: Promise<Error(InvalidCredentialsError)>
+// Output: Promise<Error(InvalidCredentials)>
 ```

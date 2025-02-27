@@ -8,14 +8,14 @@ Initiates a `do notation` for the `Option` type.
 
 <pre class="language-typescript"><code class="lang-typescript">import { Option } from 'funkcia';
 
-declare function getUser(id: string): Option<User>;
+declare function findUserById(id: string): Option<User>;
 declare function getUserScore(user: User): Option<UserScore>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
 //        ┌─── Option<UserLevel>
 //        ▼
 const userLevel = Option.Do
-  .bind('user', () => getUser('user_01'))
+  .bind('user', () => findUserById('user_123'))
   .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => getUserScore(ctx.user))
   .map((ctx) => getUserLevel(ctx.user, ctx.score));
 //       ▲
@@ -28,13 +28,13 @@ Initiates a `do notation` with the current `Option`, binding it to a context obj
 
 <pre class="language-typescript"><code class="lang-typescript">import { Option } from 'funkcia';
 
-declare function getUser(id: string): Option<User>;
+declare function findUserById(id: string): Option<User>;
 declare function getUserScore(user: User): Option<UserScore>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
 //        ┌─── Option<UserLevel>
 //        ▼
-const userLevel = getUser('user_01')
+const userLevel = findUserById('user_123')
 <strong>  .bindTo('user')
 </strong>  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => getUserScore(ctx.user))
   .map((ctx) => getUserLevel(ctx.user, ctx.score));
@@ -50,14 +50,14 @@ If the `Option` is `Some`, the value is assigned to the key in the context objec
 
 <pre class="language-typescript"><code class="lang-typescript">import { Option } from 'funkcia';
 
-declare function getUser(id: string): Option<User>;
+declare function findUserById(id: string): Option<User>;
 declare function getUserScore(user: User): Option<UserScore>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
 //        ┌─── Option<UserLevel>
 //        ▼
 const userLevel = Option.Do
-  .bind('user', () => getUser('user_01'))
+  .bind('user', () => findUserById('user_123'))
   .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => getUserScore(ctx.user))
   .map((ctx) => getUserLevel(ctx.user, ctx.score));
 //       ▲

@@ -121,17 +121,17 @@ export interface ResultAsync<Value, Error>
    * ```ts
    * import { AsyncResult } from 'funkcia';
    *
-   * declare function computeUserScore(user: User): AsyncResult<UserScore, UserNotScoredError>;
-   * declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRankingError>;
-   * declare const user: AsyncResult<User, UserNotFoundError>;
+   * declare function calculateUserScore(user: User): AsyncResult<UserScore, UserNotScored>;
+   * declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRanking>;
+   * declare const user: AsyncResult<User, UserNotFound>;
    *
-   * //        ┌─── AsyncResult<UserLevel, UserNotFoundError | UserNotScoredError | InvalidRankingError>
+   * //        ┌─── AsyncResult<UserLevel, UserNotFound | UserNotScored | InvalidRanking>
    * //        ▼
    * const userLevel = user
    *   .bindTo('user')
    * //                 ┌─── { user: User }
    * //                 ▼
-   *   .bind('score', (ctx) => computeUserScore(ctx.user))
+   *   .bind('score', (ctx) => calculateUserScore(ctx.user))
    *   .andThen((ctx) => rankUserLevel(ctx.user, ctx.score));
    * //           ▲
    * //           └─── { user: User; score: UserScore }
@@ -151,17 +151,17 @@ export interface ResultAsync<Value, Error>
    * ```ts
    * import { AsyncResult } from 'funkcia';
    *
-   * declare function findUserById(id: string): AsyncResult<User, UserNotFoundError>;
-   * declare function computeUserScore(user: User): AsyncResult<UserScore, UserNotScoredError>;
-   * declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRankingError>;
+   * declare function findUserById(id: string): AsyncResult<User, UserNotFound>;
+   * declare function calculateUserScore(user: User): AsyncResult<UserScore, UserNotScored>;
+   * declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRanking>;
    *
-   * //        ┌─── AsyncResult<UserLevel, UserNotFoundError | UserNotScoredError | InvalidRankingError>
+   * //        ┌─── AsyncResult<UserLevel, UserNotFound | UserNotScored | InvalidRanking>
    * //        ▼
    * const userLevel = AsyncResult.Do
    *   .bind('user', () => findUserById('user_123'))
    * //                 ┌─── { user: User }
    * //                 ▼
-   *   .bind('score', (ctx) => computeUserScore(ctx.user))
+   *   .bind('score', (ctx) => calculateUserScore(ctx.user))
    *   .andThen((ctx) => rankUserLevel(ctx.user, ctx.score));
    * //           ▲
    * //           └─── { user: User; score: UserScore }
@@ -593,9 +593,9 @@ export interface ResultAsync<Value, Error>
    * ```ts
    * import { AsyncResult } from 'funkcia';
    *
-   * //      ┌─── UserNotFoundError
+   * //      ┌─── UserNotFound
    * //      ▼
-   * const error = await error(new UserNotFoundError()).unwrapError();
+   * const error = await error(new UserNotFound()).unwrapError();
    * ```
    */
   unwrapError: () => Promise<Error>;
@@ -676,13 +676,13 @@ export interface ResultAsync<Value, Error>
    * //     ┌─── User
    * //     ▼
    * const user = await findUserById('user_123').expect(
-   *   (error) => new UserNotFoundError(userId),
+   *   (error) => new UserNotFound(userId),
    * //   ▲
    * //   └─── DatabaseFailureError
    * );
    *
    * const anotherUser = await findUserById('invalid_id').expect(
-   *   (error) => new UserNotFoundError('team_01'),
+   *   (error) => new UserNotFound('team_123'),
    * //   ▲
    * //   └─── DatabaseFailureError
    * );
@@ -791,11 +791,11 @@ export interface ResultAsync<Value, Error>
    * ```ts
    * import { AsyncResult } from 'funkcia';
    *
-   * declare function authenticateUser(credentials: AuthCredentials): AsyncResult<User, UserNotFoundError | InvalidCredentialsError>;
+   * declare function authenticateUser(credentials: AuthCredentials): AsyncResult<User, UserNotFound | InvalidCredentials>;
    *
    * declare async function registerSuccessfulLoginAttempt(user: User): Promise<{ loginAttempts: number }>;
    *
-   * //       ┌─── AsyncResult<User, UserNotFoundError | InvalidCredentialsError>
+   * //       ┌─── AsyncResult<User, UserNotFound | InvalidCredentials>
    * //       ▼
    * const result = authenticateUser(req.body).tap(async (user) => {
    *   return await registerSuccessfulLoginAttempt(user);
@@ -816,18 +816,18 @@ export interface ResultAsync<Value, Error>
    * ```ts
    * import { AsyncResult } from 'funkcia';
    *
-   * declare function authenticateUser(credentials: AuthCredentials): AsyncResult<User, UserNotFoundError | InvalidCredentialsError>;
+   * declare function authenticateUser(credentials: AuthCredentials): AsyncResult<User, UserNotFound | InvalidCredentials>;
    *
    * declare async function registerLoginAttempt(user: User): Promise<{ loginAttempts: number }>;
    *
-   * //       ┌─── AsyncResult<User, UserNotFoundError | InvalidCredentialsError>
+   * //       ┌─── AsyncResult<User, UserNotFound | InvalidCredentials>
    * //       ▼
    * const result = authenticateUser(req.body).tapError(async (error) => {
-   *   if (InvalidCredentialsError.is(error)) {
+   *   if (InvalidCredentials.is(error)) {
    *     return await registerLoginAttempt(error.email);
    *   }
    * });
-   * // Output: Promise<Error(InvalidCredentialsError)>
+   * // Output: Promise<Error(InvalidCredentials)>
    * ```
    */
   tapError: (onError: (error: Error) => unknown) => this;
@@ -1005,19 +1005,19 @@ export interface ResultAsyncTrait {
    * ```ts
    * import { AsyncResult } from 'funkcia';
    *
-   * declare function findUserById(id: string): AsyncResult<User, UserNotFoundError>;
+   * declare function findUserById(id: string): AsyncResult<User, UserNotFound>;
    *
-   * declare function computeUserScore(user: User): AsyncResult<UserScore, UserNotScoredError>;
+   * declare function calculateUserScore(user: User): AsyncResult<UserScore, UserNotScored>;
    *
-   * declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRankingError>;
+   * declare function rankUserLevel(user: User, score: UserScore): AsyncResult<UserLevel, InvalidRanking>;
    *
-   * //        ┌─── AsyncResult<UserLevel, UserNotFoundError | UserNotScoredError | InvalidRankingError>
+   * //        ┌─── AsyncResult<UserLevel, UserNotFound | UserNotScored | InvalidRanking>
    * //        ▼
    * const userLevel = AsyncResult.Do
    *   .bind('user', () => findUserById('user_123'))
    * //                 ┌─── { user: User }
    * //                 ▼
-   *   .bind('score', (ctx) => computeUserScore(ctx.user))
+   *   .bind('score', (ctx) => calculateUserScore(ctx.user))
    *   .andThen((ctx) => rankUserLevel(ctx.user, ctx.score));
    * //           ▲
    * //           └─── { user: User; score: UserScore }
@@ -1034,9 +1034,9 @@ export interface ResultAsyncTrait {
    * ```ts
    * import { AsyncResult } from 'funkcia';
    *
-   * declare async function findUserById(id: string): Promise<Result<User, UserNotFoundError>>;
+   * declare async function findUserById(id: string): Promise<Result<User, UserNotFound>>;
    *
-   * //     ┌─── AsyncResult<User, UserNotFoundError | UnknownError>
+   * //     ┌─── AsyncResult<User, UserNotFound | UnknownError>
    * //     ▼
    * const url = AsyncResult.try(() => findUserById('user_123'));
    * // Output: Error(UnknownError)
@@ -1079,9 +1079,9 @@ export interface ResultAsyncTrait {
    * ```ts
    * import { AsyncResult } from 'funkcia';
    *
-   * declare async function findUserById(id: string): Promise<Result<User, UserNotFoundError>>;
+   * declare async function findUserById(id: string): Promise<Result<User, UserNotFound>>;
    *
-   * //     ┌─── AsyncResult<User, UserNotFoundError | UnknownError>
+   * //     ┌─── AsyncResult<User, UserNotFound | UnknownError>
    * //     ▼
    * const url = try(
    *   () => findUserById('user_123'),
@@ -1110,11 +1110,11 @@ export interface ResultAsyncTrait {
    *
    * declare async function findUserByIdOrThrow(id: string): Promise<User>;
    *
-   * //     ┌─── AsyncResult<User, UserNotFoundError | DatabaseFailureError>
+   * //     ┌─── AsyncResult<User, UserNotFound | DatabaseFailureError>
    * //     ▼
    * const url = try(
    *   () => findUserByIdOrThrow('user_123'),
-   *   (error) => UserNotFoundError.is(error) ? error : new DatabaseFailureError(error),
+   *   (error) => UserNotFound.is(error) ? error : new DatabaseFailureError(error),
    * );
    * // Output: DatabaseFailureError('Error: Failed to connect to the database')
    * ```
@@ -1131,9 +1131,9 @@ export interface ResultAsyncTrait {
    * ```ts
    * import { AsyncResult } from 'funkcia';
    *
-   * declare async function findUserById(id: string): Promise<Result<User, UserNotFoundError | DatabaseFailureError>>;
+   * declare async function findUserById(id: string): Promise<Result<User, UserNotFound | DatabaseFailureError>>;
    *
-   * //      ┌─── AsyncResult<User, UserNotFoundError | DatabaseFailureError>
+   * //      ┌─── AsyncResult<User, UserNotFound | DatabaseFailureError>
    * //      ▼
    * const result = promise(() => findUserById('user_123'));
    * // Output: Promise<Ok(User)>
@@ -1212,16 +1212,16 @@ export interface ResultAsyncTrait {
    * ```ts
    * import { AsyncResult } from 'funkcia';
    *
-   * declare async function findUserById(id: string): Promise<Result<User, UserNotFoundError>>;
+   * declare async function findUserById(id: string): Promise<Result<User, UserNotFound>>;
    *
-   * //           ┌─── (id: string) => AsyncResult<User, UserNotFoundError | DatabaseFailureError>
+   * //           ┌─── (id: string) => AsyncResult<User, UserNotFound | DatabaseFailureError>
    * //           ▼
    * const safeFindUserById = liftPromise(
    *   findUserById,
    *   (error) => new DatabaseFailureError(error),
    * );
    *
-   * //      ┌─── AsyncResult<User, UserNotFoundError | DatabaseFailureError>
+   * //      ┌─── AsyncResult<User, UserNotFound | DatabaseFailureError>
    * //      ▼
    * const user = safeFindUserById('user_123')
    * // Output: Promise<Ok(User)>
@@ -1253,14 +1253,14 @@ export interface ResultAsyncTrait {
    *
    * declare async function findUserByIdOrThrow(id: string): Promise<User>;
    *
-   * //           ┌─── (id: string) => AsyncResult<User, UserNotFoundError | DatabaseFailureError>
+   * //           ┌─── (id: string) => AsyncResult<User, UserNotFound | DatabaseFailureError>
    * //           ▼
    * const safeFindUserById = liftPromise(
    *   findUserByIdOrThrow,
-   *   (error) => UserNotFoundError.is(error) ? error : new DatabaseFailureError(error),
+   *   (error) => UserNotFound.is(error) ? error : new DatabaseFailureError(error),
    * );
    *
-   * //      ┌─── AsyncResult<User, UserNotFoundError | DatabaseFailureError>
+   * //      ┌─── AsyncResult<User, UserNotFound | DatabaseFailureError>
    * //      ▼
    * const user = safeFindUserById('user_123')
    * // Output: Promise<Ok(User)>

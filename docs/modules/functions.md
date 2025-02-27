@@ -137,9 +137,9 @@ Returns `true`.
 ```typescript
 import { alwaysTrue, Option } from 'funkcia/functions';
 
-declare function getUser(id: string): Option<User>
+declare function findUserById(id: string): Option<User>
 
-const isRegularUser = getUser('user_123')
+const isRegularUser = findUserById('user_123')
   .map(user => user.kind !== 'ADMIN')
   .unwrapOr(alwaysTrue);
 ```
@@ -151,9 +151,9 @@ Returns `false`.
 ```typescript
 import { alwaysFalse, Option } from 'funkcia/functions';
 
-declare function getUser(id: string): Option<User>
+declare function findUserById(id: string): Option<User>
 
-const isAdmin = getUser('user_123')
+const isAdmin = findUserById('user_123')
   .map(user => user.kind === 'ADMIN')
   .unwrapOr(alwaysFalse);
 ```

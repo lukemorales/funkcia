@@ -80,7 +80,7 @@ Here's a practical example:
 import { ResultAsync } from 'funkcia';
 
 declare function rateLimit(clientId: ClientId, ip: IpAddress): ResultAsync<ClientId, RateLimitError>;
-declare function findUserByEmail(email: Email): ResultAsync<User, UserNotFoundError>;
+declare function findUserByEmail(email: Email): ResultAsync<User, UserNotFound>;
 
 const userPreferences = ResultAsync.use(function* () {
   // First, check if API rate limit is allowed
@@ -99,7 +99,7 @@ The equivalent code without `use` would be much more nested:
 import { ResultAsync } from 'funkcia';
 
 declare function rateLimit(clientId: ClientId, ip: IpAddress): ResultAsync<ClientId, RateLimitError>;
-declare function findUserByEmail(email: Email): ResultAsync<User, UserNotFoundError>;
+declare function findUserByEmail(email: Email): ResultAsync<User, UserNotFound>;
 
 const userPreferences = rateLimit(req.headers['x-client-id'], req.ip)
   .andThen(() =>
@@ -115,7 +115,7 @@ Or with intermediate variables:
 import { ResultAsync } from 'funkcia';
 
 declare function rateLimit(clientId: ClientId, ip: IpAddress): ResultAsync<ClientId, RateLimitError>;
-declare function findUserByEmail(email: Email): ResultAsync<User, UserNotFoundError>;
+declare function findUserByEmail(email: Email): ResultAsync<User, UserNotFound>;
 
 const rateLimitResult = rateLimit(req.headers['x-client-id'], req.ip);
 const user = rateLimitResult.andThen(() => findUserByEmail(req.query.email));

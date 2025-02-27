@@ -116,7 +116,7 @@ declare async function findUserById(id: string): Promise<User | null>
 
 //      ┌─── AsyncOption<User>
 //      ▼
-const option = AsyncOption.try(() => findUserById('user_01'));
+const option = AsyncOption.try(() => findUserById('user_123'));
 // Output: Promise<Some(User)>
 ```
 
@@ -131,7 +131,7 @@ declare async function findUserById(id: string): Promise<Option<User>>
 
 //      ┌─── AsyncOption<User>
 //      ▼
-const option = AsyncOption.promise(() => findUserById('user_01'));
+const option = AsyncOption.promise(() => findUserById('user_123'));
 // Output: Promise<Some(User)>
 ```
 
@@ -151,7 +151,7 @@ const safeFindUserById = AsyncOption.liftPromise(findUserById);
 
 //     ┌─── AsyncOption<User>
 //     ▼
-const user = safeFindUserById('user_01');
+const user = safeFindUserById('user_123');
 
 // With nullable return type
 declare async function findUserById(id: string): Promise<User | null>
@@ -162,7 +162,7 @@ const safeFindUserById = AsyncOption.liftPromise(findUserById);
 
 //     ┌─── AsyncOption<User>
 //     ▼
-const user = safeFindUserById('user_01');
+const user = safeFindUserById('user_123');
 ```
 
 #### predicate
@@ -367,14 +367,14 @@ declare function findUserById(id: string): AsyncOption<User>;
 
 //     ┌─── User
 //     ▼
-const user = await findUserById('user_01').expect(
+const user = await findUserById('user_123').expect(
   () => new UserNotFound(userId),
 );
 
 const anotherUser = await findUserById('invalid_id').expect(
-  () => new UserNotFound('team_01'),
+  () => new UserNotFound('team_123'),
 );
-// Output: Uncaught exception: 'User not found: "user_01"'
+// Output: Uncaught exception: 'User not found: "user_123"'
 ```
 
 #### contains

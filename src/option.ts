@@ -218,17 +218,17 @@ interface OptionTrait {
    * ```ts
    * import { Option } from 'funkcia';
    *
-   * declare function getUser(id: string): Option<User>;
+   * declare function findUserById(id: string): Option<User>;
    * declare function getUserScore(user: User): Option<UserScore>;
    * declare function getUserLevel(user: User, score: UserScore): UserLevel;
    *
    * //        ┌─── Option<UserLevel>
    * //        ▼
    * const userLevel = Option.Do
-   *   .bind('user', () => getUser('user_123'))
+   *   .bind('user', () => findUserById('user_123'))
    * //                 ┌─── { user: User }
    * //                 ▼
-   *   .bind('score', (ctx) => getUserScore(ctx.user)) // getUserScore is dependent on getUser result
+   *   .bind('score', (ctx) => getUserScore(ctx.user)) // getUserScore is dependent on findUserById result
    *   .map((ctx) => getUserLevel(ctx.user, ctx.score));
    * //       ▲
    * //       └─── { user: User; score: UserScore }
@@ -499,13 +499,13 @@ export interface Option<Value>
    * ```ts
    * import { Option } from 'funkcia';
    *
-   * declare function getUser(id: string): Option<User>;
+   * declare function findUserById(id: string): Option<User>;
    * declare function getUserScore(user: User): Option<UserScore>;
    * declare function getUserLevel(user: User, score: UserScore): UserLevel;
    *
    * //        ┌─── Option<UserLevel>
    * //        ▼
-   * const userLevel = getUser('user_123')
+   * const userLevel = findUserById('user_123')
    *   .bindTo('user')
    * //                 ┌─── { user: User }
    * //                 ▼
@@ -529,14 +529,14 @@ export interface Option<Value>
    * ```ts
    * import { Option } from 'funkcia';
    *
-   * declare function getUser(id: string): Option<User>;
+   * declare function findUserById(id: string): Option<User>;
    * declare function getUserScore(user: User): Option<UserScore>;
    * declare function getUserLevel(user: User, score: UserScore): UserLevel;
    *
    * //        ┌─── Option<UserLevel>
    * //        ▼
    * const userLevel = Option.Do
-   *   .bind('user', () => getUser('user_123'))
+   *   .bind('user', () => findUserById('user_123'))
    * //                 ┌─── { user: User }
    * //                 ▼
    *   .bind('score', (ctx) => getUserScore(ctx.user))

@@ -22,14 +22,14 @@ Initiates a `do notation` for the `Result` type.
 
 <pre class="language-typescript"><code class="lang-typescript">import { Result } from 'funkcia';
 
-declare function getUser(id: string): Result<User, UserNotFoundError>;
-declare function getUserScore(user: User): Result<UserScore, UserNotScoredError>;
+declare function findUserById(id: string): Result<User, UserNotFound>;
+declare function getUserScore(user: User): Result<UserScore, UserNotScored>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
-//        ┌─── Result<UserLevel, UserNotFoundError | UserNotScoredError>
+//        ┌─── Result<UserLevel, UserNotFound | UserNotScored>
 //        ▼
 const userLevel = Result.Do
-  .bind('user', () => getUser('user_01'))
+  .bind('user', () => findUserById('user_123'))
   .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => getUserScore(ctx.user))
   .map((ctx) => getUserLevel(ctx.user, ctx.score));
 //       ▲
@@ -42,13 +42,13 @@ Initiates a `do notation` with the current `Result`, binding it to a context obj
 
 <pre class="language-typescript"><code class="lang-typescript">import { Result } from 'funkcia';
 
-declare function getUser(id: string): Result<User, UserNotFoundError>;
-declare function getUserScore(user: User): Result<UserScore, UserNotScoredError>;
+declare function findUserById(id: string): Result<User, UserNotFound>;
+declare function getUserScore(user: User): Result<UserScore, UserNotScored>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
-//        ┌─── Result<UserLevel, UserNotFoundError | UserNotScoredError>
+//        ┌─── Result<UserLevel, UserNotFound | UserNotScored>
 //        ▼
-const userLevel = getUser('user_01')
+const userLevel = findUserById('user_123')
 <strong>  .bindTo('user')
 </strong>  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => getUserScore(ctx.user))
   .map((ctx) => getUserLevel(ctx.user, ctx.score));
@@ -64,14 +64,14 @@ If the `Result` is `Ok`, the value is assigned to the key in the context object.
 
 <pre class="language-typescript"><code class="lang-typescript">import { Result } from 'funkcia';
 
-declare function getUser(id: string): Result<User, UserNotFoundError>;
-declare function getUserScore(user: User): Result<UserScore, UserNotScoredError>;
+declare function findUserById(id: string): Result<User, UserNotFound>;
+declare function getUserScore(user: User): Result<UserScore, UserNotScored>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
-//        ┌─── Result<UserLevel, UserNotFoundError | UserNotScoredError>
+//        ┌─── Result<UserLevel, UserNotFound | UserNotScored>
 //        ▼
 const userLevel = Result.Do
-  .bind('user', () => getUser('user_01'))
+  .bind('user', () => findUserById('user_123'))
   .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => getUserScore(ctx.user))
   .map((ctx) => getUserLevel(ctx.user, ctx.score));
 //       ▲
@@ -105,7 +105,7 @@ Here's a practical example:
 ```typescript
 import { Result } from 'funkcia';
 
-declare function findUser(id: string): Result<User, UserNotFoundError>;
+declare function findUser(id: string): Result<User, UserNotFound>;
 declare function getUserPermissions(user: User): Result<Permissions, MissingPermissionsError>;
 declare function checkAccess(permissions: Permissions, resource: string): Result<Access, InsuficientPermissionsError>;
 
@@ -123,7 +123,7 @@ The equivalent code would be much more nested:
 ```typescript
 import { Result } from 'funkcia';
 
-declare function findUser(id: string): Result<User, UserNotFoundError>;
+declare function findUser(id: string): Result<User, UserNotFound>;
 declare function getUserPermissions(user: User): Result<Permissions, MissingPermissionsError>;
 declare function checkAccess(permissions: Permissions, resource: string): Result<Access, InsuficientPermissionsError>;
 
@@ -141,7 +141,7 @@ Or with intermediate variables:
 ```typescript
 import { Result } from 'funkcia';
 
-declare function findUser(id: string): Result<User, UserNotFoundError>;
+declare function findUser(id: string): Result<User, UserNotFound>;
 declare function getUserPermissions(user: User): Result<Permissions, MissingPermissionsError>;
 declare function checkAccess(permissions: Permissions, resource: string): Result<Access, InsuficientPermissionsError>;
 
