@@ -13,23 +13,19 @@ jobs:
       - name: 🔑 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Install Bun
-        uses: oven-sh/setup-bun@v2
+      - name: 🔧 Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 10.28.2
 
-      - name: ♻️ Cache node_modules
-        uses: actions/cache@v4
-        id: bun-cache
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: "**/node_modules"
-          key: ${{ runner.os }}-node-${{ hashFiles('**/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version: '22'
+          cache: 'pnpm'
 
       - name: 📦 Install dependencies
-        if: steps.bun-cache.outputs.cache-hit != 'true'
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
   tests:
     name: 🧪 Test package
@@ -39,23 +35,22 @@ jobs:
       - name: 🔑 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Install Bun
-        uses: oven-sh/setup-bun@v2
+      - name: 🔧 Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 10.28.2
 
-      - name: ♻️ Load node_modules
-        uses: actions/cache@v4
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: "**/node_modules"
-          key: ${{ runner.os }}-node-${{ hashFiles('**/bun.lock') }}
+          node-version: '22'
+          cache: 'pnpm'
 
       - name: 📦 Install dependencies
-        if: steps.bun-cache.outputs.cache-hit != 'true'
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: 🧪 Run tests
-        run: bun run test:ci
+        run: pnpm test:ci
 
   build:
     name: 🏗️ Build package
@@ -65,20 +60,19 @@ jobs:
       - name: 🔑 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Install Bun
-        uses: oven-sh/setup-bun@v2
+      - name: 🔧 Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 10.28.2
 
-      - name: ♻️ Load node_modules
-        uses: actions/cache@v4
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: "**/node_modules"
-          key: ${{ runner.os }}-node-${{ hashFiles('**/bun.lock') }}
+          node-version: '22'
+          cache: 'pnpm'
 
       - name: 📦 Install dependencies
-        if: steps.bun-cache.outputs.cache-hit != 'true'
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: 🏗️ Build package
-        run: bun run build
+        run: pnpm build
