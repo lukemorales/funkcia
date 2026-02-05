@@ -60,21 +60,21 @@ const mergedContent = safeMergeFiles('output.txt', 'data.txt', 'updated-data.txt
 
 The `use` method provides a way to write sequential operations that might fail, similar to Rust's `?` operator. It lets you write code that looks synchronous while safely handling potential failures.
 
-It essentially creates a "safe context" where you can work with values as if they were guaranteed to exist, while maintaining all the safety guarantees of `Option`. If anything fails, the failure propagates automatically. Like an electronic relay that controls current flow, ⁠relay controls computation flow: ⁠`Option.Some` continues, ⁠`Option.None` breaks the circuit.
+It essentially creates a "safe context" where you can work with values as if they were guaranteed to exist, while maintaining all the safety guarantees of `OptionAsync`. If anything fails, the failure propagates automatically. Like an electronic relay that controls current flow, ⁠relay controls computation flow: ⁠`Option.Some` continues, ⁠`Option.None` breaks the circuit.
 
 Here's a practical example:
 
 ```typescript
-import { Option } from 'funkcia';
+import { OptionAsync } from 'funkcia';
 
-declare function findUser(id: string): Option<User>;
-declare function getUserPermissions(user: User): Option<Permissions>;
-declare function checkAccess(permissions: Permissions, resource: string): Option<Access>;
+declare function findUser(id: string): OptionAsync<User>;
+declare function getUserPermissions(user: User): OptionAsync<Permissions>;
+declare function checkAccess(permissions: Permissions, resource: string): OptionAsync<Access>;
 
-const access = Option.use(function* () {
+const access = OptionAsync.use(async function* () {
   // First, try to find the user
   const user = yield* findUser('user_123');
-  // If user is found (`findUser` returns `Option.Some(User)`, get their permissions
+  // If user is found (`findUser` returns `OptionAsync.Some(User)`, get their permissions
   const permissions = yield* getUserPermissions(user);
 
   // If all steps succeed, we can use the accumulated context to check access to specific resource

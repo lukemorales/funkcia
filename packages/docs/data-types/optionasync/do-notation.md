@@ -36,8 +36,8 @@ declare function rankUserLevel(user: User, score: UserScore): OptionAsync<UserLe
 //        ▼
 const userLevel = findUserById('user_123')
 <strong>  .bindTo('user')
-</strong>  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => getUserScore(ctx.user))
-  .andThen((ctx) => getUserLevel(ctx.user, ctx.score));
+</strong>  .bind('score', (<a data-footnote-ref href="#user-content-fn-1">ctx</a>) => calculateUserScore(ctx.user))
+  .andThen((ctx) => rankUserLevel(ctx.user, ctx.score));
 //           ▲
 //           └─── { user: User; score: UserScore }
 </code></pre>

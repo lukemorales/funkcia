@@ -18,7 +18,7 @@ A `do notation` syntax allows writing code in a more declarative style, similar 
 
 #### Do
 
-Initiates a `do notation` for the `Result` type.
+Initiates a `do notation` for the `ResultAsync` type.
 
 <pre class="language-typescript"><code class="lang-typescript">import { ResultAsync } from 'funkcia';
 
@@ -60,7 +60,7 @@ const userLevel = findUserById('user_123')
 
 Binds an `ResultAsync` to the context object in a `do notation`.
 
-If the `Result` is `Ok`, the value is assigned to the key in the context object. If the `Result` is `Error`, the parent `Result` running the `Do` simulation becomes an `Error`.
+If the `ResultAsync` is `Ok`, the value is assigned to the key in the context object. If the `ResultAsync` is `Error`, the parent `ResultAsync` running the `Do` simulation becomes an `Error`.
 
 <pre class="language-typescript"><code class="lang-typescript">import { ResultAsync } from 'funkcia';
 
@@ -68,7 +68,7 @@ declare function findUserById(id: string): ResultAsync<User, UserNotFound>;
 declare function calculateUserScore(user: User): ResultAsync<UserScore, UserNotScored>;
 declare function rankUserLevel(user: User, score: UserScore): ResultAsync<UserLevel, InvalidRanking>;
 
-//        ┌─── Result<UserLevel, UserNotFound | UserNotScored>
+//        ┌─── ResultAsync<UserLevel, UserNotFound | UserNotScored>
 //        ▼
 const userLevel = ResultAsync.Do
   .bind('user', () => findUserById('user_123'))
