@@ -1471,21 +1471,22 @@ export interface Result<Value, Error>
    * import { Result } from 'funkcia';
    *
    * declare function readFile(path: string): Result<string, FileNotFoundError | FileReadError>;
-   * declare function parseSalesRecords(content: string): Result<SalesRecord[], InvalidSalesRecordFileError>;
-   * declare function aggregateSales(salesRecords: SalesRecord[]): AggregatedSaleRecord[];
    *
-   * //     ┌─── AggregatedSaleRecord[]
+   * declare function parseJsonFile(contents: string): Result<FileContent, InvalidJsonError>;
+   * declare function processFile(contents: FileContent): string;
+   *
+   * //     ┌─── string
    * //     ▼
-   * const data = readFile('sales.json')
-   *   .andThen(parseSalesRecords)
+   * const data = readFile('data.json')
+   *   .andThen(parseJsonFile)
    *   .match({
    *     Ok(contents) {
-   *       return aggregateSales(contents);
+   *       return processFile(contents);
    *     },
-   * //          ┌─── FileNotFoundError | FileReadError | InvalidSalesRecordFileError
+   * //          ┌─── FileNotFoundError | FileReadError | InvalidJsonError
    * //          ▼
    *     Error(error) {
-   *       return [];
+   *       return 'File is invalid JSON';
    *     },
    *   });
    * ```

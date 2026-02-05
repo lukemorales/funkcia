@@ -336,7 +336,7 @@ const option = Option.some('Paul')
 
 
 // Output: Some('John')
-const greeting = Option.none()
+const greeting = Option.none<string>()
   .or(() => Option.some('John'));
 ```
 
@@ -380,19 +380,19 @@ Compare the `Option` against the possible patterns and then execute code based o
 import { Option } from 'funkcia';
 
 declare function readFile(path: string): Option<string>;
-declare function parseSalesRecords(content: string): Option<SalesRecord[]>;
-declare function aggregateSales(salesRecords: SalesRecord[]): AggregatedSaleRecord[];
+declare function parseJsonFile(contents: string): Option<FileContent>;
+declare function processFile(contents: FileContent): string;
 
-//     ┌─── AggregatedSaleRecord[]
-//     ▼
-const data = readFile('sales.json')
-  .andThen(parseSalesRecords)
+//         ┌─── string
+//         ▼
+const userGreeting = readFile('data.json')
+  .andThen(parseJsonFile)
   .match({
     Some(contents) {
-      return aggregateSales(contents);
+      return processFile(contents);
     },
     None() {
-      return [];
+      return 'File is invalid JSON';
     },
   });
 ```

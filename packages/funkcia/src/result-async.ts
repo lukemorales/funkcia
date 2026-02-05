@@ -772,6 +772,7 @@ export interface ResultAsync<Value, Error>
    * declare function readFile(path: string): ResultAsync<string, FileNotFoundError | FileReadError>;
    *
    * declare function parseJsonFile(contents: string): ResultAsync<FileContent, InvalidJsonError>;
+   * declare function processFile(contents: FileContent): string;
    *
    * //     ┌─── string
    * //     ▼
@@ -779,7 +780,7 @@ export interface ResultAsync<Value, Error>
    *   .andThen(parseJsonFile)
    *   .match({
    *     Ok(contents) {
-   *       return 'File is valid JSON';
+   *       return processFile(contents);
    *     },
    * //          ┌─── FileNotFoundError | FileReadError | InvalidJsonError
    * //          ▼

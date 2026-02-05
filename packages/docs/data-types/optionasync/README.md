@@ -337,7 +337,7 @@ import { OptionAsync } from 'funkcia';
 //     ▼
 const user = await OptionAsync.some(databaseUser).unwrap();
 
-const team = await OptionAsync.none().unwrap();
+const team = await OptionAsync.none<Team>().unwrap();
 // Output: Uncaught exception: 'called "Option.unwrap()" on a "None" value'
 ```
 
@@ -356,7 +356,7 @@ const baseUrl = await OptionAsync.some(process.env.BASE_URL)
   .unwrapOr(() => 'http://localhost:3000');
 // Output: 'https://funkcia.lukemorales.io'
 
-const apiKey = await OptionAsync.none()
+const apiKey = await OptionAsync.none<string>()
   .unwrapOr(() => 'sk_test_9FK7CiUnKaU');
 // Output: 'sk_test_9FK7CiUnKaU'
 ```
@@ -510,7 +510,7 @@ const option = OptionAsync.some('Paul')
   .or(() => OptionAsync.some('John'));
 
 // Output: OptionAsync('John')>
-const greeting = OptionAsync.none()
+const greeting = OptionAsync.none<string>()
   .or(() => OptionAsync.some('John'));
 ```
 

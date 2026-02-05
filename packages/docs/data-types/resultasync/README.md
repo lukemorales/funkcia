@@ -283,10 +283,11 @@ Returns a promise that compares the underlying `Result` against the possible pat
 
 ```ts
 import { ResultAsync } from 'funkcia';
-import { readFileSync } from 'node:fs';
 
 declare function readFile(path: string): ResultAsync<string, FileNotFoundError | FileReadError>;
+
 declare function parseJsonFile(contents: string): ResultAsync<FileContent, InvalidJsonError>;
+declare function processFile(contents: FileContent): string;
 
 //     ┌─── string
 //     ▼
@@ -294,7 +295,7 @@ const data = await readFile('data.json')
   .andThen(parseJsonFile)
   .match({
     Ok(contents) {
-      return 'File is valid JSON';
+      return processFile(contents);
     },
 //          ┌─── FileNotFoundError | FileReadError | InvalidJsonError
 //          ▼
