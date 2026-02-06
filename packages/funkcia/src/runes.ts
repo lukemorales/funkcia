@@ -34,6 +34,21 @@ class RunicArray<T> extends Array<T> {
   }
 
   /**
+   * Calls a defined callback function on each element of an array, and returns an array that contains the results.
+   *
+   * @param callbackfn — A function that accepts up to three arguments. The map method calls the callbackfn function one time for each element in the array.
+   *
+   * @param thisArg — An object to which the this keyword can refer in the callbackfn function. If thisArg is omitted, undefined is used as the this value.
+   */
+  //@ts-expect-error - overriding the map method to return an RunicArray
+  override map<U>(
+    callbackfn: (value: T, index: number, array: T[]) => U,
+    thisArg?: any,
+  ): RunicArray<U> {
+    return new RunicArray(...super.map(callbackfn, thisArg));
+  }
+
+  /**
    * Returns `Some` with the item located at the specified index if it exists, otherwise `None`.
    * @param index The zero-based index of the desired code unit. A negative index will count back from the last item.
    */
