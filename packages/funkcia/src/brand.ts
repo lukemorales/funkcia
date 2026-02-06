@@ -1,5 +1,5 @@
 import { alwaysTrue, coerce, identity } from './functions';
-import { Predicate } from './predicate';
+import type { Predicate } from './predicate';
 import { Result } from './result';
 
 const BrandSymbol = Symbol.for('@funkcia/brand');
@@ -21,7 +21,7 @@ interface Parser<
   safeParse: (value: Brand.Unbrand<Type>) => Result<Type, Error>;
 }
 
-export declare module Brand {
+export declare namespace Brand {
   interface Sign<in out BrandId extends AnyBrandId> {
     readonly [BrandSymbol]: {
       readonly [K in BrandId]: K;

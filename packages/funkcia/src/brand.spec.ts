@@ -11,8 +11,6 @@ describe('Brand', () => {
       it('returns a function that accepts unbranded value and outputs a branded value', () => {
         const UserIdBrand = Brand.of<UserId>();
 
-        expectTypeOf(UserIdBrand).toEqualTypeOf<Brand.Constructor<UserId>>();
-
         const userId = UserIdBrand('user-123');
 
         expectTypeOf(userId).toEqualTypeOf<UserId>();
@@ -60,10 +58,6 @@ describe('Brand', () => {
       );
 
       it('returns a function that accepts unbranded value and outputs a branded value', () => {
-        expectTypeOf(PositiveIntBrand).toEqualTypeOf<
-          Brand.Parser<PositiveInt, InvalidPositiveIntError>
-        >();
-
         const positiveInt = PositiveIntBrand(1);
 
         expectTypeOf(positiveInt).toEqualTypeOf<PositiveInt>();

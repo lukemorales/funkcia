@@ -16,7 +16,6 @@ export default defineConfig({
     'src/predicate.ts',
     'src/runes.ts',
     'src/uri.ts',
-    'src/types.ts',
     'src/url.ts',
   ],
   format: 'esm',
