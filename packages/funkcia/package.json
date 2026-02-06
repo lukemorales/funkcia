@@ -18,84 +18,84 @@
   "type": "module",
   "main": "dist/index.mjs",
   "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "types": "dist/index.d.mts",
   "sideEffects": false,
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/index.d.mts",
         "default": "./dist/index.mjs"
       }
     },
     "./brand": {
       "import": {
-        "types": "./dist/brand.d.ts",
+        "types": "./dist/brand.d.mts",
         "default": "./dist/brand.mjs"
       }
     },
     "./result-async": {
       "import": {
-        "types": "./dist/result-async.d.ts",
+        "types": "./dist/result-async.d.mts",
         "default": "./dist/result-async.mjs"
       }
     },
     "./result": {
       "import": {
-        "types": "./dist/result.d.ts",
+        "types": "./dist/result.d.mts",
         "default": "./dist/result.mjs"
       }
     },
     "./option-async": {
       "import": {
-        "types": "./dist/option-async.d.ts",
+        "types": "./dist/option-async.d.mts",
         "default": "./dist/option-async.mjs"
       }
     },
     "./option": {
       "import": {
-        "types": "./dist/option.d.ts",
+        "types": "./dist/option.d.mts",
         "default": "./dist/option.mjs"
       }
     },
     "./exceptions": {
       "import": {
-        "types": "./dist/exceptions.d.ts",
+        "types": "./dist/exceptions.d.mts",
         "default": "./dist/exceptions.mjs"
       }
     },
     "./functions": {
       "import": {
-        "types": "./dist/functions.d.ts",
+        "types": "./dist/functions.d.mts",
         "default": "./dist/functions.mjs"
       }
     },
     "./json": {
       "import": {
-        "types": "./dist/json.d.ts",
+        "types": "./dist/json.d.mts",
         "default": "./dist/json.mjs"
       }
     },
     "./runes": {
       "import": {
-        "types": "./dist/runes.d.ts",
+        "types": "./dist/runes.d.mts",
         "default": "./dist/runes.mjs"
       }
     },
     "./predicate": {
       "import": {
-        "types": "./dist/predicate.d.ts",
+        "types": "./dist/predicate.d.mts",
         "default": "./dist/predicate.mjs"
       }
     },
     "./url": {
       "import": {
-        "types": "./dist/url.d.ts",
+        "types": "./dist/url.d.mts",
         "default": "./dist/url.mjs"
       }
     },
     "./uri": {
       "import": {
-        "types": "./dist/uri.d.ts",
+        "types": "./dist/uri.d.mts",
         "default": "./dist/uri.mjs"
       }
     }
@@ -105,10 +105,6 @@
     "clean": "rimraf dist",
     "dev": "vitest --coverage --ui",
     "lint": "run-p lint:*",
-    "lint:eslint": "eslint src --ext .ts",
-    "lint:eslint:fix": "eslint src --ext .ts --fix",
-    "lint:format": "prettier --check ./src",
-    "lint:format:fix": "prettier --write ./src",
     "lint:tsc": "tsc --project tsconfig.json --noEmit",
     "test": "vitest --passWithNoTests",
     "test:ci": "vitest --coverage --run",
