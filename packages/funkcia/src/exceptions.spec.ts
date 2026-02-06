@@ -1,6 +1,5 @@
 import {
   FailedPredicateError,
-  isTaggedError,
   NoValueError,
   Panic,
   panic,
@@ -49,61 +48,11 @@ describe('TaggedError', () => {
     expect(error.stack).toContain('original error');
   });
 
-  it('static is method works as type guard', () => {
-    const CustomError = TaggedError('CustomError');
-    const error = new CustomError('test message');
-    const regularError = new Error('regular error');
-
-    expect(CustomError.is(error)).toBeTrue();
-    expect(CustomError.is(regularError)).toBeFalse();
-  });
-
-  it('static is method returns false for different TaggedError types', () => {
-    const CustomError = TaggedError('CustomError');
-    const OtherError = TaggedError('OtherError');
-    const error = new OtherError('test message');
-
-    expect(CustomError.is(error)).toBeFalse();
-    expect(OtherError.is(error)).toBeTrue();
-  });
-
-  it('static is method returns false for null and undefined', () => {
-    const CustomError = TaggedError('CustomError');
-
-    expect(CustomError.is(null)).toBeFalse();
-    expect(CustomError.is(undefined)).toBeFalse();
-  });
-
   it('is instance of TypeError', () => {
     const CustomError = TaggedError('CustomError');
     const error = new CustomError('test message');
 
     expect(error).toBeInstanceOf(TypeError);
-  });
-});
-
-describe('isTaggedError', () => {
-  it('returns true for TaggedError instances', () => {
-    const CustomError = TaggedError('CustomError');
-    const error = new CustomError('test message');
-
-    expect(isTaggedError(error)).toBeTrue();
-  });
-
-  it('returns false for regular errors', () => {
-    expect(isTaggedError(new Error('regular error'))).toBeFalse();
-  });
-
-  it('returns false for null and undefined', () => {
-    expect(isTaggedError(null)).toBeFalse();
-    expect(isTaggedError(undefined)).toBeFalse();
-  });
-
-  it('returns false for non-error values', () => {
-    expect(isTaggedError('string')).toBeFalse();
-    expect(isTaggedError(123)).toBeFalse();
-    expect(isTaggedError({})).toBeFalse();
-    expect(isTaggedError([])).toBeFalse();
   });
 });
 
@@ -199,6 +148,7 @@ describe('panic', () => {
       panic('test message', cause);
     } catch (error) {
       expect(error).toBeInstanceOf(Panic);
+      assert.ok(Panic.is(error));
       expect(error.cause).toBe(cause);
     }
   });

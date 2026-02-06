@@ -636,7 +636,7 @@ describe('Result', () => {
         expect(result.unwrap()).toBe('HELLO WORLD');
       });
 
-      describe('executes the Error callback when the Result is Error', () => {
+      it('executes the Error callback when the Result is Error', () => {
         const mapCallback = vi.fn((value: string) => value.toUpperCase());
 
         const result = Result.fromFalsy<string, Error>(

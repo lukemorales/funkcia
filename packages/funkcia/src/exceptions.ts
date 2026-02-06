@@ -41,15 +41,31 @@ export const TaggedError = Object.assign(
 
 // ---MARK: RESULT EXCEPTIONS---
 
-export class UnhandledException extends TaggedError('UnhandledException') {}
+export class UnhandledException extends TaggedError('UnhandledException') {
+  static is(value: unknown): value is UnhandledException {
+    return value instanceof UnhandledException;
+  }
+}
 
-export class NoValueError extends TaggedError('NoValueError') {}
+export class NoValueError extends TaggedError('NoValueError') {
+  static is(value: unknown): value is NoValueError {
+    return value instanceof NoValueError;
+  }
+}
 
-export class Panic extends TaggedError('Panic') {}
+export class Panic extends TaggedError('Panic') {
+  static is(value: unknown): value is Panic {
+    return value instanceof Panic;
+  }
+}
 
 export class FailedPredicateError<T> extends TaggedError(
   'FailedPredicateError',
 ) {
+  static is(value: unknown): value is FailedPredicateError<unknown> {
+    return value instanceof FailedPredicateError;
+  }
+
   readonly value: T;
 
   constructor(value: T) {

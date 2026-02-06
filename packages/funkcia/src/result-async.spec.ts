@@ -557,7 +557,7 @@ describe('ResultAsync', () => {
         expect(errorCallback).not.toHaveBeenCalled();
       });
 
-      describe('executes the Error callback when the AsyncResult is Error', async () => {
+      it('executes the Error callback when the AsyncResult is Error', async () => {
         const okCallback = vi.fn((value: string) => value.toUpperCase());
 
         const result = ResultAsync.fromFalsy(
