@@ -17,9 +17,9 @@ Evaluates a generator early returning when an `Option.None` is propagated or ret
 
 <pre class="language-typescript" data-overflow="wrap"><code class="lang-typescript">import { Option } from 'funkcia';
 
-declare const safeParseInt: (string: string, radix?: number) => Option<number>;
+declare const safeParseInt: (string: string, radix?: number) => Option&#x3C;number>;
 
-//       ┌─── Option<number>
+//       ┌─── Option&#x3C;number>
 //       ▼
 const option = Option.use(function* () {
   const x: number = yield* safeParseInt('10');
@@ -67,9 +67,9 @@ Here's a practical example:
 
 <pre class="language-typescript"><code class="lang-typescript">import { Option } from 'funkcia';
 
-declare function findUser(id: string): Option<User>;
-declare function getUserPermissions(user: User): Option<Permissions>;
-declare function checkAccess(permissions: Permissions, resource: string): Option<Access>;
+declare function findUser(id: string): Option&#x3C;User>;
+declare function getUserPermissions(user: User): Option&#x3C;Permissions>;
+declare function checkAccess(permissions: Permissions, resource: string): Option&#x3C;Access>;
 
 const access = Option.use(function* () {
   // First, try to find the user
@@ -118,7 +118,5 @@ const access = maybePermissions.andThen(permissions => {
 });
 ```
 {% endcode %}
-
-
 
 [^1]: user: User

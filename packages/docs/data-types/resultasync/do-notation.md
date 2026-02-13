@@ -1,17 +1,3 @@
----
-layout:
-  title:
-    visible: true
-  description:
-    visible: false
-  tableOfContents:
-    visible: true
-  outline:
-    visible: true
-  pagination:
-    visible: true
----
-
 # Do Notation
 
 A `do notation` syntax allows writing code in a more declarative style, similar to the `do notation` in other programming languages. It provides a way to define variables and perform operations on them using functions like `bind` and `let`, piping the returned values into a context object.
@@ -22,11 +8,11 @@ Initiates a `do notation` for the `ResultAsync` type.
 
 <pre class="language-typescript"><code class="lang-typescript">import { ResultAsync } from 'funkcia';
 
-declare function findUserById(id: string): ResultAsync<User, UserNotFound>;
-declare function calculateUserScore(user: User): ResultAsync<UserScore, UserNotScored>;
-declare function rankUserLevel(user: User, score: UserScore): ResultAsync<UserLevel, InvalidRanking>;
+declare function findUserById(id: string): ResultAsync&#x3C;User, UserNotFound>;
+declare function calculateUserScore(user: User): ResultAsync&#x3C;UserScore, UserNotScored>;
+declare function rankUserLevel(user: User, score: UserScore): ResultAsync&#x3C;UserLevel, InvalidRanking>;
 
-//        ┌─── ResultAsync<UserLevel, UserNotFound | UserNotScored>
+//        ┌─── ResultAsync&#x3C;UserLevel, UserNotFound | UserNotScored | InvalidRanking>
 //        ▼
 const userLevel = ResultAsync.Do
   .bind('user', () => findUserById('user_123'))
@@ -42,11 +28,11 @@ Initiates a `do notation` with the current `ResultAsync`, binding it to a contex
 
 <pre class="language-typescript"><code class="lang-typescript">import { ResultAsync } from 'funkcia';
 
-declare function findUserById(id: string): ResultAsync<User, UserNotFound>;
-declare function calculateUserScore(user: User): ResultAsync<UserScore, UserNotScored>;
-declare function rankUserLevel(user: User, score: UserScore): ResultAsync<UserLevel, InvalidRanking>;
+declare function findUserById(id: string): ResultAsync&#x3C;User, UserNotFound>;
+declare function calculateUserScore(user: User): ResultAsync&#x3C;UserScore, UserNotScored>;
+declare function rankUserLevel(user: User, score: UserScore): ResultAsync&#x3C;UserLevel, InvalidRanking>;
 
-//        ┌─── ResultAsync<UserLevel, UserNotFound | UserNotScored>
+//        ┌─── ResultAsync&#x3C;UserLevel, UserNotFound | UserNotScored | InvalidRanking>
 //        ▼
 const userLevel = findUserById('user_123')
 <strong>  .bindTo('user')
@@ -64,11 +50,11 @@ If the `ResultAsync` is `Ok`, the value is assigned to the key in the context ob
 
 <pre class="language-typescript"><code class="lang-typescript">import { ResultAsync } from 'funkcia';
 
-declare function findUserById(id: string): ResultAsync<User, UserNotFound>;
-declare function calculateUserScore(user: User): ResultAsync<UserScore, UserNotScored>;
-declare function rankUserLevel(user: User, score: UserScore): ResultAsync<UserLevel, InvalidRanking>;
+declare function findUserById(id: string): ResultAsync&#x3C;User, UserNotFound>;
+declare function calculateUserScore(user: User): ResultAsync&#x3C;UserScore, UserNotScored>;
+declare function rankUserLevel(user: User, score: UserScore): ResultAsync&#x3C;UserLevel, InvalidRanking>;
 
-//        ┌─── ResultAsync<UserLevel, UserNotFound | UserNotScored>
+//        ┌─── ResultAsync&#x3C;UserLevel, UserNotFound | UserNotScored | InvalidRanking>
 //        ▼
 const userLevel = ResultAsync.Do
   .bind('user', () => findUserById('user_123'))
@@ -86,7 +72,8 @@ Ensure you know what you're doing when binding a promise using `let`, otherwise 
 
 Binds non-rejecting promise to the context object in a `do notation`.
 
-<pre class="language-typescript"><code class="lang-typescript">import { ResultAsync } from 'funkcia';
+```typescript
+import { ResultAsync } from 'funkcia';
 
 //      ┌─── ResultAsync<number, never>
 //      ▼
@@ -98,7 +85,7 @@ const result = ResultAsync.Do
   .map((ctx) => ctx.subtotal + ctx.tax);
 //      ▲
 //      └─── { subtotal: number; tax: number }
-</code></pre>
+```
 
 ### Understanding the do notation
 
@@ -157,14 +144,6 @@ const access = permissions.andThen(permissions => {
 });
 ```
 
-
-
-
-
-[^1]: (parameter) ctx: { \
-    &#x20; readonly user: User;\
-    }
-
-[^2]: (parameter) ctx: { \
-    &#x20; readonly a: number;\
+[^1]: (parameter) ctx: {\
+    readonly user: User;\
     }

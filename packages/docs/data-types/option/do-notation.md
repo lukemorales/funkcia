@@ -8,11 +8,11 @@ Initiates a `do notation` for the `Option` type.
 
 <pre class="language-typescript"><code class="lang-typescript">import { Option } from 'funkcia';
 
-declare function findUserById(id: string): Option<User>;
-declare function getUserScore(user: User): Option<UserScore>;
+declare function findUserById(id: string): Option&#x3C;User>;
+declare function getUserScore(user: User): Option&#x3C;UserScore>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
-//        ┌─── Option<UserLevel>
+//        ┌─── Option
 //        ▼
 const userLevel = Option.Do
   .bind('user', () => findUserById('user_123'))
@@ -28,11 +28,11 @@ Initiates a `do notation` with the current `Option`, binding it to a context obj
 
 <pre class="language-typescript"><code class="lang-typescript">import { Option } from 'funkcia';
 
-declare function findUserById(id: string): Option<User>;
-declare function getUserScore(user: User): Option<UserScore>;
+declare function findUserById(id: string): Option&#x3C;User>;
+declare function getUserScore(user: User): Option&#x3C;UserScore>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
-//        ┌─── Option<UserLevel>
+//        ┌─── Option
 //        ▼
 const userLevel = findUserById('user_123')
 <strong>  .bindTo('user')
@@ -50,11 +50,11 @@ If the `Option` is `Some`, the value is assigned to the key in the context objec
 
 <pre class="language-typescript"><code class="lang-typescript">import { Option } from 'funkcia';
 
-declare function findUserById(id: string): Option<User>;
-declare function getUserScore(user: User): Option<UserScore>;
+declare function findUserById(id: string): Option&#x3C;User>;
+declare function getUserScore(user: User): Option&#x3C;UserScore>;
 declare function getUserLevel(user: User, score: UserScore): UserLevel;
 
-//        ┌─── Option<UserLevel>
+//        ┌─── Option
 //        ▼
 const userLevel = Option.Do
   .bind('user', () => findUserById('user_123'))
@@ -70,9 +70,10 @@ Binds a raw value to the context object in a `Do-notation`.
 
 If the value is not nullable, the value is assigned to the key in the context object. If the value is `null` or `undefined`, the parent `Option` running the `Do` simulation becomes a `None`.
 
-<pre class="language-typescript"><code class="lang-typescript">import { Option } from 'funkcia';
+```typescript
+import { Option } from 'funkcia';
 
-//      ┌─── Option<number>
+//      ┌─── Option
 //      ▼
 const orderTotal = Option.Do
   .let('subtotal', () => 120)
@@ -82,7 +83,7 @@ const orderTotal = Option.Do
   .map((ctx) => ctx.subtotal + ctx.tax);
 //      ▲
 //      └─── { subtotal: number; tax: number }
-</code></pre>
+```
 
 ### Understanding the do notation
 
@@ -141,14 +142,6 @@ const access = permissions.andThen(permissions => {
 });
 ```
 
-
-
-
-
-[^1]: (parameter) ctx: { \
-    &#x20; readonly user: User;\
-    }
-
-[^2]: (parameter) ctx: { \
-    &#x20; readonly a: number;\
+[^1]: (parameter) ctx: {\
+    readonly user: User;\
     }

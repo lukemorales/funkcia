@@ -17,10 +17,10 @@ Evaluates an _async_ generator early returning when an `Option.None` is propagat
 
 <pre class="language-typescript" data-overflow="wrap"><code class="lang-typescript">import { OptionAsync } from 'funkcia';
 
-declare const safeReadFile: (path: string) => OptionAsync<string>;
-declare const safeWriteFile: (path: string, content: string) => OptionAsync<string>;
+declare const safeReadFile: (path: string) => OptionAsync&#x3C;string>;
+declare const safeWriteFile: (path: string, content: string) => OptionAsync&#x3C;string>;
 
-//          ┌─── OptionAsync<string>
+//          ┌─── OptionAsync&#x3C;string>
 //          ▼
 const mergedContent = OptionAsync.use(async function* () {
   const <a data-footnote-ref href="#user-content-fn-1">fileA</a> = yield* safeReadFile('data.txt');
@@ -28,7 +28,7 @@ const mergedContent = OptionAsync.use(async function* () {
 
   return safeWriteFile('output.txt', `${fileA}\n${fileB}`); // doesn't run
 });
-// Output: OptionAsync<never>
+// Output: OptionAsync
 </code></pre>
 
 #### fn
@@ -40,10 +40,10 @@ Returns a function that evaluates an _async_ generator when called with the defi
 
 <pre class="language-typescript"><code class="lang-typescript">import { OptionAsync } from 'funkcia';
 
-declare const safeReadFile: (path: string) => OptionAsync<string>;
-declare const safeWriteFile: (path: string, content: string) => OptionAsync<string>;
+declare const safeReadFile: (path: string) => OptionAsync&#x3C;string>;
+declare const safeWriteFile: (path: string, content: string) => OptionAsync&#x3C;string>;
 
-//          ┌─── (output: string, pathA: string, pathB: string) => OptionAsync<string>
+//          ┌─── (output: string, pathA: string, pathB: string) => OptionAsync&#x3C;string>
 //          ▼
 const safeMergeFiles = OptionAsync.fn(async function* (output: string, pathA: string, pathB: string) {
   const <a data-footnote-ref href="#user-content-fn-1">fileA</a> = yield* safeReadFile(pathA);
@@ -53,7 +53,7 @@ const safeMergeFiles = OptionAsync.fn(async function* (output: string, pathA: st
 });
 
 const mergedContent = safeMergeFiles('output.txt', 'data.txt', 'updated-data.txt');
-// Output: OptionAsync<string>
+// Output: OptionAsync
 </code></pre>
 
 ### Understanding the use method
@@ -118,8 +118,6 @@ const access = maybePermissions.andThen(permissions => {
 });
 ```
 {% endcode %}
-
-
 
 [^1]: const fileA: string
 

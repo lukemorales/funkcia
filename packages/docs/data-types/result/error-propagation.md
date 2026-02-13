@@ -1,16 +1,5 @@
 ---
 icon: sparkles
-layout:
-  title:
-    visible: true
-  description:
-    visible: false
-  tableOfContents:
-    visible: true
-  outline:
-    visible: true
-  pagination:
-    visible: true
 ---
 
 # Error Propagation
@@ -28,9 +17,9 @@ Evaluates a generator early returning when a `Result.Error` is propagated or ret
 
 <pre class="language-typescript" data-overflow="wrap"><code class="lang-typescript">import { Result } from 'funkcia';
 
-declare const safeParseInt: (string: string, radix?: number) => Result<number, TypeError>;
+declare const safeParseInt: (string: string, radix?: number) => Result&#x3C;number, TypeError>;
 
-//       ┌─── Result<number, TypeError>
+//       ┌─── Result&#x3C;number, TypeError>
 //       ▼
 const result = Result.use(function* () {
   const <a data-footnote-ref href="#user-content-fn-1">x</a> = yield* safeParseInt('10');
@@ -50,9 +39,9 @@ Returns a function that evaluates a generator when called with the declared argu
 
 <pre class="language-typescript" data-overflow="wrap"><code class="lang-typescript">import { Result } from 'funkcia';
 
-declare const safeParseInt: (string: string, radix?: number) => Result<number, TypeError>;
+declare const safeParseInt: (string: string, radix?: number) => Result&#x3C;number, TypeError>;
 
-//           ┌─── (a: string, b: string) => Result<number, TypeError>
+//           ┌─── (a: string, b: string) => Result&#x3C;number, TypeError>
 //           ▼
 const sumParsedIntegers = Result.fn(function* (a: string, b: string) {
   const <a data-footnote-ref href="#user-content-fn-1">x</a> = yield* safeParseInt(a);
@@ -127,8 +116,6 @@ const access = maybePermissions.andThen(permissions => {
 });
 ```
 {% endcode %}
-
-
 
 [^1]: const x: number
 

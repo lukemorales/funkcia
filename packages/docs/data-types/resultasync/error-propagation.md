@@ -1,6 +1,7 @@
 ---
 icon: sparkles
 layout:
+  width: default
   title:
     visible: true
   description:
@@ -10,6 +11,10 @@ layout:
   outline:
     visible: true
   pagination:
+    visible: true
+  metadata:
+    visible: true
+  tags:
     visible: true
 ---
 
@@ -28,10 +33,10 @@ Evaluates an _async_ generator early returning when a `Result.Error` is propagat
 
 <pre class="language-typescript" data-overflow="wrap"><code class="lang-typescript">import { ResultAsync } from 'funkcia';
 
-declare const safeReadFile: (path: string) => ResultAsync<string, NodeFSError>;
-declare const safeWriteFile: (path: string, content: string) => ResultAsync<string, NodeFSError>;
+declare const safeReadFile: (path: string) => ResultAsync&#x3C;string, NodeFSError>;
+declare const safeWriteFile: (path: string, content: string) => ResultAsync&#x3C;string, NodeFSError>;
 
-//          ┌─── ResultAsync<string, NodeFSError>
+//          ┌─── ResultAsync&#x3C;string, NodeFSError>
 //          ▼
 const mergedContent = ResultAsync.use(async function* () {
   const <a data-footnote-ref href="#user-content-fn-1">fileA</a> = yield* safeReadFile('data.txt');
@@ -39,7 +44,7 @@ const mergedContent = ResultAsync.use(async function* () {
 </strong>
   return safeWriteFile('output.txt', `${fileA}\n${fileB}`); // doesn't run
 });
-// Output: ResultAsync<string, NodeFSError>
+// Output: ResultAsync&#x3C;string, NodeFSError>
 </code></pre>
 
 #### fn
@@ -51,10 +56,10 @@ Returns a function that evaluates an _async_ generator when called with the defi
 
 <pre class="language-typescript"><code class="lang-typescript">import { ResultAsync } from 'funkcia';
 
-declare const safeReadFile: (path: string) => ResultAsync<string, NodeFSError>;
-declare const safeWriteFile: (path: string, content: string) => ResultAsync<string, NodeFSError>;
+declare const safeReadFile: (path: string) => ResultAsync&#x3C;string, NodeFSError>;
+declare const safeWriteFile: (path: string, content: string) => ResultAsync&#x3C;string, NodeFSError>;
 
-//          ┌─── (output: string, pathA: string, pathB: string) => ResultAsync<string, NodeFSError>
+//          ┌─── (output: string, pathA: string, pathB: string) => ResultAsync&#x3C;string, NodeFSError>
 //          ▼
 const safeMergeFiles = ResultAsync.fn(async function* (output: string, pathA: string, pathB: string) {
   const <a data-footnote-ref href="#user-content-fn-1">fileA</a> = yield* safeReadFile(pathA);
@@ -64,7 +69,7 @@ const safeMergeFiles = ResultAsync.fn(async function* (output: string, pathA: st
 });
 
 const mergedContent = safeMergeFiles('output.txt', 'data.txt', 'updated-data.txt');
-// Output: ResultAsync<string, NodeFSError>
+// Output: ResultAsync&#x3C;string, NodeFSError>
 
 </code></pre>
 
@@ -123,8 +128,6 @@ const user = rateLimitResult.andThen(() => findUserByEmail(req.query.email));
 const userPreferences = user.map(user => user.preferences);
 ```
 {% endcode %}
-
-
 
 [^1]: const fileA: string
 

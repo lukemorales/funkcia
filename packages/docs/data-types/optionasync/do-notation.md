@@ -8,11 +8,11 @@ Initiates a `Do-notation` for the `OptionAsync` type.
 
 <pre class="language-typescript"><code class="lang-typescript">import { OptionAsync } from 'funkcia';
 
-declare function findUserById(id: string): OptionAsync<User>;
-declare function calculateUserScore(user: User): OptionAsync<UserScore>;
-declare function rankUserLevel(user: User, score: UserScore): OptionAsync<UserLevel>;
+declare function findUserById(id: string): OptionAsync&#x3C;User>;
+declare function calculateUserScore(user: User): OptionAsync&#x3C;UserScore>;
+declare function rankUserLevel(user: User, score: UserScore): OptionAsync&#x3C;UserLevel>;
 
-//        ┌─── OptionAsync<UserLevel>
+//        ┌─── OptionAsync&#x3C;UserLevel>
 //        ▼
 const userLevel = OptionAsync.Do
   .bind('user', () => findUserById('user_123'))
@@ -28,11 +28,11 @@ Initiates a `Do-notation` with the current `OptionAsync`, binding it to a contex
 
 <pre class="language-typescript"><code class="lang-typescript">import { OptionAsync } from 'funkcia';
 
-declare function findUserById(id: string): OptionAsync<User>;
-declare function calculateUserScore(user: User): OptionAsync<UserScore>;
-declare function rankUserLevel(user: User, score: UserScore): OptionAsync<UserLevel>;
+declare function findUserById(id: string): OptionAsync&#x3C;User>;
+declare function calculateUserScore(user: User): OptionAsync&#x3C;UserScore>;
+declare function rankUserLevel(user: User, score: UserScore): OptionAsync&#x3C;UserLevel>;
 
-//        ┌─── OptionAsync<UserLevel>
+//        ┌─── OptionAsync&#x3C;UserLevel>
 //        ▼
 const userLevel = findUserById('user_123')
 <strong>  .bindTo('user')
@@ -50,11 +50,11 @@ If the `OptionAsync` resolves to `Some`, the value is assigned to the key in the
 
 <pre class="language-typescript"><code class="lang-typescript">import { OptionAsync } from 'funkcia';
 
-declare function findUserById(id: string): OptionAsync<User>;
-declare function calculateUserScore(user: User): OptionAsync<UserScore>;
-declare function rankUserLevel(user: User, score: UserScore): OptionAsync<UserLevel>;
+declare function findUserById(id: string): OptionAsync&#x3C;User>;
+declare function calculateUserScore(user: User): OptionAsync&#x3C;UserScore>;
+declare function rankUserLevel(user: User, score: UserScore): OptionAsync&#x3C;UserLevel>;
 
-//        ┌─── OptionAsync<UserLevel>
+//        ┌─── OptionAsync&#x3C;UserLevel>
 //        ▼
 const userLevel = OptionAsync.Do
   .bind('user', () => findUserById('user_123'))
@@ -74,7 +74,8 @@ Binds a non-rejecting promise to the context object in a `do notation`.
 
 If the promise resolves to a non-nullable value, the value is assigned to the key in the context object. If the promise resolves to `null` or `undefined`, the parent `OptionAsync` running the `Do` simulation becomes a `None`.
 
-<pre class="language-typescript"><code class="lang-typescript">import { OptionAsync } from 'funkcia';
+```typescript
+import { OptionAsync } from 'funkcia';
 
 //      ┌─── OptionAsync<number>
 //      ▼
@@ -86,7 +87,7 @@ const orderTotal = OptionAsync.Do
   .map((ctx) => ctx.subtotal + ctx.tax);
 //      ▲
 //      └─── { subtotal: number; tax: number }
-</code></pre>
+```
 
 ### Understanding the do notation
 
@@ -145,14 +146,6 @@ const access = permissions.andThen(permissions => {
 });
 ```
 
-
-
-
-
-[^1]: (parameter) ctx: { \
-    &#x20; readonly user: User;\
-    }
-
-[^2]: (parameter) ctx: { \
-    &#x20; readonly a: number;\
+[^1]: (parameter) ctx: {\
+    readonly user: User;\
     }
