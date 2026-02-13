@@ -15,6 +15,7 @@ Migrate existing error handling and validation into explicit, typed, chainable f
 2. Classify failure shape before coding.
    - Use `Option`/`OptionAsync` for expected absence without an error payload.
    - Use `Result`/`ResultAsync` for expected failure with explicit error semantics.
+   - Treat unexpected callback throws/rejections as defects (`Panic`), not domain errors.
 3. Define domain errors with `TaggedError` before refactoring call chains.
    - Model application failures (auth, validation, not-found, rate limit, external dependency).
    - Preserve causes when wrapping infrastructure failures.
@@ -29,6 +30,18 @@ Migrate existing error handling and validation into explicit, typed, chainable f
 6. Verify behavior and type contracts.
    - Add runtime + `expectTypeOf` tests.
    - Run repository checks before completion.
+
+## Defects vs Domain Errors
+
+- Model expected business failures with `Option.none()` or `Result.error(...)`.
+- Treat unexpected throws/rejections inside callbacks as defects and let them surface as `Panic`.
+- Return expected failures; do not throw them.
+
+| API | Domain behavior | Defect behavior |
+| --- | --- | --- |
+| `Option` / `Result` | Return `None` / `Error` for expected failures | Throws in combinator callbacks (`map`, `andThen`, `filter`, `or`, `match`, `tap`, etc.) become `Panic` |
+| `OptionAsync` | `try` or `let` rejection/nullable resolves to `None` | `tap` throw/reject becomes `Panic` |
+| `ResultAsync` | `try` rejection resolves to `Error` (`UnhandledException` or mapped error) | `let`, `tap`, or `tapError` throw/reject becomes `Panic` |
 
 ## Migration Strategy
 

@@ -5,18 +5,80 @@ icon: bullseye-arrow
 
 # Quickstart
 
-<figure><img src="https://gitbookio.github.io/onboarding-template-images/quickstart-hero.png" alt=""><figcaption></figcaption></figure>
+This quickstart shows the core Funkcia flow: model expected failures with `Option`/`Result`, then use `OptionAsync`/`ResultAsync` for async workflows.
 
-Beautiful documentation starts with the content you create — and GitBook makes it easy to get started with any pre-existing content.
+### Install
 
-{% hint style="info" %}
-Want to learn about writing content from scratch? Head to the [Basics](https://github.com/GitbookIO/onboarding-template/blob/main/getting-started/broken-reference/README.md) section to learn more.
-{% endhint %}
+```bash
+pnpm add funkcia
+```
 
-### Import
+### Import what you need
 
-GitBook supports importing content from many popular writing tools and formats. If your content already exists, you can upload a file or group of files to be imported.
+```ts
+import { Option, Result } from 'funkcia';
+import { OptionAsync } from 'funkcia/option-async';
+import { ResultAsync } from 'funkcia/result-async';
+```
 
-### Sync a repository
+### Start with `Option`
 
-GitBook also allows you to set up a bi-directional sync with an existing repository on GitHub or GitLab. Setting up Git Sync allows you and your team to write content in GitBook or in code, and never have to worry about your content becoming out of sync.
+Use `Option` for missing values without throwing.
+
+```ts
+import { Option } from 'funkcia';
+
+declare function findUserEmail(userId: string): string | null;
+
+const email = Option.fromNullable(findUserEmail('user_123'))
+  .filter((value) => value.includes('@'))
+  .unwrapOr(() => 'guest@example.com');
+```
+
+### Use `Result` for typed failures
+
+Use `Result` when you want explicit error payloads.
+
+```ts
+import { Result } from 'funkcia';
+import { TaggedError } from 'funkcia/exceptions';
+
+class InvalidCouponError extends TaggedError('InvalidCouponError') {}
+
+function validateCoupon(code: string) {
+  return code.length > 5
+    ? Result.ok(code)
+    : Result.error(new InvalidCouponError('Coupon code is too short'));
+}
+```
+
+### Move to async with `OptionAsync` and `ResultAsync`
+
+```ts
+import { OptionAsync } from 'funkcia/option-async';
+import { ResultAsync } from 'funkcia/result-async';
+
+declare function readToken(): Promise<string | null>;
+declare function fetchUser(token: string): Promise<{ id: string }>;
+
+const token = OptionAsync.try(() => readToken());
+
+const user = token
+  .andThen((value) => OptionAsync.fromNullable(value))
+  .andThen((value) => OptionAsync.try(() => fetchUser(value)));
+
+const safeUser = ResultAsync.try(() => fetchUser('token'));
+```
+
+### Next steps
+
+- Learn do-notation:
+  - [Option Do Notation](../data-types/option/do-notation.md)
+  - [Result Do Notation](../data-types/result/do-notation.md)
+  - [OptionAsync Do Notation](../data-types/optionasync/do-notation.md)
+  - [ResultAsync Do Notation](../data-types/resultasync/do-notation.md)
+- Learn error propagation:
+  - [Option Error Propagation](../data-types/option/error-propagation.md)
+  - [Result Error Propagation](../data-types/result/error-propagation.md)
+  - [OptionAsync Error Propagation](../data-types/optionasync/error-propagation.md)
+  - [ResultAsync Error Propagation](../data-types/resultasync/error-propagation.md)

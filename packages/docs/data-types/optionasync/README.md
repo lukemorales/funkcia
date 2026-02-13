@@ -18,6 +18,19 @@ layout:
 
 Every `OptionAsync` resolves to either `Option.Some`, containing a value, or `Option.None`, which is empty. It allows you to chain the same methods as an `Option`, but in an asynchronous context.
 
+### Defects vs Domain Errors
+
+- Domain absence is expected and represented with `Option.None`.
+- Defects are unexpected throw/reject behavior in callback code and are surfaced as `Panic`.
+- Best practice: expected failures should be returned as `None`, not thrown.
+
+| Scenario | Behavior |
+| --- | --- |
+| Missing/invalid value in normal async control flow | Resolve to `Option.None` |
+| `OptionAsync.try(() => promise)` promise rejects or resolves to nullable | Resolves to `Option.None` |
+| `OptionAsync.let(...)` callback throws/rejects or returns nullable | Resolves to `Option.None` |
+| `OptionAsync.tap(...)` callback throws/rejects | Treated as a defect and throws `Panic` |
+
 ### Static Methods
 
 #### some

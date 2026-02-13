@@ -16,6 +16,18 @@ layout:
 
 `Result` represents the result of an operation that can either be successful (`Ok`) or a failure (`Error`). It's commonly used to represent the result of a function that may fail, such as a network request, a file read, or a database query.
 
+### Defects vs Domain Errors
+
+- Domain errors are expected failures represented with `Result.error(...)`.
+- Defects are unexpected exceptions thrown inside callbacks and are surfaced as `Panic`.
+- Best practice: expected failures should be returned as `Error`, not thrown.
+
+| Scenario | Behavior |
+| --- | --- |
+| Domain validation or business failure | Return `Result.error(...)` |
+| Callback throws inside combinators (`map`, `mapError`, `mapBoth`, `andThen`, `filter`, `or`, `match`, `unwrapOr`, `contains`, `tap`, `tapError`, do-notation helpers) | Treated as a defect and throws `Panic` |
+| `Result.try(() => ...)` callback throws | Returns `Result.Error(UnhandledException)` or your mapped custom error |
+
 ### Static Methods
 
 #### ok
@@ -236,6 +248,27 @@ const safeJsonParse = Result.lift(
 //       ▼
 const result = safeJsonParse('{ "name": "John Doe" }');
 // Output: Ok({ name: 'John Doe' })
+```
+
+#### partition
+
+Given an array of `Result`s, returns a tuple where:
+
+- index `0` contains all values from `Result.Ok`
+- index `1` contains all values from `Result.Error`
+
+```ts
+import { Result } from 'funkcia';
+
+const [values, errors] = Result.partition([
+  Result.ok(1),
+  Result.error('Missing name'),
+  Result.ok(3),
+  Result.error('Missing email'),
+]);
+
+// values: [1, 3]
+// errors: ['Missing name', 'Missing email']
 ```
 
 #### values

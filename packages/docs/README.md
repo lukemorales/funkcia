@@ -42,3 +42,13 @@ yarn add funkcia
 ### Jump right in
 
 <table data-card-size="large" data-view="cards" data-full-width="true"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Option</td><td></td><td></td><td></td><td><a href="data-types/option/">option</a></td></tr><tr><td>Result</td><td></td><td></td><td></td><td><a href="data-types/result/">result</a></td></tr><tr><td>OptionAsync</td><td></td><td></td><td></td><td><a href="data-types/optionasync/">optionasync</a></td></tr><tr><td>ResultAsync</td><td></td><td></td><td></td><td><a href="data-types/resultasync/">resultasync</a></td></tr><tr><td>Brand</td><td></td><td></td><td></td><td><a href="modules/brand.md">brand.md</a></td></tr><tr><td>Pattern Matching</td><td></td><td></td><td></td><td><a href="modules/pattern-matching.md">pattern-matching.md</a></td></tr></tbody></table>
+
+### Docs parity checklist
+
+Before publishing docs updates:
+
+- Verify public API names against source exports in `/packages/funkcia/src`.
+- Ensure method headings match API casing exactly.
+- Remove stale methods that no longer exist in source.
+- Confirm `SUMMARY.md` links point to real files.
+- Run a quick search for known removed APIs to avoid drift regressions.

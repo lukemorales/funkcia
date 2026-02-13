@@ -18,6 +18,18 @@ layout:
 
 It is commonly used to represent the result of a function that may not return a value due to failure or missing data, such as a network request, a file read, or a database query.
 
+### Defects vs Domain Errors
+
+- Domain absence is expected and represented with `Option.none()`.
+- Defects are unexpected exceptions thrown inside callbacks and are surfaced as `Panic`.
+- Best practice: expected failures should be returned as `None`, not thrown.
+
+| Scenario | Behavior |
+| --- | --- |
+| Missing/invalid value in normal control flow | Return `Option.none()` |
+| Callback throws inside combinators (`map`, `andThen`, `filter`, `or`, `match`, `unwrapOr`, `contains`, `tap`, do-notation helpers) | Treated as a defect and throws `Panic` |
+| `Option.try(() => ...)` callback throws or returns nullable | Returns `Option.None` |
+
 ### Constructor
 
 #### some

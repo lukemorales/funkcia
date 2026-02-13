@@ -6,6 +6,19 @@ An `ResultAsync` allows you to chain the same methods as a `Result`, but in an a
 
 By awaiting the `ResultAsync`, the Promise inside will resolve to the underlying `Result`.
 
+### Defects vs Domain Errors
+
+- Domain errors are expected failures represented with `Result.Error`.
+- Defects are unexpected throw/reject behavior in callback code and are surfaced as `Panic`.
+- Best practice: expected failures should be returned as `Error`, not thrown.
+
+| Scenario                                                                     | Behavior                                                                   |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Domain validation or business failure                                        | Resolve to `Result.Error(...)`                                             |
+| `ResultAsync.try(() => promise)` promise rejects                             | Resolves to `Result.Error(UnhandledException)` or your mapped custom error |
+| `ResultAsync.let(...)` callback throws/rejects                               | Treated as a defect and throws `Panic`                                     |
+| `ResultAsync.tap(...)` / `ResultAsync.tapError(...)` callback throws/rejects | Treated as a defect and throws `Panic`                                     |
+
 ### Static Methods
 
 #### ok
@@ -108,59 +121,99 @@ const result = ResultAsync.fromFalsy(
 );
 ```
 
+#### fromResult
+
+Converts a synchronous `Result` into a `ResultAsync`.
+
+```ts
+import { Result, ResultAsync } from 'funkcia';
+
+//       ┌─── ResultAsync<number, never>
+//       ▼
+const result = ResultAsync.fromResult(Result.ok(1));
+```
+
+#### fromOption
+
+Converts an `Option` into a `ResultAsync`.
+
+If the `Option` is `Some`, it resolves to `Result.Ok`.
+If it is `None`, it resolves to `Result.Error(NoValueError)` or your custom error.
+
+```ts
+import { Option, ResultAsync } from 'funkcia';
+
+//       ┌─── ResultAsync<number, NoValueError>
+//       ▼
+const result = ResultAsync.fromOption(Option.some(1));
+
+//       ┌─── ResultAsync<number, Error>
+//       ▼
+const withCustomError = ResultAsync.fromOption(
+  Option.none<number>(),
+  () => new Error('Missing value'),
+);
+```
+
+#### fromOptionAsync
+
+Converts an `OptionAsync` into a `ResultAsync`.
+
+If the `OptionAsync` resolves to `Some`, it resolves to `Result.Ok`.
+If it resolves to `None`, it resolves to `Result.Error(NoValueError)` or your custom error.
+
+```ts
+import { OptionAsync, ResultAsync } from 'funkcia';
+
+declare function readFile(path: string): OptionAsync<string>;
+
+//       ┌─── ResultAsync<string, NoValueError>
+//       ▼
+const result = ResultAsync.fromOptionAsync(readFile('data.json'));
+
+//       ┌─── ResultAsync<string, Error>
+//       ▼
+const withCustomError = ResultAsync.fromOptionAsync(
+  readFile('data.json'),
+  () => new Error('File not found'),
+);
+```
+
 #### try
 
-Constructs an `ResultAsync` from a promise that may reject or return a `Result`.
+Constructs a `ResultAsync` from a promise that may reject.
 
-Provides multiple overloads for different promise return types and error handling strategies.
+If the promise resolves, the value is wrapped in `Result.Ok`. If it rejects, the error is wrapped in `Result.Error` using `UnhandledException` or your custom mapper.
 
 ```ts
 import { ResultAsync } from 'funkcia';
-
-// With Result-returning promise
-declare async function findUserById(id: string): Promise<Result<User, UserNotFound>>;
-
-//     ┌─── ResultAsync<User, UserNotFound | UnhandledException>
-//     ▼
-const url = ResultAsync.try(() => findUserById('user_123'));
-// Output: ResultAsync<User, UserNotFound | UnhandledException>
 
 // With value-returning promise
 declare async function findUserByIdOrThrow(id: string): Promise<User>;
 
 //     ┌─── ResultAsync<User, UnhandledException>
 //     ▼
-const url = ResultAsync.try(() => findUserByIdOrThrow('user_123'));
+const result = ResultAsync.try(() => findUserByIdOrThrow('user_123'));
 // Output: ResultAsync<User, UnhandledException>
 
 // With custom error handling
 //     ┌─── ResultAsync<User, UserNotFound | DatabaseFailureError>
 //     ▼
-const url = ResultAsync.try(
+const withCustomError = ResultAsync.try(
   () => findUserByIdOrThrow('user_123'),
   (error) => UserNotFound.is(error) ? error : new DatabaseFailureError(error),
 );
 // Output: ResultAsync<User, UserNotFound | DatabaseFailureError>
 ```
 
-#### promise
-
-Constructs an `ResultAsync` from a `Promise` that returns a `Result`, and never rejects.
-
-```ts
-import { ResultAsync } from 'funkcia';
-
-declare async function findUserById(id: string): Promise<Result<User, UserNotFound | DatabaseFailureError>>;
-
-//      ┌─── ResultAsync<User, UserNotFound | DatabaseFailureError>
-//      ▼
-const result = ResultAsync.promise(() => findUserById('user_123'));
-// Output: ResultAsync<User, UserNotFound | DatabaseFailureError>
-```
-
 #### fn
 
-Declares a promise that must return a `Result`, returning a new function that returns a `ResultAsync` and never rejects.
+Declares a function that returns either:
+
+- a `Promise<Result<...>>`, or
+- an async generator for propagation flows.
+
+It returns a new function that produces `ResultAsync`.
 
 ```ts
 import { ResultAsync } from 'funkcia';
@@ -175,6 +228,41 @@ const safeFindUserById = ResultAsync.fn((id: string) => findUserById(id));
 //     ▼
 const user = safeFindUserById('user_123');
 // Output: ResultAsync<User, UserNotFound>
+```
+
+#### resource
+
+Wraps a resource and provides a safe way to execute operations with error handling.
+
+```ts
+import { ResultAsync } from 'funkcia';
+import { drizzle } from 'drizzle-orm/node-postgres';
+
+const database = drizzle(process.env.DATABASE_URL!);
+
+const db = ResultAsync.resource(database);
+
+//       ┌─── ResultAsync<{ id: string }[], UnhandledException>
+//       ▼
+const result = db.run((client) => client.query.users.findMany({
+  columns: { id: true },
+}));
+```
+
+With custom error mapping:
+
+```ts
+import { ResultAsync } from 'funkcia';
+import { TaggedError } from 'funkcia/exceptions';
+import { drizzle } from 'drizzle-orm/node-postgres';
+
+const database = drizzle(process.env.DATABASE_URL!);
+
+class DatabaseError extends TaggedError('DatabaseError') {}
+
+const database = drizzle(process.env.DATABASE_URL!);
+
+const db = ResultAsync.resource(database, () => new DatabaseError('Query failed'));
 ```
 
 #### predicate
@@ -476,6 +564,23 @@ const result = ResultAsync.fromNullable(user.lastName).mapError(
 //   ▲
 //   └─── NoValueError
 );
+```
+
+#### mapBoth
+
+Transforms both variants of the `ResultAsync` in one call:
+
+- `Ok` values are mapped by `cases.Ok`
+- `Error` values are mapped by `cases.Error`
+
+```ts
+import { ResultAsync } from 'funkcia';
+
+const result = ResultAsync.fromNullable(user.lastName).mapBoth({
+  Ok: (value) => value.toUpperCase(),
+  Error: () => new Error('Missing last name'),
+});
+// ResultAsync<string, Error>
 ```
 
 #### andThen
