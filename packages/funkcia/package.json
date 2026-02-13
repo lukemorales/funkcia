@@ -1,0 +1,188 @@
+{
+  "name": "funkcia",
+  "version": "0.6.0",
+  "description": "Encode failure and absence of value in TypeScript",
+  "author": "Luke Morales <oss@lukemorales.io>",
+  "homepage": "https://github.com/lukemorales/funkcia#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lukemorales/funkcia.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lukemorales/funkcia/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "dist/index.mjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      }
+    },
+    "./brand": {
+      "import": {
+        "types": "./dist/brand.d.mts",
+        "default": "./dist/brand.mjs"
+      }
+    },
+    "./result-async": {
+      "import": {
+        "types": "./dist/result-async.d.mts",
+        "default": "./dist/result-async.mjs"
+      }
+    },
+    "./result": {
+      "import": {
+        "types": "./dist/result.d.mts",
+        "default": "./dist/result.mjs"
+      }
+    },
+    "./option-async": {
+      "import": {
+        "types": "./dist/option-async.d.mts",
+        "default": "./dist/option-async.mjs"
+      }
+    },
+    "./option": {
+      "import": {
+        "types": "./dist/option.d.mts",
+        "default": "./dist/option.mjs"
+      }
+    },
+    "./exceptions": {
+      "import": {
+        "types": "./dist/exceptions.d.mts",
+        "default": "./dist/exceptions.mjs"
+      }
+    },
+    "./pattern-matching": {
+      "import": {
+        "types": "./dist/pattern-matching.d.mts",
+        "default": "./dist/pattern-matching.mjs"
+      }
+    },
+    "./functions": {
+      "import": {
+        "types": "./dist/functions.d.mts",
+        "default": "./dist/functions.mjs"
+      }
+    },
+    "./json": {
+      "import": {
+        "types": "./dist/json.d.mts",
+        "default": "./dist/json.mjs"
+      }
+    },
+    "./runes": {
+      "import": {
+        "types": "./dist/runes.d.mts",
+        "default": "./dist/runes.mjs"
+      }
+    },
+    "./predicate": {
+      "import": {
+        "types": "./dist/predicate.d.mts",
+        "default": "./dist/predicate.mjs"
+      }
+    },
+    "./url": {
+      "import": {
+        "types": "./dist/url.d.mts",
+        "default": "./dist/url.mjs"
+      }
+    },
+    "./uri": {
+      "import": {
+        "types": "./dist/uri.d.mts",
+        "default": "./dist/uri.mjs"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "clean": "rimraf dist",
+    "dev": "vitest --coverage --ui",
+    "lint": "run-p lint:*",
+    "lint:tsc": "tsc --project tsconfig.json --noEmit",
+    "test": "vitest --passWithNoTests",
+    "test:ci": "vitest --coverage --run",
+    "test:coverage": "vitest --coverage"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.5.2",
+    "@changesets/cli": "^2.29.8",
+    "@lukemorales/prettier-config": "^1.1.1",
+    "@types/node": "^22.19.9",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/ui": "^4.0.18",
+    "eslint": "^9.39.2",
+    "eslint-config-lukemorales": "^0.5.0",
+    "jest-extended": "^7.0.0",
+    "npm-run-all": "^4.1.5",
+    "tsdown": "^0.20.3",
+    "typescript": "^4.9.5",
+    "vitest": "^4.0.18"
+  },
+  "prettier": "@lukemorales/prettier-config",
+  "eslintConfig": {
+    "extends": [
+      "lukemorales",
+      "lukemorales/oss"
+    ],
+    "rules": {
+      "@typescript-eslint/ban-types": "off",
+      "@typescript-eslint/consistent-type-imports": [
+        "warn",
+        {
+          "fixStyle": "separate-type-imports"
+        }
+      ],
+      "@typescript-eslint/member-ordering": "off",
+      "@typescript-eslint/method-signature-style": "off",
+      "@typescript-eslint/no-empty-interface": "off",
+      "@typescript-eslint/no-namespace": [
+        "error",
+        {
+          "allowDeclarations": true
+        }
+      ],
+      "@typescript-eslint/no-unnecessary-condition": "off",
+      "@typescript-eslint/no-unnecessary-type-arguments": "off",
+      "@typescript-eslint/strict-boolean-expressions": "off",
+      "@typescript-eslint/unified-signatures": "off",
+      "func-names": "off",
+      "import/export": "off",
+      "import/no-extraneous-dependencies": "off",
+      "prefer-object-spread": "off",
+      "prefer-rest-params": "off",
+      "require-yield": "off"
+    }
+  },
+  "keywords": [
+    "fp",
+    "functional",
+    "typescript",
+    "result",
+    "option",
+    "either",
+    "maybe",
+    "monad",
+    "types",
+    "rust",
+    "ocaml",
+    "nim",
+    "haskell",
+    "scala",
+    "error-handling",
+    "generator",
+    "type-safety"
+  ]
+}

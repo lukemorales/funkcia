@@ -16,23 +16,19 @@ jobs:
       - name: 🔑 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Install Bun
-        uses: oven-sh/setup-bun@v2
+      - name: 🔧 Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 10.28.2
 
-      - name: ♻️ Cache node_modules
-        uses: actions/cache@v4
-        id: bun-cache
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: "**/node_modules"
-          key: ${{ runner.os }}-node-${{ hashFiles('**/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version: '22'
+          cache: 'pnpm'
 
       - name: 📦 Install dependencies
-        if: steps.bun-cache.outputs.cache-hit != 'true'
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
   build:
     name: 🏗️ Build package
@@ -42,23 +38,28 @@ jobs:
       - name: 🔑 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Install Bun
-        uses: oven-sh/setup-bun@v2
+      - name: 🔧 Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 10.28.2
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
 
       - name: 📦 Install dependencies
-        if: steps.bun-cache.outputs.cache-hit != 'true'
-        run: bun install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: 🚨 Check for errors
-        run: bun run lint
+        run: pnpm lint
 
       - name: 🧪 Run tests
-        run: bun run test:ci
+        run: pnpm test:ci
 
       - name: ⚒️ Build package
-        run: bun run build
+        run: pnpm build
 
   release:
     name: 🚀 Release to NPM
@@ -73,29 +74,26 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 🔧 Install Bun
-        uses: oven-sh/setup-bun@v2
+      - name: 🔧 Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          bun-version: latest
+          version: 10.28.2
 
-      - name: ♻️ Load node_modules
-        uses: actions/cache@v4
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: "**/node_modules"
-          key: ${{ runner.os }}-node-${{ hashFiles('**/bun.lock') }}
+          node-version: '22'
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: ♻️ Load build files
         uses: actions/cache@v4
         with:
           path: "**/dist"
-          key: ${{ runner.os }}-build-${{ hashFiles('**/bun.lock') }}
-
-      - name: 🛠️ Setup Node for NPM
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          check-latest: true
-          registry-url: 'https://registry.npmjs.org'
+          key: ${{ runner.os }}-build-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: 👤 Set git user
         run: |
@@ -109,8 +107,8 @@ jobs:
           setupGitUser: false
           title: "chore(changesets): bump package version"
           commit: "chore: bump package version"
-          version: bun .github/changeset-version.js
-          publish: bun run release
+          version: pnpm .github/changeset-version.js
+          publish: pnpm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

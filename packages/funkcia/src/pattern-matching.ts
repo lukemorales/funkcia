@@ -1,0 +1,326 @@
+/* eslint-disable prefer-object-has-own */
+
+type NoInfer<T> = [T][T extends any ? 0 : never];
+
+/**
+ * `unknown` extends `any` will be true,
+ * whereas `unknown` extends other types will be false
+ */
+type ValidateOutput<T> = unknown extends T ? unknown : T;
+
+export type ExhaustiveUnion<
+  Union extends string | boolean,
+  Output = unknown,
+> = [Union] extends [string]
+  ? {
+      [Key in Union]: (value: Key) => Output;
+    } & ExhaustiveDefaultCase<NoInfer<Output>>
+  : Union extends boolean
+  ? {
+      true: (value: true) => Output;
+      false: (value: false) => Output;
+    } & ExhaustiveDefaultCase<NoInfer<Output>>
+  : never;
+
+export type ExhaustiveTag<
+  Union extends object,
+  Tag extends keyof Union,
+  Output = unknown,
+> = [Union[Tag]] extends [string]
+  ? {
+      [Key in `${Union[Tag]}`]: (
+        value: Extract<Union, { [K in Tag]: Key }>,
+      ) => Output;
+    } & ExhaustiveDefaultCase<NoInfer<Output>>
+  : Union[Tag] extends boolean
+  ? {
+      true: (value: Extract<Union, { [K in Tag]: true }>) => Output;
+      false: (value: Extract<Union, { [K in Tag]: false }>) => Output;
+    } & ExhaustiveDefaultCase<NoInfer<Output>>
+  : never;
+
+type ExhaustiveDefaultCase<Output> = {
+  /**
+   * Default case
+   *
+   * @description
+   * When declared, "exhaustive" will fallback to this case
+   * instead of throwing an unreachable error on unmatched case
+   */
+  _?: (value: never) => Output;
+};
+
+/**
+ * Ensures no extra values are passed to the object
+ */
+type ValidateKeys<T, U> = [keyof T] extends [keyof U]
+  ? T
+  : {
+      [Key in keyof U]: Key extends keyof T ? T[Key] : never;
+    };
+
+function hasDefaultCase<DefaultValue, Output>(
+  match: object,
+): match is { _: (value: DefaultValue) => Output } {
+  return Object.prototype.hasOwnProperty.call(match, '_');
+}
+
+function hasDefaultTag(value: object): value is { _tag: string | boolean } {
+  return (
+    '_tag' in value &&
+    (typeof value._tag === 'string' || typeof value._tag === 'boolean')
+  );
+}
+
+type MatchCases<InferredCases, StrictCases, Output> = unknown extends Output
+  ? InferredCases
+  : StrictCases;
+
+type ExtractOutput<Cases, Output> = unknown extends Output
+  ? ValidateOutput<
+      ReturnType<Extract<Cases[keyof Cases], (...args: any[]) => unknown>>
+    >
+  : Output;
+
+/**
+ * Signals an impossible code path at runtime.
+ *
+ * @description
+ * Use this in `switch` defaults or branches that should be unreachable.
+ * If called, it throws a `TypeError` with a safe representation of the value.
+ *
+ * @example
+ * ```ts
+ * import { corrupt } from 'funkcia/pattern-matching';
+ *
+ * type Role = 'ADMIN' | 'VIEWER';
+ *
+ * function canEdit(role: Role): boolean {
+ *   switch (role) {
+ *     case 'ADMIN':
+ *       return true;
+ *     case 'VIEWER':
+ *       return false;
+ *     default:
+ *       return corrupt(role);
+ *   }
+ * }
+ * ```
+ */
+export function corrupt(unreachable: never): never {
+  function safeStringify(value: any) {
+    if (typeof value === 'symbol') {
+      return value.toString();
+    }
+
+    if (typeof value === 'undefined') {
+      return 'undefined';
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    try {
+      return JSON.stringify(value);
+    } catch (error) {
+      if (error instanceof TypeError) {
+        if (typeof value === 'bigint') {
+          return `${value.toString()} (bigint)`;
+        }
+
+        return 'circular object';
+      }
+
+      throw error;
+    }
+  }
+
+  throw new TypeError(
+    `Internal Error: encountered impossible value "${safeStringify(
+      unreachable,
+    )}"`,
+  );
+}
+
+/**
+ * Exhaustively matches a literal union (`string | boolean`) or tagged union.
+ *
+ * @description
+ * All variants must be handled unless a default `_` case is provided.
+ * For object unions with `_tag`, the `_tag` key is used automatically.
+ *
+ * @example
+ * ```ts
+ * import { exhaustive } from 'funkcia/pattern-matching';
+ *
+ * type State = 'IDLE' | 'LOADING' | 'SUCCESS' | 'ERROR';
+ *
+ * function label(state: State): string {
+ *   return exhaustive(state, {
+ *     IDLE: () => 'Idle',
+ *     LOADING: () => 'Loading',
+ *     SUCCESS: () => 'Success',
+ *     ERROR: () => 'Error',
+ *   });
+ * }
+ * ```
+ *
+ * @example
+ * ```ts
+ * import { TaggedError } from 'funkcia/exceptions';
+ * import { exhaustive } from 'funkcia/pattern-matching';
+ *
+ * class UserNotFoundError extends TaggedError('UserNotFoundError') {}
+ * class InvalidCouponError extends TaggedError('InvalidCouponError') {}
+ *
+ * type CheckoutError = UserNotFoundError | InvalidCouponError;
+ *
+ * function status(error: CheckoutError): number {
+ *   return exhaustive(error, {
+ *     UserNotFoundError: () => 404,
+ *     InvalidCouponError: () => 422,
+ *   });
+ * }
+ * ```
+ */
+function exhaustive<
+  Union extends string | boolean,
+  Output,
+  Cases extends ExhaustiveUnion<Union> = ExhaustiveUnion<Union>,
+>(
+  union: Union,
+  match: MatchCases<
+    ValidateKeys<Cases, ExhaustiveUnion<Union>>,
+    ExhaustiveUnion<Union, Output>,
+    Output
+  >,
+): ExtractOutput<Cases, Output>;
+function exhaustive<
+  Union extends { _tag: string | boolean },
+  Output,
+  Cases extends ExhaustiveTag<Union, '_tag'> = ExhaustiveTag<Union, '_tag'>,
+>(
+  union: Union,
+  match: MatchCases<
+    ValidateKeys<Cases, ExhaustiveTag<Union, '_tag'>>,
+    ExhaustiveTag<Union, '_tag', Output>,
+    Output
+  >,
+): ExtractOutput<Cases, Output>;
+function exhaustive<
+  Union extends object,
+  Tag extends keyof Union,
+  Output,
+  Cases extends ExhaustiveTag<Union, Tag> = ExhaustiveTag<Union, Tag>,
+>(
+  union: Union,
+  tag: Tag,
+  match: MatchCases<
+    ValidateKeys<Cases, ExhaustiveTag<Union, Tag>>,
+    ExhaustiveTag<Union, Tag, Output>,
+    Output
+  >,
+): ExtractOutput<Cases, Output>;
+function exhaustive(
+  unionOrObject: string | boolean | object,
+  casesOrKeyofUnion: string | object,
+  cases?: object,
+) {
+  if (typeof cases !== 'undefined') {
+    return exhaustive.tag(
+      unionOrObject as object,
+      casesOrKeyofUnion as never,
+      cases,
+    );
+  }
+
+  if (typeof unionOrObject === 'object' && unionOrObject !== null) {
+    if (hasDefaultTag(unionOrObject)) {
+      return exhaustive.tag(unionOrObject, '_tag', casesOrKeyofUnion as never);
+    }
+  }
+
+  const union = unionOrObject as string | boolean;
+  const $cases = casesOrKeyofUnion as Record<
+    string,
+    (value: string | boolean) => unknown
+  >;
+
+  const matchesKey: boolean = Object.prototype.hasOwnProperty.call(
+    $cases,
+    String(union),
+  );
+
+  if (!matchesKey) {
+    const never = union as never;
+
+    return hasDefaultCase<never, unknown>($cases)
+      ? $cases._(never)
+      : corrupt(never);
+  }
+
+  const event = $cases[String(union)] as (value: never) => unknown;
+
+  return event(union as never);
+}
+
+/**
+ * Exhaustively matches an object union using an explicit tag key.
+ *
+ * @description
+ * Use this when your discriminant key is not `_tag`.
+ *
+ * @example
+ * ```ts
+ * import { exhaustive } from 'funkcia/pattern-matching';
+ *
+ * type Shape =
+ *   | { kind: 'circle'; radius: number }
+ *   | { kind: 'square'; size: number };
+ *
+ * function area(shape: Shape): number {
+ *   return exhaustive.tag(shape, 'kind', {
+ *     circle: (value) => Math.PI * value.radius ** 2,
+ *     square: (value) => value.size ** 2,
+ *   });
+ * }
+ * ```
+ */
+exhaustive.tag = <
+  Union extends object,
+  Tag extends keyof Union,
+  Output,
+  Cases extends ExhaustiveTag<Union, Tag> = ExhaustiveTag<Union, Tag>,
+>(
+  union: Union,
+  tag: Tag,
+  cases: MatchCases<
+    ValidateKeys<Cases, ExhaustiveTag<Union, Tag>>,
+    ExhaustiveTag<Union, Tag, Output>,
+    Output
+  >,
+): ExtractOutput<Cases, Output> => {
+  const key = union[tag];
+
+  const matchesKey: boolean = Object.prototype.hasOwnProperty.call(
+    cases,
+    key as PropertyKey,
+  );
+
+  if (!matchesKey) {
+    const never = union as never;
+
+    return (
+      hasDefaultCase<never, unknown>(cases) ? cases._(never) : corrupt(never)
+    ) as never;
+  }
+
+  const event = (cases as Record<string, (value: Union) => unknown>)[
+    String(key)
+  ] as (value: Union) => unknown;
+
+  return event(union) as ExtractOutput<Cases, Output>;
+};
+
+export { exhaustive };
