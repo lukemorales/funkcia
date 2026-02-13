@@ -18,7 +18,7 @@ import { ResultAsync } from 'funkcia';
 //      ┌─── ResultAsync<number, never>
 //      ▼
 const result = ResultAsync.ok(10);
-// ResultAsync(10)>
+// ResultAsync<number, never>
 ```
 
 #### of
@@ -35,7 +35,7 @@ import { ResultAsync } from 'funkcia';
 //      ┌─── ResultAsync<number, never>
 //      ▼
 const result = ResultAsync.of(10);
-// ResultAsync(10)>
+// ResultAsync<number, never>
 ```
 
 #### error
@@ -123,7 +123,7 @@ declare async function findUserById(id: string): Promise<Result<User, UserNotFou
 //     ┌─── ResultAsync<User, UserNotFound | UnhandledException>
 //     ▼
 const url = ResultAsync.try(() => findUserById('user_123'));
-// Output: ResultAsync(User)>
+// Output: ResultAsync<User, UserNotFound | UnhandledException>
 
 // With value-returning promise
 declare async function findUserByIdOrThrow(id: string): Promise<User>;
@@ -131,7 +131,7 @@ declare async function findUserByIdOrThrow(id: string): Promise<User>;
 //     ┌─── ResultAsync<User, UnhandledException>
 //     ▼
 const url = ResultAsync.try(() => findUserByIdOrThrow('user_123'));
-// Output: Promise<Error(UnhandledException)>
+// Output: ResultAsync<User, UnhandledException>
 
 // With custom error handling
 //     ┌─── ResultAsync<User, UserNotFound | DatabaseFailureError>
@@ -140,7 +140,7 @@ const url = ResultAsync.try(
   () => findUserByIdOrThrow('user_123'),
   (error) => UserNotFound.is(error) ? error : new DatabaseFailureError(error),
 );
-// Output: Promise<Error(DatabaseFailureError('Error: Failed to connect to the database'))>
+// Output: ResultAsync<User, UserNotFound | DatabaseFailureError>
 ```
 
 #### promise
@@ -155,7 +155,7 @@ declare async function findUserById(id: string): Promise<Result<User, UserNotFou
 //      ┌─── ResultAsync<User, UserNotFound | DatabaseFailureError>
 //      ▼
 const result = ResultAsync.promise(() => findUserById('user_123'));
-// Output: ResultAsync(User)>
+// Output: ResultAsync<User, UserNotFound | DatabaseFailureError>
 ```
 
 #### fn
@@ -174,7 +174,7 @@ const safeFindUserById = ResultAsync.fn((id: string) => findUserById(id));
 //     ┌─── ResultAsync<User, UserNotFound>
 //     ▼
 const user = safeFindUserById('user_123');
-// Output: ResultAsync(User)>
+// Output: ResultAsync<User, UserNotFound>
 ```
 
 #### predicate
@@ -246,13 +246,13 @@ Combines two `ResultAsync`s into a single `ResultAsync` containing a tuple of th
 ```ts
 import { ResultAsync } from 'funkcia';
 
-const first = ResultAsync.ok('hello');
-const second = ResultAsync.ok('world');
+const firstName = ResultAsync.ok('Jane');
+const lastName = ResultAsync.ok('Doe');
 
 //       ┌─── ResultAsync<[string, string], never>
 //       ▼
-const strings = first.zip(second);
-// Output: ResultAsync(['hello', 'world'])>
+const strings = firstName.zip(lastName);
+// Output: ResultAsync<[string, string], never>
 ```
 
 #### zipWith
@@ -262,13 +262,13 @@ Combines two `ResultAsync`s into a single `ResultAsync`. The new value is produc
 ```ts
 import { ResultAsync } from 'funkcia';
 
-const first = ResultAsync.ok('hello');
-const second = ResultAsync.ok('world');
+const firstName = ResultAsync.ok('Jane');
+const lastName = ResultAsync.ok('Doe');
 
 //        ┌─── ResultAsync<string, never>
 //        ▼
-const greeting = first.zipWith(second, (a, b) => `${a} ${b}`);
-// Output: ResultAsync('hello world')>
+const greeting = firstName.zipWith(lastName, (a, b) => `${a} ${b}`);
+// Output: ResultAsync<string, never>
 ```
 
 ### Conversions
@@ -341,13 +341,13 @@ import { ResultAsync } from 'funkcia';
 
 //       ┌─── string
 //       ▼
-const baseUrl = await ResultAsync.ok(process.env.BASE_URL)
+const baseUrl = await ResultAsync.ok('https://app.acme.com')
   .unwrapOr(() => 'http://localhost:3000');
-// Output: 'https://funkcia.lukemorales.io'
+// Output: 'https://app.acme.com'
 
 const apiKey = await ResultAsync.error('Missing API key')
-  .unwrapOr(() => 'sk_test_9FK7CiUnKaU');
-// Output: 'sk_test_9FK7CiUnKaU'
+  .unwrapOr(() => 'api_test_acme_123');
+// Output: 'api_test_acme_123'
 ```
 
 #### unwrapOrNull
@@ -383,20 +383,24 @@ import { ResultAsync } from 'funkcia';
 
 declare function findUserById(id: string): ResultAsync<User, DatabaseFailureError>;
 
+const userId = 'user_123';
+
 //     ┌─── User
 //     ▼
-const user = await findUserById('user_123').expect(
+const user = await findUserById(userId).expect(
   (error) => new UserNotFound(userId),
 //   ▲
 //   └─── DatabaseFailureError
 );
 
-const anotherUser = await findUserById('invalid_id').expect(
-  (error) => new UserNotFound('team_123'),
+const invalidId = 'invalid_id';
+
+const anotherUser = await findUserById(invalidId).expect(
+  (error) => new UserNotFound(invalidId),
 //   ▲
 //   └─── DatabaseFailureError
 );
-// Output: Uncaught exception: 'User not found: "user_123"'
+// Output: Uncaught exception: 'User not found: "invalid_id"'
 ```
 
 #### merge
@@ -411,11 +415,11 @@ declare function findOrCreateUserByEmail(email: Email): ResultAsync<User, never>
 
 //       ┌─── User
 //       ▼
-const result = await getCachedUser('johndoe@example.com')
+const result = await getCachedUser('customer@acme.com')
   .swap() // ResultAsync<CacheMissError<Email>, User>
   .andThen((cacheMiss) => findOrCreateUserByEmail(cacheMiss.input)) // ResultAsync<User, User>
   .merge();
-// Output: { id: 'user_123', email: 'johndoe@example.com' }
+// Output: { id: 'user_123', email: 'customer@acme.com' }
 ```
 
 #### contains
@@ -456,7 +460,6 @@ import { ResultAsync } from 'funkcia';
 //       ┌─── ResultAsync<number, never>
 //       ▼
 const result = ResultAsync.ok(10).map(number => number * 2);
-// Output: ResultAsync(20)>
 ```
 
 #### mapError
@@ -543,15 +546,15 @@ import { ResultAsync } from 'funkcia';
 
 //       ┌─── string
 //       ▼
-const result = await ResultAsync.ok('Smith')
-  .or(() => ResultAsync.ok('John'))
+const result = await ResultAsync.ok('alex@gmail.com')
+  .or(() => ResultAsync.ok('alex@acme.com'))
   .unwrap();
-// Output: 'Smith'
+// Output: 'alex@gmail.com'
 
-const greeting = await ResultAsync.error(new Error('Missing user'))
-  .or(() => ResultAsync.ok('John'))
+const workEmail = await ResultAsync.error(new Error('Missing personal email'))
+  .or(() => ResultAsync.ok('alex@acme.com'))
   .unwrap();
-// Output: 'John'
+// Output: 'alex@acme.com'
 ```
 
 #### swap
@@ -566,9 +569,9 @@ import { ResultAsync } from 'funkcia';
 declare function getCachedUser(email: Email): ResultAsync<User, CacheMissError<Email>>;
 declare function findOrCreateUserByEmail(email: Email): ResultAsync<User, never>;
 
-//       ┌─── Result<User, User>
+//       ┌─── ResultAsync<User, User>
 //       ▼
-const result = getCachedUser('johndoe@example.com')
+const result = getCachedUser('customer@acme.com')
   .swap()
   .andThen((cacheMiss) => findOrCreateUserByEmail(cacheMiss.input));
 //             ▲
@@ -592,7 +595,7 @@ declare async function registerSuccessfulLoginAttempt(user: User): Promise<{ log
 const result = authenticateUser(req.body).tap(async (user) => {
   return await registerSuccessfulLoginAttempt(user);
 });
-// Output: ResultAsync(User)>
+// Output: ResultAsync<User, UserNotFound | InvalidCredentials>
 ```
 
 #### tapError
@@ -612,5 +615,5 @@ const result = authenticateUser(req.body).tapError(async (error) => {
     return await registerLoginAttempt(error.email);
   }
 });
-// Output: Promise<Error(InvalidCredentials)>
+// Output: ResultAsync<User, UserNotFound | InvalidCredentials>
 ```

@@ -463,7 +463,7 @@ export interface ResultAsync<Value, Error>
    * //       ┌─── ResultAsync<number, never>
    * //       ▼
    * const result = ResultAsync.ok(10).map(number => number * 2);
-   * // Output: Promise<Ok(20)>
+   * // Output: ResultAsync<number, never>
    * ```
    */
   map<Output>(
@@ -667,15 +667,15 @@ export interface ResultAsync<Value, Error>
    *
    *  //       ┌─── string
    *  //       ▼
-   * const result = await ResultAsync.ok('Smith')
-   *   .or(() => ResultAsync.ok('John'))
+   * const result = await ResultAsync.ok('alex@gmail.com')
+   *   .or(() => ResultAsync.ok('alex@acme.com'))
    *   .unwrap();
-   * // Output: 'Smith'
+   * // Output: 'alex@gmail.com'
    *
-   * const greeting = await ResultAsync.error(new Error('Missing user'))
-   *   .or(() => ResultAsync.ok('John'))
+   * const workEmail = await ResultAsync.error(new Error('Missing personal email'))
+   *   .or(() => ResultAsync.ok('alex@acme.com'))
    *   .unwrap();
-   * // Output: 'John'
+   * // Output: 'alex@acme.com'
    * ```
    */
   or: <$ResultAsync extends AnyResultAsync>(
@@ -701,7 +701,7 @@ export interface ResultAsync<Value, Error>
    *
    * //       ┌─── ResultAsync<User, User>
    * //       ▼
-   * const result = getCachedUser('johndoe@example.com')
+   * const result = getCachedUser('customer@acme.com')
    *   .swap()
    *   .andThen((cacheMiss) => findOrCreateUserByEmail(cacheMiss.input));
    * //             ▲
@@ -718,13 +718,13 @@ export interface ResultAsync<Value, Error>
    * ```ts
    * import { ResultAsync } from 'funkcia';
    *
-   * const first = ResultAsync.ok('hello');
-   * const second = ResultAsync.ok('world');
+   * const firstName = ResultAsync.ok('Jane');
+   * const lastName = ResultAsync.ok('Doe');
    *
    * //       ┌─── ResultAsync<[string, string], never>
    * //       ▼
-   * const strings = first.zip(second);
-   * // Output: Promise<Ok(['hello', 'world'])>
+   * const strings = firstName.zip(lastName);
+   * // Output: ResultAsync<[string, string], never>
    * ```
    */
   zip: <Value2, Error2>(
@@ -744,13 +744,13 @@ export interface ResultAsync<Value, Error>
    * import { ResultAsync } from 'funkcia';
    *
    *
-   * const first = ResultAsync.ok('hello');
-   * const second = ResultAsync.ok('world');
+   * const firstName = ResultAsync.ok('Jane');
+   * const lastName = ResultAsync.ok('Doe');
    *
    * //        ┌─── ResultAsync<string, never>
    * //        ▼
-   * const greeting = first.zipWith(second, (a, b) => `${a} ${b}`);
-   * // Output: Promise<Ok('hello world')>
+   * const greeting = firstName.zipWith(lastName, (a, b) => `${a} ${b}`);
+   * // Output: ResultAsync<string, never>
    * ```
    */
   zipWith: <Value2, Error2, Output>(
@@ -845,13 +845,13 @@ export interface ResultAsync<Value, Error>
    *
    * //      ┌─── string
    * //      ▼
-   * const baseUrl = await ResultAsync.ok('https://app.example.com')
+   * const baseUrl = await ResultAsync.ok('https://app.acme.com')
    *   .unwrapOr(() => 'http://localhost:3000');
-   * // Output: 'https://app.example.com'
+   * // Output: 'https://app.acme.com'
    *
    * const apiKey = await ResultAsync.error('Missing API key')
-   *   .unwrapOr(() => 'api_test_123');
-   * // Output: 'api_test_123'
+   *   .unwrapOr(() => 'api_test_acme_123');
+   * // Output: 'api_test_acme_123'
    * ```
    */
   unwrapOr: <Output = DoNotation.Unbrand<Value>>(
@@ -947,11 +947,11 @@ export interface ResultAsync<Value, Error>
    *
    * //       ┌─── User
    * //       ▼
-   * const result = await getCachedUser('johndoe@example.com')
+   * const result = await getCachedUser('customer@acme.com')
    *   .swap() // ResultAsync<CacheMissError<Email>, User>
    *   .andThen((cacheMiss) => findOrCreateUserByEmail(cacheMiss.input)) // ResultAsync<User, User>
    *   .merge();
-   * // Output: { id: 'user_123', email: 'johndoe@example.com' }
+   * // Output: { id: 'user_123', email: 'customer@acme.com' }
    * ```
    */
   merge: () => Promise<DoNotation.Unbrand<Value> | Error>;
@@ -1014,7 +1014,7 @@ export interface ResultAsync<Value, Error>
    * const result = authenticateUser(req.body).tap(async (user) => {
    *   return await registerSuccessfulLoginAttempt(user);
    * });
-   * // Output: Promise<Ok(User)>
+   * // Output: ResultAsync<User, UserNotFound | InvalidCredentials>
    * ```
    */
   tap: (onOk: (value: DoNotation.Unbrand<Value>) => unknown) => this;
@@ -1041,7 +1041,7 @@ export interface ResultAsync<Value, Error>
    *     return await registerLoginAttempt(error.email);
    *   }
    * });
-   * // Output: Promise<Error(InvalidCredentials)>
+   * // Output: ResultAsync<User, UserNotFound | InvalidCredentials>
    * ```
    */
   tapError: (onError: (error: Error) => unknown) => this;
@@ -1060,7 +1060,7 @@ interface ResultAsyncTrait {
    * //      ┌─── ResultAsync<number, never>
    * //      ▼
    * const result = ResultAsync.ok(10);
-   * // Promise<Ok(10)>
+   * // ResultAsync<number, never>
    * ```
    */
   ok: <Value>(value: Value) => ResultAsync<Value, never>;
@@ -1078,7 +1078,7 @@ interface ResultAsyncTrait {
    * //      ┌─── ResultAsync<number, never>
    * //      ▼
    * const result = ResultAsync.of(10);
-   * // Promise<Ok(10)>
+   * // ResultAsync<number, never>
    * ```
    */
   of: <Value>(value: Value) => ResultAsync<Value, never>;
@@ -1209,7 +1209,7 @@ interface ResultAsyncTrait {
    * //       ┌─── ResultAsync<number, never>
    * //       ▼
    * const result = ResultAsync.fromResult(Result.ok(1));
-   * // Output: Promise<Ok(1)>
+   * // Output: ResultAsync<number, never>
    * ```
    */
   fromResult: <Value, Error>(
@@ -1229,7 +1229,7 @@ interface ResultAsyncTrait {
    * //       ┌─── ResultAsync<number, NoValueError>
    * //       ▼
    * const result = ResultAsync.fromOption(Option.some(1));
-   * // Output: Promise<Ok(1)>
+   * // Output: ResultAsync<number, NoValueError>
    * ```
    */
   fromOption<Value>(option: Option<Value>): ResultAsync<Value, NoValueError>;
@@ -1249,7 +1249,7 @@ interface ResultAsyncTrait {
    *   Option.none(),
    *   () => new CustomError('Missing value'),
    * );
-   * // Output: Promise<Error(CustomError)>
+   * // Output: ResultAsync<number, CustomError>
    * ```
    */
   fromOption<Value, Error>(
@@ -1272,7 +1272,7 @@ interface ResultAsyncTrait {
    * //       ┌─── ResultAsync<string, NoValueError>
    * //       ▼
    * const result = ResultAsync.fromOptionAsync(readFile('data.json'));
-   * // Output: Promise<Ok(string)>
+   * // Output: ResultAsync<string, NoValueError>
    * ```
    */
   fromOptionAsync<Value>(
@@ -1297,7 +1297,7 @@ interface ResultAsyncTrait {
    *   readFile('data.json'),
    *   () => new FileNotFoundError('data.json'),
    * );
-   * // Output: Promise<Ok(string)>
+   * // Output: ResultAsync<string, FileNotFoundError>
    * ```
    */
   fromOptionAsync<Value, Error extends {}>(
@@ -1545,7 +1545,7 @@ interface ResultAsyncTrait {
    * const findUser = ResultAsync.fn((id: string) => findUserById(id));
    *
    * const result = await findUser('user_123');
-   * // Output: Promise<Ok(User)>
+   * // Output: ResultAsync<User, UserNotFound>
    * ```
    */
   fn<Args extends readonly unknown[], $Result extends Result.Any>(
@@ -1616,7 +1616,7 @@ interface ResultAsyncTrait {
    *
    *   return safeWriteFile('output.txt', `${fileA}\n${fileB}`); // doesn't run
    * });
-   * // Output: Promise<Error(FileNotFoundError)>
+   * // Output: ResultAsync<string, FileNotFoundError | FailedToWriteFileError>
    * ```
    */
   use<$Result extends Result.Any, Error extends {}>(
@@ -1674,7 +1674,7 @@ interface ResultAsyncTrait {
    * //       ┌─── ResultAsync<{ id: string }[], UnhandledException>
    * //       ▼
    * const result = await db.run((client) => client.query.users.findMany());
-   * // Output: Promise<Ok([{ id: '1' }, { id: '2' }])>
+   * // Output: ResultAsync<{ id: string }[], UnhandledException>
    * ```
    */
   resource<$Resource>(resource: $Resource): ResultAsync.Resource<$Resource>;
@@ -1708,7 +1708,7 @@ interface ResultAsyncTrait {
    * //       ┌─── ResultAsync<{ id: string }, DatabaseError>
    * //       ▼
    * const result = await db.run((client) => client.query.users.findOne());
-   * // Output: Promise<Error(DatabaseError)>
+   * // Output: ResultAsync<{ id: string }, DatabaseError>
    * ```
    */
   resource<$Resource, Error extends {}>(

@@ -1372,15 +1372,15 @@ export interface Result<Value, Error>
    * ```ts
    * import { Result } from 'funkcia';
    *
-   * const personalEmail = Result.ok('johndoe@gmail.com')
-   *   .or(() => Result.ok('johndoe@example.com'))
+   * const personalEmail = Result.ok('alex@gmail.com')
+   *   .or(() => Result.ok('alex@acme.com'))
    *   .unwrap();
-   * // Output: 'johndoe@gmail.com'
+   * // Output: 'alex@gmail.com'
    *
    * const workEmail = Result.error(new Error('Missing personal email'))
-   *   .or(() => Result.ok('johndoe@example.com'))
+   *   .or(() => Result.ok('alex@acme.com'))
    *   .unwrap();
-   * // Output: 'johndoe@example.com'
+   * // Output: 'alex@acme.com'
    * ```
    */
   or<NewValue, NewError>(
@@ -1403,7 +1403,7 @@ export interface Result<Value, Error>
    *
    * //       ┌─── Result<User, User>
    * //       ▼
-   * const result = getCachedUser('johndoe@example.com')
+   * const result = getCachedUser('customer@acme.com')
    *   .swap() // Result<CacheMissError<Email>, User>
    *   .map((cacheMiss) => findOrCreateUserByEmail(cacheMiss.input));
    * //         ▲
@@ -1420,13 +1420,13 @@ export interface Result<Value, Error>
    * ```ts
    * import { Result } from 'funkcia';
    *
-   * const first = Result.ok('hello');
-   * const second = Result.ok('world');
+   * const firstName = Result.ok('Jane');
+   * const lastName = Result.ok('Doe');
    *
    * //       ┌─── Result<[string, string], never>
    * //       ▼
-   * const strings = first.zip(second);
-   * // Output: Ok(['hello', 'world'])
+   * const strings = firstName.zip(lastName);
+   * // Output: Ok(['Jane', 'Doe'])
    * ```
    */
   zip<Value2, Error2>(
@@ -1446,13 +1446,13 @@ export interface Result<Value, Error>
    * import { Result } from 'funkcia';
    *
    *
-   * const first = Result.ok('hello');
-   * const second = Result.ok('world');
+   * const firstName = Result.ok('Jane');
+   * const lastName = Result.ok('Doe');
    *
    * //        ┌─── Result<string, never>
    * //        ▼
-   * const greeting = first.zipWith(second, (a, b) => `${a} ${b}`);
-   * // Output: Ok('hello world')
+   * const fullName = firstName.zipWith(lastName, (a, b) => `${a} ${b}`);
+   * // Output: Ok('Jane Doe')
    * ```
    */
   zipWith<Value2, Error2, Output>(
@@ -1544,13 +1544,13 @@ export interface Result<Value, Error>
    *
    * //       ┌─── string
    * //       ▼
-   * const baseUrl = Result.ok('https://app.example.com')
+   * const baseUrl = Result.ok('https://app.acme.com')
    *   .unwrapOr(() => 'http://localhost:3000');
-   * // Output: 'https://app.example.com'
+   * // Output: 'https://app.acme.com'
    *
    * const apiKey = Result.error('Missing API key')
-   *   .unwrapOr(() => 'api_test_123');
-   * // Output: 'api_test_123'
+   *   .unwrapOr(() => 'api_test_acme_123');
+   * // Output: 'api_test_acme_123'
    * ```
    */
   unwrapOr(
@@ -1634,11 +1634,11 @@ export interface Result<Value, Error>
    *
    * //       ┌─── User
    * //       ▼
-   * const result = getCachedUser('johndoe@example.com')
+   * const result = getCachedUser('customer@acme.com')
    *   .swap() // Result<CacheMissError, User>
    *   .map((cacheMiss) => getUserByEmail(cacheMiss.input)) // Result<User, User>
    *   .merge();
-   * // Output: { id: 'user_123', email: 'johndoe@example.com' }
+   * // Output: { id: 'user_123', email: 'customer@acme.com' }
    * ```
    */
   merge(): DoNotation.Unbrand<Value> | Error;

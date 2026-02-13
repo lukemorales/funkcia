@@ -63,6 +63,12 @@
         "default": "./dist/exceptions.mjs"
       }
     },
+    "./pattern-matching": {
+      "import": {
+        "types": "./dist/pattern-matching.d.mts",
+        "default": "./dist/pattern-matching.mjs"
+      }
+    },
     "./functions": {
       "import": {
         "types": "./dist/functions.d.mts",

@@ -967,13 +967,13 @@ export interface Option<Value>
    * ```ts
    * import { Option } from 'funkcia';
    *
-   * const first = Option.some('hello');
-   * const second = Option.some('world');
+   * const firstName = Option.some('Jane');
+   * const lastName = Option.some('Doe');
    *
    * //       ┌─── Option<[string, string]>
    * //       ▼
-   * const strings = first.zip(second);
-   * // Output: Some(['hello', 'world'])
+   * const strings = firstName.zip(lastName);
+   * // Output: Some(['Jane', 'Doe'])
    * ```
    */
   zip<Value2 extends {}>(
@@ -990,13 +990,13 @@ export interface Option<Value>
    * import { Option } from 'funkcia';
    *
    *
-   * const first = Option.some('hello');
-   * const second = Option.some('world');
+   * const firstName = Option.some('Jane');
+   * const lastName = Option.some('Doe');
    *
    * //        ┌─── Option<string>
    * //        ▼
-   * const greeting = first.zipWith(second, (a, b) => `${a} ${b}`);
-   * // Output: Some('hello world')
+   * const greeting = firstName.zipWith(lastName, (a, b) => `${a} ${b}`);
+   * // Output: Some('Jane Doe')
    * ```
    */
   zipWith<Value2 extends {}, Output extends {}>(
@@ -1070,11 +1070,11 @@ export interface Option<Value>
    * //       ▼
    * const baseUrl = Option.fromNullable(process.env.BASE_URL)
    *   .unwrapOr(() => 'http://localhost:3000');
-   * // Output: 'https://app.example.com'
+   * // Output: 'https://app.acme.com'
    *
    * const apiKey = Option.none<string>()
-   *   .unwrapOr(() => 'api_test_123');
-   * // Output: 'api_test_123'
+   *   .unwrapOr(() => 'api_test_acme_123');
+   * // Output: 'api_test_acme_123'
    * ```
    */
   unwrapOr(onNone: () => DoNotation.Unbrand<Value>): DoNotation.Unbrand<Value>;
@@ -1126,16 +1126,20 @@ export interface Option<Value>
    *
    * declare function findUserById(id: string): Option<User>;
    *
+   * const userId = 'user_123';
+   *
    * //     ┌─── User
    * //     ▼
-   * const user = findUserById('user_123').expect(
+   * const user = findUserById(userId).expect(
    *   () => new UserNotFound(userId),
    * );
    *
-   * const anotherUser = findUserById('invalid_id').expect(
-   *   () => new UserNotFound('invalid_id'),
+   * const invalidId = 'invalid_id';
+   *
+   * const anotherUser = findUserById(invalidId).expect(
+   *   () => new UserNotFound(invalidId),
    * );
-   * // Output: Uncaught exception: 'User not found: "user_123"'
+   * // Output: Uncaught exception: 'User not found: "invalid_id"'
    * ```
    */
   expect<Exception extends globalThis.Error>(

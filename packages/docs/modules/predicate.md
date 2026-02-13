@@ -21,10 +21,13 @@ The Predicate module provides utilities for type-safe predicate functions in Typ
 Returns a new function that will return the opposite boolean value of the original predicate.
 
 ```typescript
-import { not } from 'funkcia/predicate';
+import { not } from 'funkcia';
 
-const isString = (value: unknown) => typeof value === 'string';
-const isNotString = not(isString);
+const isGreaterThanZero = (value: number): boolean => value > 0;
+const isLessOrEqualToZero = not(isGreaterThanZero);
+
+const result = isLessOrEqualToZero(-1);
+        //^?  true
 ```
 
 #### Predicate\<A>
@@ -70,9 +73,4 @@ import { Predicate } from 'funkcia/predicate';
 type Shape = Circle | Square | Triangle;
 type UnguardedShape = Predicate.Unguarded<Shape, Circle>;
 //        ^? Square | Triangle
-```
-
-
-
-```
 ```

@@ -8,6 +8,7 @@ export default defineConfig({
     'src/brand.ts',
     'src/exceptions.ts',
     'src/functions.ts',
+    'src/pattern-matching.ts',
     'src/result-async.ts',
     'src/result.ts',
     'src/option-async.ts',

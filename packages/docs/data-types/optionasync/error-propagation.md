@@ -28,7 +28,7 @@ const mergedContent = OptionAsync.use(async function* () {
 
   return safeWriteFile('output.txt', `${fileA}\n${fileB}`); // doesn't run
 });
-// Output: Promise<None>
+// Output: OptionAsync<never>
 </code></pre>
 
 #### fn
@@ -53,7 +53,7 @@ const safeMergeFiles = OptionAsync.fn(async function* (output: string, pathA: st
 });
 
 const mergedContent = safeMergeFiles('output.txt', 'data.txt', 'updated-data.txt');
-// Output: Promise<Some('[ERROR] Failed to connect\n[INFO] Connection restored')>
+// Output: OptionAsync<string>
 </code></pre>
 
 ### Understanding the use method

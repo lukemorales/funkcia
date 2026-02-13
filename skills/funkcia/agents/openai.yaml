@@ -1,0 +1,4 @@
+interface:
+  display_name: "Funkcia"
+  short_description: "Adopt Funkcia with practical Option/Result workflows"
+  default_prompt: "Use $funkcia to adopt Funkcia in this codebase, including migration strategy, tagged errors, and module-specific usage patterns."

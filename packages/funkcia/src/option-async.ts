@@ -417,7 +417,7 @@ export interface OptionAsync<Value>
    * //       ┌─── OptionAsync<number>
    * //       ▼
    * const option = OptionAsync.some(10).map(number => number * 2);
-   * // Output: Promise<Some(20)>
+   * // Output: OptionAsync<number>
    * ```
    */
   map<Output>(
@@ -571,13 +571,13 @@ export interface OptionAsync<Value>
    * ```ts
    * import { OptionAsync } from 'funkcia';
    *
-   * const first = OptionAsync.some('hello');
-   * const second = OptionAsync.some('world');
+   * const firstName = OptionAsync.some('Jane');
+   * const lastName = OptionAsync.some('Doe');
    *
    * //       ┌─── OptionAsync<[string, string]>
    * //       ▼
-   * const strings = first.zip(second);
-   * // Output: Promise<Some(['hello', 'world'])>
+   * const strings = firstName.zip(lastName);
+   * // Output: OptionAsync<[string, string]>
    * ```
    */
   zip: <Value2 extends {}>(
@@ -596,13 +596,13 @@ export interface OptionAsync<Value>
    * import { OptionAsync } from 'funkcia';
    *
    *
-   * const first = OptionAsync.some('hello');
-   * const second = OptionAsync.some('world');
+   * const firstName = OptionAsync.some('Jane');
+   * const lastName = OptionAsync.some('Doe');
    *
    * //        ┌─── OptionAsync<string>
    * //        ▼
-   * const greeting = first.zipWith(second, (a, b) => `${a} ${b}`);
-   * // Output: Promise<Some('hello world')>
+   * const greeting = firstName.zipWith(lastName, (a, b) => `${a} ${b}`);
+   * // Output: OptionAsync<string>
    * ```
    */
   zipWith: <Value2 extends {}, Output extends {}>(
@@ -675,11 +675,11 @@ export interface OptionAsync<Value>
    * //       ▼
    * const baseUrl = await OptionAsync.fromNullable(process.env.BASE_URL)
    *   .unwrapOr(() => 'http://localhost:3000');
-   * // Output: 'https://app.example.com'
+   * // Output: 'https://app.acme.com'
    *
    * const apiKey = await OptionAsync.none<string>()
-   *   .unwrapOr(() => 'api_test_123');
-   * // Output: 'api_test_123'
+   *   .unwrapOr(() => 'api_test_acme_123');
+   * // Output: 'api_test_acme_123'
    * ```
    */
   unwrapOr: (
@@ -932,7 +932,7 @@ interface OptionAsyncTrait {
    * //       ┌─── OptionAsync<number>
    * //       ▼
    * const option = OptionAsync.fromOption(Option.some(1));
-   * // Output: Promise<Some(1)>
+   * // Output: OptionAsync<number>
    * ```
    */
   fromOption: <Value>(option: Option<Value>) => OptionAsync<Value>;
@@ -952,7 +952,7 @@ interface OptionAsyncTrait {
    * //       ┌─── OptionAsync<User>
    * //       ▼
    * const option = OptionAsync.fromResult(findUserById('user_123'));
-   * // Output: Promise<Some(User)>
+   * // Output: OptionAsync<User>
    * ```
    */
   fromResult: <Value, Error>(
@@ -974,7 +974,7 @@ interface OptionAsyncTrait {
    * //       ┌─── OptionAsync<string>
    * //       ▼
    * const option = OptionAsync.fromResultAsync(readFile('data.json'));
-   * // Output: Promise<Some(string)>
+   * // Output: OptionAsync<string>
    * ```
    */
   fromResultAsync: <Value, Error>(
@@ -1036,7 +1036,7 @@ interface OptionAsyncTrait {
    * //      ┌─── OptionAsync<User>
    * //      ▼
    * const option = OptionAsync.try(() => findUserById('user_123'));
-   * // Output: Promise<Some(User)>
+   * // Output: OptionAsync<User>
    * ```
    */
   try<Value>(
@@ -1116,7 +1116,7 @@ interface OptionAsyncTrait {
    * //      ┌─── OptionAsync<User>
    * //      ▼
    * const option = OptionAsync.fn(() => findUserById('user_123'));
-   * // Output: Promise<Some(User)>
+   * // Output: OptionAsync<User>
    * ```
    */
   fn<Args extends readonly unknown[], $Option extends Option.Any>(
@@ -1176,7 +1176,7 @@ interface OptionAsyncTrait {
    *
    *   return safeWriteFile('output.txt', `${fileA}\n${fileB}`); // doesn't run
    * });
-   * // Output: Promise<None>
+   * // Output: OptionAsync<never>
    * ```
    */
   use<$Option extends Option.Any>(

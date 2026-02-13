@@ -370,15 +370,15 @@ Replaces the current `Result` with the provided fallback `Result` when it is `Er
 ```ts
 import { Result } from 'funkcia';
 
-const personalEmail = Result.ok('johndoe@gmail.com')
-  .or(() => Result.ok('johndoe@example.com'))
+const personalEmail = Result.ok('alex@gmail.com')
+  .or(() => Result.ok('alex@acme.com'))
   .unwrap();
-// Output: 'johndoe@gmail.com'
+// Output: 'alex@gmail.com'
 
 const workEmail = Result.error(new Error('Missing personal email'))
-  .or(() => Result.ok('johndoe@example.com'))
+  .or(() => Result.ok('alex@acme.com'))
   .unwrap();
-// Output: 'johndoe@example.com'
+// Output: 'alex@acme.com'
 ```
 
 #### swap
@@ -393,7 +393,7 @@ declare function findOrCreateUserByEmail(email: Email): User;
 
 //       ┌─── Result<User, User>
 //       ▼
-const result = getCachedUser('johndoe@example.com')
+const result = getCachedUser('customer@acme.com')
   .swap() // Result<CacheMissError<Email>, User>
   .map((cacheMiss) => findOrCreateUserByEmail(cacheMiss.input));
 //         ▲
@@ -407,13 +407,13 @@ Combines two `Result`s into a single `Result` containing a tuple of their values
 ```ts
 import { Result } from 'funkcia';
 
-const first = Result.ok('hello');
-const second = Result.ok('world');
+const firstName = Result.ok('Jane');
+const lastName = Result.ok('Doe');
 
 //       ┌─── Result<[string, string], never>
 //       ▼
-const strings = first.zip(second);
-// Output: Ok(['hello', 'world'])
+const strings = firstName.zip(lastName);
+// Output: Ok(['Jane', 'Doe'])
 ```
 
 #### zipWith
@@ -423,13 +423,13 @@ Combines two `Result`s into a single `Result`. The new value is produced by appl
 ```ts
 import { Result } from 'funkcia';
 
-const first = Result.ok('hello');
-const second = Result.ok('world');
+const firstName = Result.ok('Jane');
+const lastName = Result.ok('Doe');
 
 //        ┌─── Result<string, never>
 //        ▼
-const greeting = first.zipWith(second, (a, b) => `${a} ${b}`);
-// Output: Ok('hello world')
+const greeting = firstName.zipWith(lastName, (a, b) => `${a} ${b}`);
+// Output: Ok('Jane Doe')
 ```
 
 #### match
@@ -508,13 +508,13 @@ import { Result } from 'funkcia';
 
 //       ┌─── string
 //       ▼
-const baseUrl = Result.ok('https://funkcia.lukemorales.io')
+const baseUrl = Result.ok('https://app.acme.com')
   .unwrapOr(() => 'http://localhost:3000');
-// Output: 'https://funkcia.lukemorales.io'
+// Output: 'https://app.acme.com'
 
 const apiKey = Result.error('Missing API key')
-  .unwrapOr(() => 'sk_test_9FK7CiUnKaU');
-// Output: 'sk_test_9FK7CiUnKaU'
+  .unwrapOr(() => 'api_test_acme_123');
+// Output: 'api_test_acme_123'
 ```
 
 #### unwrapOrNull
@@ -566,6 +566,8 @@ import { Result } from 'funkcia';
 
 declare function findUserById(id: string): Result<User, NoValueError>;
 
+const userId = 'user_123';
+
 //     ┌─── User
 //     ▼
 const user = findUserById(userId).expect(
@@ -587,11 +589,11 @@ declare function getOrCreateUserByEmail(email: Email): User;
 
 //       ┌─── User
 //       ▼
-const result = getCachedUser('johndoe@example.com')
+const result = getCachedUser('customer@acme.com')
   .swap() // Result<CacheMissError<Email>, User>
   .map((cacheMiss) => getOrCreateUserByEmail(cacheMiss.input)) // Result<User, User>
   .merge();
-// Output: { id: 'user_123', email: 'johndoe@example.com' }
+// Output: { id: 'user_123', email: 'customer@acme.com' }
 ```
 
 #### contains

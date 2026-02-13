@@ -347,13 +347,13 @@ Combines two `Option`s into a single `Option` containing a tuple of their values
 ```ts
 import { Option } from 'funkcia';
 
-const first = Option.some('hello');
-const second = Option.some('world');
+const firstName = Option.some('Jane');
+const lastName = Option.some('Doe');
 
 //       ┌─── Option<[string, string]>
 //       ▼
-const strings = first.zip(second);
-// Output: Some(['hello', 'world'])
+const strings = firstName.zip(lastName);
+// Output: Some(['Jane', 'Doe'])
 ```
 
 #### zipWith
@@ -363,13 +363,13 @@ Combines two `Option`s into a single `Option`. The new value is produced by appl
 ```ts
 import { Option } from 'funkcia';
 
-const first = Option.some('hello');
-const second = Option.some('world');
+const firstName = Option.some('Jane');
+const lastName = Option.some('Doe');
 
 //        ┌─── Option<string>
 //        ▼
-const greeting = first.zipWith(second, (a, b) => `${a} ${b}`);
-// Output: Some('hello world')
+const fullName = firstName.zipWith(lastName, (a, b) => `${a} ${b}`);
+// Output: Some('Jane Doe')
 ```
 
 #### match
@@ -431,11 +431,11 @@ import { Option } from 'funkcia';
 //       ▼
 const baseUrl = Option.fromNullable(process.env.BASE_URL)
   .unwrapOr(() => 'http://localhost:3000');
-// Output: 'https://app.example.com'
+// Output: 'https://app.acme.com'
 
 const apiKey = Option.none<string>()
-  .unwrapOr(() => 'api_test_123');
-// Output: 'api_test_123'
+  .unwrapOr(() => 'api_test_acme_123');
+// Output: 'api_test_acme_123'
 ```
 
 #### unwrapOrNull

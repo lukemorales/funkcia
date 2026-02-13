@@ -116,7 +116,7 @@ declare async function findUserById(id: string): Promise<User | null>
 //      ┌─── OptionAsync<User>
 //      ▼
 const option = OptionAsync.try(() => findUserById('user_123'));
-// Output: OptionAsync(User)>
+// Output: OptionAsync<User>
 ```
 
 #### fn
@@ -135,7 +135,7 @@ const safeFindUserById = OptionAsync.fn((id: string) => findUserById(id));
 //     ┌─── OptionAsync<User>
 //     ▼
 const user = safeFindUserById('user_123');
-// Output: OptionAsync(User)>
+// Output: OptionAsync<User>
 ```
 
 #### fromOption
@@ -256,13 +256,13 @@ Combines two `OptionAsync`s into a single `OptionAsync` containing a tuple of th
 ```ts
 import { OptionAsync } from 'funkcia';
 
-const first = OptionAsync.some('hello');
-const second = OptionAsync.some('world');
+const firstName = OptionAsync.some('Jane');
+const lastName = OptionAsync.some('Doe');
 
 //       ┌─── OptionAsync<[string, string]>
 //       ▼
-const strings = first.zip(second);
-// Output: OptionAsync(['hello', 'world'])>
+const strings = firstName.zip(lastName);
+// Output: OptionAsync<[string, string]>
 ```
 
 #### zipWith
@@ -272,13 +272,13 @@ Combines two `OptionAsync`s into a single `OptionAsync`. The new value is produc
 ```ts
 import { OptionAsync } from 'funkcia';
 
-const first = OptionAsync.some('hello');
-const second = OptionAsync.some('world');
+const firstName = OptionAsync.some('Jane');
+const lastName = OptionAsync.some('Doe');
 
 //        ┌─── OptionAsync<string>
 //        ▼
-const greeting = first.zipWith(second, (a, b) => `${a} ${b}`);
-// Output: OptionAsync('hello world')>
+const greeting = firstName.zipWith(lastName, (a, b) => `${a} ${b}`);
+// Output: OptionAsync<string>
 ```
 
 ### Conversions
@@ -352,13 +352,13 @@ import { OptionAsync } from 'funkcia';
 
 //       ┌─── string
 //       ▼
-const baseUrl = await OptionAsync.some(process.env.BASE_URL)
+const baseUrl = await OptionAsync.fromNullable(process.env.BASE_URL)
   .unwrapOr(() => 'http://localhost:3000');
-// Output: 'https://funkcia.lukemorales.io'
+// Output: 'https://app.acme.com'
 
 const apiKey = await OptionAsync.none<string>()
-  .unwrapOr(() => 'sk_test_9FK7CiUnKaU');
-// Output: 'sk_test_9FK7CiUnKaU'
+  .unwrapOr(() => 'api_test_acme_123');
+// Output: 'api_test_acme_123'
 ```
 
 #### unwrapOrNull
@@ -398,16 +398,20 @@ import { OptionAsync } from 'funkcia';
 
 declare function findUserById(id: string): OptionAsync<User>;
 
+const userId = 'user_123';
+
 //     ┌─── User
 //     ▼
-const user = await findUserById('user_123').expect(
+const user = await findUserById(userId).expect(
   () => new UserNotFound(userId),
 );
 
-const anotherUser = await findUserById('invalid_id').expect(
-  () => new UserNotFound('team_123'),
+const invalidId = 'invalid_id';
+
+const anotherUser = await findUserById(invalidId).expect(
+  () => new UserNotFound(invalidId),
 );
-// Output: Uncaught exception: 'User not found: "user_123"'
+// Output: Uncaught exception: 'User not found: "invalid_id"'
 ```
 
 #### contains
@@ -448,7 +452,6 @@ import { OptionAsync } from 'funkcia';
 //       ┌─── OptionAsync<number>
 //       ▼
 const option = OptionAsync.some(10).map(number => number * 2);
-// Output: OptionAsync(20)>
 ```
 
 #### andThen
@@ -505,13 +508,13 @@ Replaces the current `OptionAsync` with the provided fallback `OptionAsync` when
 ```ts
 import { OptionAsync } from 'funkcia';
 
-// Output: OptionAsync('Paul')>
-const option = OptionAsync.some('Paul')
-  .or(() => OptionAsync.some('John'));
+// Output: OptionAsync<string>
+const preferredName = OptionAsync.some('Ava')
+  .or(() => OptionAsync.some('Guest'));
 
-// Output: OptionAsync('John')>
-const greeting = OptionAsync.none<string>()
-  .or(() => OptionAsync.some('John'));
+// Output: OptionAsync<string>
+const displayName = OptionAsync.none<string>()
+  .or(() => OptionAsync.some('Guest'));
 ```
 
 #### firstSomeOf

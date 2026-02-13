@@ -39,7 +39,7 @@ const mergedContent = ResultAsync.use(async function* () {
 </strong>
   return safeWriteFile('output.txt', `${fileA}\n${fileB}`); // doesn't run
 });
-// Output: Promise<Error(NodeFSError)>
+// Output: ResultAsync<string, NodeFSError>
 </code></pre>
 
 #### fn
@@ -64,7 +64,7 @@ const safeMergeFiles = ResultAsync.fn(async function* (output: string, pathA: st
 });
 
 const mergedContent = safeMergeFiles('output.txt', 'data.txt', 'updated-data.txt');
-// Output: Promise<Ok('[ERROR] Failed to connect\n[INFO] Connection restored')>
+// Output: ResultAsync<string, NodeFSError>
 
 </code></pre>
 
