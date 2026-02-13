@@ -19,13 +19,13 @@ jobs:
       - name: 🔧 Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.28.2
+          version: 10.29.3
 
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "24"
+          cache: "pnpm"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
@@ -41,13 +41,13 @@ jobs:
       - name: 🔧 Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.28.2
+          version: 10.29.3
 
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "24"
+          cache: "pnpm"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
@@ -77,14 +77,14 @@ jobs:
       - name: 🔧 Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.28.2
+          version: 10.29.3
 
       - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: "24"
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
 
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
@@ -97,7 +97,7 @@ jobs:
 
       - name: 👤 Set git user
         run: |
-          git config --global user.email "lukemorales@live.com"
+          git config --global user.email "oss@lukemorales.io"
           git config --global user.name "Luke Morales"
 
       - name: 🚀 Create Changesets Pull Request or Publish to NPM
@@ -107,7 +107,7 @@ jobs:
           setupGitUser: false
           title: "chore(changesets): bump package version"
           commit: "chore: bump package version"
-          version: pnpm .github/changeset-version.js
+          version: node .github/changeset-version.js
           publish: pnpm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
