@@ -27,6 +27,7 @@
 * [Exceptions](modules/exceptions.md)
 * [Functions](modules/functions.md)
 * [JSON](modules/json.md)
+* [Pattern Matching](modules/pattern-matching.md)
 * [Predicate](modules/predicate.md)
 * [Runes](modules/runes.md)
 * [URI](modules/uri.md)

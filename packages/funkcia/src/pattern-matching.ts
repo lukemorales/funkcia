@@ -82,8 +82,33 @@ type ExtractOutput<Cases, Output> = unknown extends Output
     >
   : Output;
 
-export const corrupt = (unreachable: never): never => {
-  const safeStringify = (value: any) => {
+/**
+ * Signals an impossible code path at runtime.
+ *
+ * @description
+ * Use this in `switch` defaults or branches that should be unreachable.
+ * If called, it throws a `TypeError` with a safe representation of the value.
+ *
+ * @example
+ * ```ts
+ * import { corrupt } from 'funkcia/pattern-matching';
+ *
+ * type Role = 'ADMIN' | 'VIEWER';
+ *
+ * function canEdit(role: Role): boolean {
+ *   switch (role) {
+ *     case 'ADMIN':
+ *       return true;
+ *     case 'VIEWER':
+ *       return false;
+ *     default:
+ *       return corrupt(role);
+ *   }
+ * }
+ * ```
+ */
+export function corrupt(unreachable: never): never {
+  function safeStringify(value: any) {
     if (typeof value === 'symbol') {
       return value.toString();
     }
@@ -109,15 +134,56 @@ export const corrupt = (unreachable: never): never => {
 
       throw error;
     }
-  };
+  }
 
   throw new TypeError(
     `Internal Error: encountered impossible value "${safeStringify(
       unreachable,
     )}"`,
   );
-};
+}
 
+/**
+ * Exhaustively matches a literal union (`string | boolean`) or tagged union.
+ *
+ * @description
+ * All variants must be handled unless a default `_` case is provided.
+ * For object unions with `_tag`, the `_tag` key is used automatically.
+ *
+ * @example
+ * ```ts
+ * import { exhaustive } from 'funkcia/pattern-matching';
+ *
+ * type State = 'IDLE' | 'LOADING' | 'SUCCESS' | 'ERROR';
+ *
+ * function label(state: State): string {
+ *   return exhaustive(state, {
+ *     IDLE: () => 'Idle',
+ *     LOADING: () => 'Loading',
+ *     SUCCESS: () => 'Success',
+ *     ERROR: () => 'Error',
+ *   });
+ * }
+ * ```
+ *
+ * @example
+ * ```ts
+ * import { TaggedError } from 'funkcia/exceptions';
+ * import { exhaustive } from 'funkcia/pattern-matching';
+ *
+ * class UserNotFoundError extends TaggedError('UserNotFoundError') {}
+ * class InvalidCouponError extends TaggedError('InvalidCouponError') {}
+ *
+ * type CheckoutError = UserNotFoundError | InvalidCouponError;
+ *
+ * function status(error: CheckoutError): number {
+ *   return exhaustive(error, {
+ *     UserNotFoundError: () => 404,
+ *     InvalidCouponError: () => 422,
+ *   });
+ * }
+ * ```
+ */
 function exhaustive<
   Union extends string | boolean,
   Output,
@@ -199,6 +265,28 @@ function exhaustive(
   return event(union as never);
 }
 
+/**
+ * Exhaustively matches an object union using an explicit tag key.
+ *
+ * @description
+ * Use this when your discriminant key is not `_tag`.
+ *
+ * @example
+ * ```ts
+ * import { exhaustive } from 'funkcia/pattern-matching';
+ *
+ * type Shape =
+ *   | { kind: 'circle'; radius: number }
+ *   | { kind: 'square'; size: number };
+ *
+ * function area(shape: Shape): number {
+ *   return exhaustive.tag(shape, 'kind', {
+ *     circle: (value) => Math.PI * value.radius ** 2,
+ *     square: (value) => value.size ** 2,
+ *   });
+ * }
+ * ```
+ */
 exhaustive.tag = <
   Union extends object,
   Tag extends keyof Union,
@@ -223,9 +311,9 @@ exhaustive.tag = <
   if (!matchesKey) {
     const never = union as never;
 
-    return (hasDefaultCase<never, unknown>(cases)
-      ? cases._(never)
-      : corrupt(never)) as never;
+    return (
+      hasDefaultCase<never, unknown>(cases) ? cases._(never) : corrupt(never)
+    ) as never;
   }
 
   const event = (cases as Record<string, (value: Union) => unknown>)[
