@@ -1,6 +1,6 @@
 {
   "name": "funkcia",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Encode failure and absence of value in TypeScript",
   "author": "Luke Morales <oss@lukemorales.io>",
   "homepage": "https://github.com/lukemorales/funkcia#readme",
