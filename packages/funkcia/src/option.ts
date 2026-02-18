@@ -668,7 +668,7 @@ interface OptionTrait {
    */
   fn<Args extends readonly unknown[], $Option extends Option.Any>(
     fn: (...args: Args) => Generator<never, $Option>,
-  ): (...args: Args) => Generator<never, Option<Option.Unwrap<$Option>>>;
+  ): (...args: Args) => Option<Option.Unwrap<$Option>>;
 
   /**
    * Converts a function that may throw or return a nullable value

@@ -8,19 +8,6 @@ type AnyBrandId = string | symbol;
 
 type AnyBrand = Brand.Sign<any>;
 
-interface Constructor<in out Type extends AnyBrand> {
-  (value: Brand.Unbrand<Type>): Type;
-  is: (value: Brand.Unbrand<Type>) => value is Brand.Unbrand<Type> & Type;
-}
-
-interface Parser<
-  in out Type extends AnyBrand,
-  in out Error extends globalThis.Error,
-> extends Constructor<Type> {
-  parse: (value: Brand.Unbrand<Type>) => Type;
-  safeParse: (value: Brand.Unbrand<Type>) => Result<Type, Error>;
-}
-
 export declare namespace Brand {
   interface Sign<in out BrandId extends AnyBrandId> {
     readonly [BrandSymbol]: {
@@ -33,26 +20,39 @@ export declare namespace Brand {
       ? Value
       : never
     : never;
+
+  interface Constructor<in out Type extends AnyBrand> {
+    (value: Brand.Unbrand<Type>): Type;
+    is: (value: Brand.Unbrand<Type>) => value is Brand.Unbrand<Type> & Type;
+  }
+
+  interface Parser<
+    in out Type extends AnyBrand,
+    in out Error extends globalThis.Error,
+  > extends Constructor<Type> {
+    parse: (value: Brand.Unbrand<Type>) => Type;
+    safeParse: (value: Brand.Unbrand<Type>) => Result<Type, Error>;
+  }
 }
 
 export type Brand<T, BrandId extends AnyBrandId> = T & Brand.Sign<BrandId>;
 
 interface BrandTrait {
-  of<Type extends AnyBrand>(): Constructor<Type>;
+  of<Type extends AnyBrand>(): Brand.Constructor<Type>;
 
   of<Type extends AnyBrand, Error extends globalThis.Error>(
     predicate: Predicate.Predicate<Brand.Unbrand<Type>>,
     onUnfulfilled: (value: Brand.Unbrand<Type>) => Error,
-  ): Parser<Type, Error>;
+  ): Brand.Parser<Type, Error>;
 
   unbrand: <T extends AnyBrand>(value: T) => Brand.Unbrand<T>;
 }
 
-function of<Type extends AnyBrand>(): Constructor<Type>;
+function of<Type extends AnyBrand>(): Brand.Constructor<Type>;
 function of<Type extends AnyBrand, Error extends globalThis.Error>(
   predicate: Predicate.Predicate<Brand.Unbrand<Type>>,
   onUnfulfilled: (value: Brand.Unbrand<Type>) => Error,
-): Parser<Type, Error>;
+): Brand.Parser<Type, Error>;
 function of(
   predicate?: Predicate.Predicate<any>,
   onUnfulfilled?: (value: any) => globalThis.Error,

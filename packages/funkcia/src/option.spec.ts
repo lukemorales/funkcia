@@ -245,8 +245,15 @@ describe('Option', () => {
         const wrappedFn = Option.fn(hasEnabledSetting);
 
         expectTypeOf(wrappedFn).toEqualTypeOf<
-          (enabled: boolean | null) => Generator<never, Option<'YES' | 'NO'>>
+          (enabled: boolean | null) => Option<'YES' | 'NO'>
         >();
+
+        const option = wrappedFn(true);
+
+        expectTypeOf(option).toEqualTypeOf<Option<'YES' | 'NO'>>();
+
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toBe('YES');
       });
     });
 

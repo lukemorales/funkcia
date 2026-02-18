@@ -257,10 +257,7 @@ class Err<E> {
   }
 
   match(cases: { Ok: (value: any) => any; Error: (error: E) => any }) {
-    return catchDefect(
-      () => cases.Error(this.error),
-      `A defect occurred while matching Error case of a Result`,
-    );
+    return cases.Error(this.error);
   }
 
   unwrap(): never {
