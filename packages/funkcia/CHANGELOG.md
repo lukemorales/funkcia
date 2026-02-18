@@ -1,5 +1,13 @@
 # funkcia
 
+## 1.0.1
+
+### Patch Changes
+
+- [`7545a9f`](https://github.com/lukemorales/funkcia/commit/7545a9f12e93f54313c8c17a03ae1d52d89da14c) Thanks [@lukemorales](https://github.com/lukemorales)! - Fix type signatures for `Brand.of` and `Option.fn` to match their runtime behavior.
+
+  Update `Result.match` on `Error` results to call the `Error` handler directly, without defect wrapping.
+
 ## 1.0.0
 
 ### Major Changes
