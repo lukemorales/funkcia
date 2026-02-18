@@ -1,101 +1,36 @@
-# Funkcia Monorepo
+<p align="center">
+  <a href="https://github.com/lukemorales/funkcia" target="\_parent"><img src="https://em-content.zobj.net/source/samsung/395/brain_1f9e0.png" alt="Brain emoji" height="130"></a>
+</p>
 
-This is a monorepo for the Funkcia project, managed with [Turborepo](https://turbo.build/repo).
+<h1 align="center">Funkcia</h1>
 
-## What's inside?
+<p align="center">
+  <a href="https://github.com/lukemorales/funkcia/actions/workflows/tests.yml" target="\_parent"><img src="https://github.com/lukemorales/funkcia/actions/workflows/tests.yml/badge.svg?branch=main" alt="Latest build"></a>
+  <a href="https://www.npmjs.com/package/funkcia" target="\_parent"><img src="https://badgen.net/npm/v/funkcia" alt="Latest published version"></a>
+  <a href="https://bundlephobia.com/package/funkcia@latest" target="\_parent"><img src="https://badgen.net/bundlephobia/minzip/funkcia" alt="Bundlephobia"></a>
+  <a href="https://bundlephobia.com/package/funkcia@latest" target="\_parent"><img src="https://badgen.net/bundlephobia/tree-shaking/funkcia" alt="Tree shaking available"></a>
+  <a href="https://github.com/lukemorales/funkcia" target="\_parent"><img src="https://badgen.net/npm/types/funkcia" alt="Types included"></a>
+  <a href="https://www.npmjs.com/package/funkcia" target="\_parent"><img src="https://badgen.net/npm/license/funkcia" alt="License"></a>
+  <a href="https://www.npmjs.com/package/funkcia" target="\_parent"><img src="https://badgen.net/npm/dt/funkcia" alt="Number of downloads"></a>
+  <a href="https://github.com/lukemorales/funkcia" target="\_parent"><img src="https://img.shields.io/github/stars/lukemorales/funkcia.svg?style=social&amp;label=Star" alt="GitHub Stars"></a>
+</p>
 
-This monorepo includes the following packages:
+<p align="center">
+  <strong>Encode failure and absence of value in TypeScript</strong>
+</p>
 
-### Packages
+<p align="center">
+  <code>Data types</code> inspired by the best parts of Rust, OCaml, Nim, Scala, and Haskell
+  <br> providing a type-safe way to build your applications with better DX.
+</p>
 
-- `funkcia`: Core library for encoding failure and absence of value in TypeScript
+## 📦 Install
+`funkcia` is available as a package on NPM. Install it with your favorite package manager:
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js >= 18.0.0
-- pnpm >= 9.0.0
-
-### Installation
-
-```bash
-pnpm install
+```dircolors
+npm install funkcia
 ```
 
-### Build
+## 📖 Documentation
 
-To build all packages:
-
-```bash
-pnpm run build
-```
-
-### Development
-
-To run tests in watch mode:
-
-```bash
-pnpm run dev
-```
-
-### Testing
-
-Run all tests:
-
-```bash
-pnpm run test
-```
-
-Run tests with coverage:
-
-```bash
-pnpm run test:coverage
-```
-
-Run tests in CI mode:
-
-```bash
-pnpm run test:ci
-```
-
-### Linting
-
-Run all linters:
-
-```bash
-pnpm run lint
-```
-
-### Clean
-
-Clean all build artifacts:
-
-```bash
-pnpm run clean
-```
-
-## Turborepo
-
-This monorepo uses [Turborepo](https://turbo.build/repo) for:
-
-- **Fast builds**: Turborepo caches build outputs and only rebuilds what's changed
-- **Task orchestration**: Runs tasks across packages in the correct order
-- **Remote caching**: Share build caches across your team (optional)
-
-### Useful Commands
-
-- `turbo run build` - Build all packages
-- `turbo run test` - Run all tests
-- `turbo run lint` - Lint all packages
-
-Learn more about Turborepo at [turbo.build/repo](https://turbo.build/repo).
-
-## Release
-
-This project uses [Changesets](https://github.com/changesets/changesets) for versioning and publishing.
-
-```bash
-pnpm run changeset
-pnpm run release
-```
+The full documentation is available at [funkcia.lukemorales.io](https://funkcia.lukemorales.io).
