@@ -1,5 +1,11 @@
 # funkcia
 
+## 1.0.2
+
+### Patch Changes
+
+- [`dcbf75c`](https://github.com/lukemorales/funkcia/commit/dcbf75c0105eb345d44dce9d873417e9a597571a) Thanks [@lukemorales](https://github.com/lukemorales)! - Add README.md
+
 ## 1.0.1
 
 ### Patch Changes
