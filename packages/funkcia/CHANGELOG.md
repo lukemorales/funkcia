@@ -1,5 +1,15 @@
 # funkcia
 
+## 1.1.0
+
+### Minor Changes
+
+- [`71cbfcd`](https://github.com/lukemorales/funkcia/commit/71cbfcd8df1a2652c8c4ee3f63ddf7a44e35a4b5) Thanks [@lukemorales](https://github.com/lukemorales)! - Add dual-call predicate APIs across `Option`, `Result`, `OptionAsync`, and `ResultAsync` while preserving curried usage.
+
+  Add dual-call `Result.fromNullable` support so it can be used as either `Result.fromNullable(value, onNullable)` or `Result.fromNullable(onNullable)(value)`.
+
+  Add no-arg overloads for `ResultAsync.ok()` and `ResultAsync.of()` returning `ResultAsync<void, never>`.
+
 ## 1.0.2
 
 ### Patch Changes
