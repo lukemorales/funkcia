@@ -28,10 +28,13 @@ Constructs an `ResultAsync` that resolves to a `Result.Ok` with the provided val
 ```ts
 import { ResultAsync } from 'funkcia';
 
+//      ┌─── ResultAsync<void, never>
+//      ▼
+const empty = ResultAsync.ok();
+
 //      ┌─── ResultAsync<number, never>
 //      ▼
 const result = ResultAsync.ok(10);
-// ResultAsync<number, never>
 ```
 
 #### of
@@ -45,10 +48,13 @@ Constructs an `ResultAsync` that resolves to a `Result.Ok` with the provided val
 ```ts
 import { ResultAsync } from 'funkcia';
 
+//      ┌─── ResultAsync<void, never>
+//      ▼
+const empty = ResultAsync.of();
+
 //      ┌─── ResultAsync<number, never>
 //      ▼
 const result = ResultAsync.of(10);
-// ResultAsync<number, never>
 ```
 
 #### error
@@ -305,6 +311,23 @@ const ensureCircle = ResultAsync.predicate(
 //   ┌─── Square
 //   ▼
   (shape) => new InvalidShapeError(shape.kind),
+);
+
+// Direct style
+//       ┌─── ResultAsync<number, FailedPredicateError<number>>
+//       ▼
+const directResult = ResultAsync.predicate(
+  10,
+  (value) => value > 0,
+);
+
+// Direct style with custom error
+//       ┌─── ResultAsync<number, InvalidNumberError>
+//       ▼
+const directResultWithCustomError = ResultAsync.predicate(
+  10,
+  (value) => value > 0,
+  (value) => new InvalidNumberError(value),
 );
 ```
 

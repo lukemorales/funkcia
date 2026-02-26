@@ -195,6 +195,11 @@ const ensurePositive = Option.predicate(
 //       ┌─── Option<number>
 //       ▼
 const option = ensurePositive(input);
+
+// Direct style
+//       ┌─── Option<number>
+//       ▼
+const directOption = Option.predicate(10, (value) => value > 0);
 ```
 
 #### fn

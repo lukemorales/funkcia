@@ -158,17 +158,17 @@ describe('Option', () => {
     });
 
     describe('predicate', () => {
+      interface Circle {
+        kind: 'circle';
+      }
+
+      interface Square {
+        kind: 'square';
+      }
+
+      type Shape = Circle | Square;
+
       it('creates a function that will return an `Option` with the refined type of a value if the predicate is fulfilled', () => {
-        interface Circle {
-          kind: 'circle';
-        }
-
-        interface Square {
-          kind: 'square';
-        }
-
-        type Shape = Circle | Square;
-
         const ensureCircle = Option.predicate(
           (shape: Shape): shape is Circle => shape.kind === 'circle',
         );
@@ -198,6 +198,40 @@ describe('Option', () => {
 
         expect(option.isSome()).toBeTrue();
         expect(option.unwrap()).toBe(10);
+      });
+
+      it('supports direct invocation for guards', () => {
+        const option = Option.predicate(
+          { kind: 'circle' } as Shape,
+          (shape): shape is Circle => shape.kind === 'circle',
+        );
+
+        expectTypeOf(option).toEqualTypeOf<Option<Circle>>();
+
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toEqual({ kind: 'circle' });
+      });
+
+      it('supports direct invocation for predicates', () => {
+        const positiveValue = 10 as number;
+        const negativeValue = -1 as number;
+
+        const positive = Option.predicate(
+          positiveValue,
+          (value) => value > 0,
+        );
+        const negative = Option.predicate(
+          negativeValue,
+          (value) => value > 0,
+        );
+
+        const assertPositive: Option<number> = positive;
+        const assertNegative: Option<number> = negative;
+        void assertPositive;
+        void assertNegative;
+
+        expect(positive.isSome()).toBeTrue();
+        expect(negative.isNone()).toBeTrue();
       });
     });
 

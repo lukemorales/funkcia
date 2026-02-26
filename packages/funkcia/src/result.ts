@@ -368,10 +368,29 @@ export const Result: ResultTrait = {
   ok,
   of: ok,
   error: error as never,
-  fromNullable(value: any, onNullable?: Thunk<any>) {
-    return value != null
-      ? (ok(value) as never)
-      : (error(onNullable?.() ?? new NoValueError()) as never);
+  fromNullable(...args: any[]) {
+    const [value, onNullable] = args as [any, Thunk<any>?];
+    const isCurriedCall =
+      args.length === 1 && typeof value === 'function' && value.length === 0;
+
+    if (isCurriedCall) {
+      const onNullableThunk = value as Thunk<any>;
+
+      return ((nullableValue: any) => {
+        if (nullableValue != null) {
+          return ok(nullableValue) as never;
+        }
+
+        return error(onNullableThunk()) as never;
+      }) as never;
+    }
+
+    if (value != null) {
+      return ok(value) as never;
+    }
+
+    const nullableError = onNullable?.() ?? new NoValueError();
+    return error(nullableError) as never;
   },
   fromFalsy(value: any, onFalsy?: AnyUnaryFn) {
     return (
@@ -389,9 +408,21 @@ export const Result: ResultTrait = {
     return ok(Object.create(null)) as never;
   },
   try: tryCatch,
-  predicate(criteria: AnyUnaryFn, onUnfulfilled?: AnyUnaryFn) {
-    return (value: any) =>
-      ok(value).filter(criteria, onUnfulfilled as never) as never;
+  predicate(
+    criteriaOrValue: any,
+    criteriaOrOnUnfulfilled?: AnyUnaryFn,
+    onUnfulfilled?: AnyUnaryFn,
+  ): any {
+    if (typeof criteriaOrValue === 'function') {
+      const criteria = criteriaOrValue;
+      return (value: any) =>
+        ok(value).filter(criteria, criteriaOrOnUnfulfilled as never) as never;
+    }
+
+    return ok(criteriaOrValue).filter(
+      criteriaOrOnUnfulfilled as never,
+      onUnfulfilled as never,
+    ) as never;
   },
   fn(fn: Function) {
     return (...args: any[]) => {
@@ -519,6 +550,26 @@ interface ResultTrait {
   /**
    * Constructs a `Result` from a nullable value.
    *
+   * Provide the `onNullable` callback first to get a reusable mapper function.
+   *
+   * @example
+   * ```ts
+   * import { Result } from 'funkcia';
+   *
+   * const fromNullableUser = Result.fromNullable(() => new UserNotFound());
+   *
+   * //      ┌─── Result<User, UserNotFound>
+   * //      ▼
+   * const result = fromNullableUser(user);
+   * ```
+   */
+  fromNullable<Error extends {}>(
+    onNullable: Thunk<Error>,
+  ): <Value>(value: Nullable<Value>) => Result<NonNullable<Value>, Error>;
+
+  /**
+   * Constructs a `Result` from a nullable value.
+   *
    * If the value is `null` or `undefined`, it returns a `Result.Error` with a `NoValueError` error.
    * Otherwise, it returns a `Result.Ok`.
    *
@@ -549,7 +600,7 @@ interface ResultTrait {
    *
    * declare const user: User | null;
    *
-   * //      ┌─── Result<string, UserNotFound>
+   * //      ┌─── Result<User, UserNotFound>
    * //      ▼
    * const result = Result.fromNullable(
    *   user,
@@ -717,7 +768,7 @@ interface ResultTrait {
    * //         ┌─── (shape: Shape) => Result<Circle, FailedPredicateError<Square>>
    * //         ▼
    * const ensureCircle = Result.predicate(
-   *   (shape: Shape): shape is Circle => shape.kind === 'circle',
+   *   (shape): shape is Circle => shape.kind === 'circle',
    * );
    *
    * //       ┌─── Result<Circle, FailedPredicateError<Square>>
@@ -835,6 +886,99 @@ interface ResultTrait {
   ) => Criteria extends Predicate.Predicate<infer Input>
     ? Result<Input, Error>
     : never;
+
+  /**
+   * Asserts that a value passes the provided type guard.
+   *
+   * If the test fails, returns `Result.Error` with `FailedPredicateError`.
+   *
+   * @example
+   * ```ts
+   * import { Result } from 'funkcia';
+   *
+   * declare const input: Shape;
+   *
+   * //       ┌─── Result<Circle, FailedPredicateError<Square>>
+   * //       ▼
+   * const result = Result.predicate(
+   *   input,
+   *   (shape): shape is Circle => shape.kind === 'circle',
+   * );
+   * ```
+   */
+  predicate<Input, Output extends Input>(
+    value: Input,
+    criteria: Predicate.Guard<Input, Output>,
+  ): Result<Output, FailedPredicateError<Predicate.Unguarded<Input, Output>>>;
+
+  /**
+   * Asserts that a value passes the provided predicate.
+   *
+   * If the test fails, returns `Result.Error` with `FailedPredicateError`.
+   *
+   * @example
+   * ```ts
+   * import { Result } from 'funkcia';
+   *
+   * //       ┌─── Result<number, FailedPredicateError<number>>
+   * //       ▼
+   * const result = Result.predicate(10, (value) => value > 0);
+   * ```
+   */
+  predicate<Input>(
+    value: Input,
+    criteria: Predicate.Predicate<Input>,
+  ): Result<Input, FailedPredicateError<Input>>;
+
+  /**
+   * Asserts that a value passes the provided type guard.
+   *
+   * If the test fails, returns `Result.Error` with the value from `onUnfulfilled`.
+   *
+   * @example
+   * ```ts
+   * import { Result } from 'funkcia';
+   *
+   * declare const input: Shape;
+   *
+   * //       ┌─── Result<Circle, InvalidShapeError>
+   * //       ▼
+   * const result = Result.predicate(
+   *   input,
+   *   (shape): shape is Circle => shape.kind === 'circle',
+   *   (shape) => new InvalidShapeError(shape.kind),
+   * );
+   * ```
+   */
+  predicate<Input, Output extends Input, Error extends {}>(
+    value: Input,
+    criteria: Predicate.Guard<Input, Output>,
+    onUnfulfilled: (input: Predicate.Unguarded<Input, Output>) => Error,
+  ): Result<Output, Error>;
+
+  /**
+   * Asserts that a value passes the provided predicate.
+   *
+   * If the test fails, returns `Result.Error` with the value from `onUnfulfilled`.
+   *
+   * @example
+   * ```ts
+   * import { Result } from 'funkcia';
+   *
+   * //       ┌─── Result<number, InvalidNumberError>
+   * //       ▼
+   * const result = Result.predicate(
+   *   10,
+   *   (value) => value > 0,
+   *   (value) => new InvalidNumberError(value),
+   * );
+   * ```
+   */
+  predicate<Input, Error extends {}>(
+    value: Input,
+    criteria: Predicate.Predicate<Input>,
+    onUnfulfilled: (input: Input) => Error,
+  ): Result<Input, Error>;
 
   /**
    * Declare a function that always returns a `Result`.

@@ -89,12 +89,18 @@ declare const user: User | null;
 //      ▼
 const result = Result.fromNullable(user);
 
-//            ┌─── Result<string, UserNotFound>
+//            ┌─── Result<User, UserNotFound>
 //            ▼
 const resultWithCustomError = Result.fromNullable(
   user,
   () => new UserNotFound(),
 );
+
+const fromNullableUser = Result.fromNullable(() => new UserNotFound());
+
+//            ┌─── Result<User, UserNotFound>
+//            ▼
+const resultFromCurriedApi = fromNullableUser(user);
 ```
 
 #### fromFalsy
@@ -191,6 +197,20 @@ const ensureCircle = Result.predicate(
 //          ▼
 const ensurePositive = Result.predicate(
   (value: number) => value > 0,
+  (value) => new InvalidNumberError(value),
+);
+
+// Direct style
+//       ┌─── Result<number, FailedPredicateError<number>>
+//       ▼
+const directResult = Result.predicate(10, (value) => value > 0);
+
+// Direct style with custom error
+//       ┌─── Result<number, InvalidNumberError>
+//       ▼
+const directResultWithCustomError = Result.predicate(
+  10,
+  (value) => value > 0,
   (value) => new InvalidNumberError(value),
 );
 </code></pre>

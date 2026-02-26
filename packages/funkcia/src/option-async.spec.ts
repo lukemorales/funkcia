@@ -272,17 +272,17 @@ describe('OptionAsync', () => {
     });
 
     describe('predicate', () => {
+      interface Circle {
+        kind: 'circle';
+      }
+
+      interface Square {
+        kind: 'square';
+      }
+
+      type Shape = Circle | Square;
+
       it('creates a function that will return an `OptionAsync` with the refined type of a value if the predicate is fulfilled', async () => {
-        interface Circle {
-          kind: 'circle';
-        }
-
-        interface Square {
-          kind: 'square';
-        }
-
-        type Shape = Circle | Square;
-
         const ensureCircle = OptionAsync.predicate(
           (shape: Shape): shape is Circle => shape.kind === 'circle',
         );
@@ -316,6 +316,41 @@ describe('OptionAsync', () => {
         const option = await task;
         expect(option.isSome()).toBeTrue();
         expect(option.unwrap()).toBe(10);
+      });
+
+      it('supports direct invocation for guards', async () => {
+        const task = OptionAsync.predicate(
+          { kind: 'circle' } as Shape,
+          (shape): shape is Circle => shape.kind === 'circle',
+        );
+
+        expectTypeOf(task).toEqualTypeOf<OptionAsync<Circle>>();
+
+        const option = await task;
+        expect(option.isSome()).toBeTrue();
+        expect(option.unwrap()).toEqual({ kind: 'circle' });
+      });
+
+      it('supports direct invocation for predicates', async () => {
+        const positiveValue = 10 as number;
+        const negativeValue = -1 as number;
+
+        const positive = OptionAsync.predicate(
+          positiveValue,
+          (value) => value > 0,
+        );
+        const negative = OptionAsync.predicate(
+          negativeValue,
+          (value) => value > 0,
+        );
+
+        const assertPositive: OptionAsync<number> = positive;
+        const assertNegative: OptionAsync<number> = negative;
+        void assertPositive;
+        void assertNegative;
+
+        await expect(positive.unwrap()).resolves.toBe(10);
+        await expect(negative.unwrapOrNull()).resolves.toBeNull();
       });
     });
 

@@ -49,6 +49,28 @@ describe('Result', () => {
         expect(result.unwrap()).toBe('hello world');
       });
 
+      it('supports the curried API with a custom nullable handler', () => {
+        const fromNullable = Result.fromNullable(
+          () => new Error('missing value'),
+        );
+
+        expectTypeOf(fromNullable).toEqualTypeOf<
+          <Value>(
+            value: Value | null | undefined,
+          ) => Result<NonNullable<Value>, Error>
+        >();
+
+        const okResult = fromNullable('hello world');
+        expectTypeOf(okResult).toEqualTypeOf<Result<string, Error>>();
+        expect(okResult.isOk()).toBeTrue();
+        expect(okResult.unwrap()).toBe('hello world');
+
+        const errorResult = fromNullable(null as string | null);
+        expectTypeOf(errorResult).toEqualTypeOf<Result<string, Error>>();
+        expect(errorResult.isError()).toBeTrue();
+        expect(errorResult.unwrapError()).toEqual(new Error('missing value'));
+      });
+
       it('creates an Error Result when the value is nullable', () => {
         const value = null as string | null | undefined;
 
@@ -252,6 +274,57 @@ describe('Result', () => {
 
         expect(positiveResult.isOk()).toBeTrue();
         expect(positiveResult.unwrap()).toBe(10);
+      });
+
+      it('supports direct invocation for guards', () => {
+        const circleResult = Result.predicate(
+          { kind: 'circle' } as Shape,
+          (shape): shape is Circle => shape.kind === 'circle',
+        );
+
+        expectTypeOf(circleResult).toEqualTypeOf<
+          Result<Circle, FailedPredicateError<Square>>
+        >();
+
+        expect(circleResult.isOk()).toBeTrue();
+        expect(circleResult.unwrap()).toEqual({ kind: 'circle' });
+      });
+
+      it('supports direct invocation for predicates', () => {
+        const positiveValue = 10 as number;
+        const negativeValue = -1 as number;
+
+        const positive = Result.predicate(positiveValue, (value) => value > 0);
+        const negative = Result.predicate(negativeValue, (value) => value > 0);
+
+        expectTypeOf(positive).toEqualTypeOf<
+          Result<number, FailedPredicateError<number>>
+        >();
+        expectTypeOf(negative).toEqualTypeOf<
+          Result<number, FailedPredicateError<number>>
+        >();
+
+        expect(positive.isOk()).toBeTrue();
+        expect(negative.isError()).toBeTrue();
+      });
+
+      it('supports direct invocation with custom error', () => {
+        class InvalidNumberError extends TaggedError('InvalidNumberError') {}
+
+        const negativeValue = -1 as number;
+
+        const result = Result.predicate(
+          negativeValue,
+          (value) => value > 0,
+          () => new InvalidNumberError(),
+        );
+
+        expectTypeOf(result).toEqualTypeOf<
+          Result<number, InvalidNumberError>
+        >();
+
+        expect(result.isError()).toBeTrue();
+        expect(result.unwrapError()).toEqual(new InvalidNumberError());
       });
     });
 

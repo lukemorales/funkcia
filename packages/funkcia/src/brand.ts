@@ -9,6 +9,8 @@ type AnyBrandId = string | symbol;
 type AnyBrand = Brand.Sign<any>;
 
 export declare namespace Brand {
+  type Any = Brand<any, any>;
+
   interface Sign<in out BrandId extends AnyBrandId> {
     readonly [BrandSymbol]: {
       readonly [K in BrandId]: K;
@@ -19,7 +21,7 @@ export declare namespace Brand {
     ? Brand<Pointer, BrandId> extends infer Value & Sign<BrandId>
       ? Value
       : never
-    : never;
+    : Type;
 
   interface Constructor<in out Type extends AnyBrand> {
     (value: Brand.Unbrand<Type>): Type;

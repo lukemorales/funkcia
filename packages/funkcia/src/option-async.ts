@@ -244,8 +244,14 @@ export const OptionAsync: OptionAsyncTrait = {
       }),
     );
   },
-  predicate(criteria: UnaryFn<any, boolean>) {
-    return (input: any) => some(input).filter(criteria);
+  predicate(...args: any[]): any {
+    if (args.length === 1) {
+      const [predicate] = args as [UnaryFn<any, boolean>];
+      return (input: any) => some(input).filter(predicate);
+    }
+
+    const [criteriaOrValue, criteria] = args as [any, UnaryFn<any, boolean>];
+    return some(criteriaOrValue).filter(criteria as never) as never;
   },
   fn(promise) {
     return (...args) =>
@@ -1086,7 +1092,7 @@ interface OptionAsyncTrait {
    * //         ┌─── (shape: Shape) => OptionAsync<Circle>
    * //         ▼
    * const ensureCircle = OptionAsync.predicate(
-   *   (shape: Shape): shape is Circle => shape.kind === 'circle',
+   *   (shape): shape is Circle => shape.kind === 'circle',
    * );
    *
    * //       ┌─── OptionAsync<Circle>
@@ -1103,6 +1109,52 @@ interface OptionAsyncTrait {
   predicate<Criteria extends Predicate.Predicate<any>>(
     criteria: Criteria,
   ): (...args: Parameters<Criteria>) => OptionAsync<Parameters<Criteria>[0]>;
+
+  /**
+   * Asserts that a value passes the provided type guard.
+   *
+   * If the test fails, resolves to `Option.None`.
+   *
+   * @example
+   * ```ts
+   * import { OptionAsync } from 'funkcia';
+   *
+   * declare const input: Shape;
+   *
+   * //       ┌─── OptionAsync<Circle>
+   * //       ▼
+   * const option = OptionAsync.predicate(
+   *   input,
+   *   (shape): shape is Circle => shape.kind === 'circle',
+   * );
+   * ```
+   */
+  predicate<Input, Output extends Input>(
+    value: Input,
+    criteria: Predicate.Guard<Input, Output>,
+  ): OptionAsync<Output>;
+
+  /**
+   * Asserts that a value passes the provided predicate.
+   *
+   * If the test fails, resolves to `Option.None`.
+   *
+   * @example
+   * ```ts
+   * import { OptionAsync } from 'funkcia';
+   *
+   * //       ┌─── OptionAsync<number>
+   * //       ▼
+   * const option = OptionAsync.predicate(
+   *   10,
+   *   (value) => value > 0,
+   * );
+   * ```
+   */
+  predicate<Input>(
+    value: Input,
+    criteria: Predicate.Predicate<Input>,
+  ): OptionAsync<Input>;
 
   /**
    * Declares a promise that must return an `Option`, returning a new function that returns an `OptionAsync` and never rejects.

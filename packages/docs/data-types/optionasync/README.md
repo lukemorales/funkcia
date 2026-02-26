@@ -241,6 +241,11 @@ const ensurePositive = OptionAsync.predicate(
 //       ┌─── OptionAsync<number>
 //       ▼
 const option = ensurePositive(input);
+
+// Direct style
+//       ┌─── OptionAsync<number>
+//       ▼
+const directOption = OptionAsync.predicate(10, (value) => value > 0);
 ```
 
 ### Combinators

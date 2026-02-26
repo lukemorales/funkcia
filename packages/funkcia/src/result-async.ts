@@ -238,8 +238,11 @@ function resultAsync<Value, Error>(
   return new AsyncResult(task) as never;
 }
 
-const ok: ResultAsyncTrait['ok'] = (value) =>
-  resultAsync(() => Promise.resolve(Result.ok(value)));
+function ok(): ResultAsync<void, never>;
+function ok<Value>(value: Value): ResultAsync<Value, never>;
+function ok(value?: unknown): ResultAsync<any, never> {
+  return resultAsync(() => Promise.resolve(Result.ok(value)));
+}
 
 const error: ResultAsyncTrait['error'] = (err) =>
   resultAsync(() => Promise.resolve(Result.error(err))) as never;
@@ -301,8 +304,21 @@ export const ResultAsync: ResultAsyncTrait = {
     return ok(Object.create(null)) as never;
   },
   try: tryCatch,
-  predicate(criteria: UnaryFn<any, boolean>) {
-    return (input: any) => ok(input).filter(criteria) as never;
+  predicate(
+    criteriaOrValue: any,
+    criteriaOrOnUnfulfilled?: UnaryFn<any, any>,
+    onUnfulfilled?: UnaryFn<any, any>,
+  ): any {
+    if (typeof criteriaOrValue === 'function') {
+      const criteria = criteriaOrValue;
+      return (input: any) =>
+        ok(input).filter(criteria, criteriaOrOnUnfulfilled as never) as never;
+    }
+
+    return ok(criteriaOrValue).filter(
+      criteriaOrOnUnfulfilled as never,
+      onUnfulfilled as never,
+    ) as never;
   },
   fn(promise: (...args: any[]) => Promise<any> | AsyncGenerator<any, any>) {
     return (...args: any[]) =>
@@ -1057,13 +1073,19 @@ interface ResultAsyncTrait {
    * ```ts
    * import { ResultAsync } from 'funkcia';
    *
-   * //      ┌─── ResultAsync<number, never>
+   * //      ┌─── ResultAsync<void, never>
    * //      ▼
+   * const empty = ResultAsync.ok();
+   *
+   * //       ┌─── ResultAsync<number, never>
+   * //       ▼
    * const result = ResultAsync.ok(10);
-   * // ResultAsync<number, never>
    * ```
    */
-  ok: <Value>(value: Value) => ResultAsync<Value, never>;
+  ok: {
+    (): ResultAsync<void, never>;
+    <Value>(value: Value): ResultAsync<Value, never>;
+  };
 
   /**
    * @alias
@@ -1075,13 +1097,19 @@ interface ResultAsyncTrait {
    * ```ts
    * import { ResultAsync } from 'funkcia';
    *
-   * //      ┌─── ResultAsync<number, never>
+   * //      ┌─── ResultAsync<void, never>
    * //      ▼
+   * const empty = ResultAsync.of();
+   *
+   * //       ┌─── ResultAsync<number, never>
+   * //       ▼
    * const result = ResultAsync.of(10);
-   * // ResultAsync<number, never>
    * ```
    */
-  of: <Value>(value: Value) => ResultAsync<Value, never>;
+  of: {
+    (): ResultAsync<void, never>;
+    <Value>(value: Value): ResultAsync<Value, never>;
+  };
 
   /**
    * Constructs a `ResultAsync` that resolves to a `Result.Error` with the provided value.
@@ -1408,7 +1436,7 @@ interface ResultAsyncTrait {
    * //         ┌─── (shape: Shape) => ResultAsync<Circle, FailedPredicateError<Square>>
    * //         ▼
    * const ensureCircle = ResultAsync.predicate(
-   *   (shape: Shape): shape is Circle => shape.kind === 'circle',
+   *   (shape): shape is Circle => shape.kind === 'circle',
    * );
    *
    * //       ┌─── ResultAsync<Circle, FailedPredicateError<Square>>
@@ -1530,6 +1558,102 @@ interface ResultAsyncTrait {
   ) => Criteria extends Predicate.Predicate<infer Input>
     ? ResultAsync<Input, Error>
     : never;
+
+  /**
+   * Asserts that a value passes the provided type guard.
+   *
+   * If the test fails, resolves to `Result.Error` with `FailedPredicateError`.
+   *
+   * @example
+   * ```ts
+   * import { ResultAsync } from 'funkcia';
+   *
+   * declare const input: Shape;
+   *
+   * //       ┌─── ResultAsync<Circle, FailedPredicateError<Square>>
+   * //       ▼
+   * const result = ResultAsync.predicate(
+   *   input,
+   *   (shape): shape is Circle => shape.kind === 'circle',
+   * );
+   * ```
+   */
+  predicate<Input, Output extends Input>(
+    value: Input,
+    criteria: Predicate.Guard<Input, Output>,
+  ): ResultAsync<
+    Output,
+    FailedPredicateError<Predicate.Unguarded<Input, Output>>
+  >;
+
+  /**
+   * Asserts that a value passes the provided predicate.
+   *
+   * If the test fails, resolves to `Result.Error` with `FailedPredicateError`.
+   *
+   * @example
+   * ```ts
+   * import { ResultAsync } from 'funkcia';
+   *
+   * //       ┌─── ResultAsync<number, FailedPredicateError<number>>
+   * //       ▼
+   * const result = ResultAsync.predicate(10, (value) => value > 0);
+   * ```
+   */
+  predicate<Input>(
+    value: Input,
+    criteria: Predicate.Predicate<Input>,
+  ): ResultAsync<Input, FailedPredicateError<Input>>;
+
+  /**
+   * Asserts that a value passes the provided type guard.
+   *
+   * If the test fails, resolves to `Result.Error` with the value from `onUnfulfilled`.
+   *
+   * @example
+   * ```ts
+   * import { ResultAsync } from 'funkcia';
+   *
+   * declare const input: Shape;
+   *
+   * //       ┌─── ResultAsync<Circle, InvalidShapeError>
+   * //       ▼
+   * const result = ResultAsync.predicate(
+   *   input,
+   *   (shape): shape is Circle => shape.kind === 'circle',
+   *   (shape) => new InvalidShapeError(shape.kind),
+   * );
+   * ```
+   */
+  predicate<Input, Output extends Input, Error extends {}>(
+    value: Input,
+    criteria: Predicate.Guard<Input, Output>,
+    onUnfulfilled: (input: Predicate.Unguarded<Input, Output>) => Error,
+  ): ResultAsync<Output, Error>;
+
+  /**
+   * Asserts that a value passes the provided predicate.
+   *
+   * If the test fails, resolves to `Result.Error` with the value from `onUnfulfilled`.
+   *
+   * @example
+   * ```ts
+   * import { ResultAsync } from 'funkcia';
+   *
+   * //       ┌─── ResultAsync<number, InvalidNumberError>
+   * //       ▼
+   * const result = ResultAsync.predicate(
+   *   10,
+   *   (value) => value > 0,
+   *   (value) => new InvalidNumberError(value),
+   * );
+   * ```
+   */
+  predicate<Input, Error extends {}>(
+    value: Input,
+    criteria: Predicate.Predicate<Input>,
+    onUnfulfilled: (input: Input) => Error,
+  ): ResultAsync<Input, Error>;
 
   /**
    * Declares a promise that must return a `Result`, returning a new function that returns a `ResultAsync` and never rejects.

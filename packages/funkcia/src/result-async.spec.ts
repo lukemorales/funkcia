@@ -14,6 +14,16 @@ import { ResultAsync } from './result-async';
 describe('ResultAsync', () => {
   describe('constructors', () => {
     describe('ok', () => {
+      it('creates a AsyncResult with an `Ok` and void when called without arguments', async () => {
+        const task = ResultAsync.ok();
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<void, never>>();
+
+        const result = await task;
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.equals(Result.ok())).toBeTrue();
+      });
+
       it('creates a AsyncResult with an `Ok` and the provided value', async () => {
         const task = ResultAsync.ok('hello world');
         expectTypeOf(task).toEqualTypeOf<ResultAsync<string, never>>();
@@ -26,6 +36,16 @@ describe('ResultAsync', () => {
     });
 
     describe('of', () => {
+      it('creates a AsyncResult with an `Ok` and void when called without arguments', async () => {
+        const task = ResultAsync.of();
+        expectTypeOf(task).toEqualTypeOf<ResultAsync<void, never>>();
+
+        const result = await task;
+
+        expect(result.isOk()).toBeTrue();
+        expect(result.equals(Result.ok())).toBeTrue();
+      });
+
       it('creates a AsyncResult with an `Ok` and the provided value', async () => {
         const task = ResultAsync.of('hello world');
         expectTypeOf(task).toEqualTypeOf<ResultAsync<string, never>>();
@@ -273,6 +293,70 @@ describe('ResultAsync', () => {
         const result = await task;
         expect(result.isOk()).toBeTrue();
         expect(result.unwrap()).toBe(10);
+      });
+
+      it('supports direct invocation for guards', async () => {
+        const task = ResultAsync.predicate(
+          { kind: 'circle' } as Shape,
+          (shape): shape is Circle => shape.kind === 'circle',
+        );
+
+        expectTypeOf(task).toEqualTypeOf<
+          ResultAsync<Circle, FailedPredicateError<Square>>
+        >();
+
+        const result = await task;
+        expect(result.isOk()).toBeTrue();
+        expect(result.unwrap()).toEqual({ kind: 'circle' });
+      });
+
+      it('supports direct invocation for predicates', async () => {
+        const positiveValue = 10 as number;
+        const negativeValue = -1 as number;
+
+        const positive = ResultAsync.predicate(
+          positiveValue,
+          (value) => value > 0,
+        );
+        const negative = ResultAsync.predicate(
+          negativeValue,
+          (value) => value > 0,
+        );
+
+        const assertPositive: ResultAsync<
+          number,
+          FailedPredicateError<number>
+        > = positive;
+        const assertNegative: ResultAsync<
+          number,
+          FailedPredicateError<number>
+        > = negative;
+        void assertPositive;
+        void assertNegative;
+
+        await expect(positive.unwrap()).resolves.toBe(10);
+        await expect(negative.unwrapError()).resolves.toEqual(
+          new FailedPredicateError(-1),
+        );
+      });
+
+      it('supports direct invocation with custom error', async () => {
+        class InvalidNumberError extends TaggedError('InvalidNumberError') {}
+
+        const negativeValue = -1 as number;
+
+        const task = ResultAsync.predicate(
+          negativeValue,
+          (value) => value > 0,
+          () => new InvalidNumberError(),
+        );
+
+        const assertTask: ResultAsync<number, InvalidNumberError> = task;
+        void assertTask;
+
+        await expect(task.unwrapError()).resolves.toEqual(
+          new InvalidNumberError(),
+        );
       });
     });
 

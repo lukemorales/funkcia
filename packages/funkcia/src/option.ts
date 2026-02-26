@@ -312,8 +312,14 @@ export const Option: OptionTrait = {
 
     return none() as never;
   },
-  predicate(criteria: AnyUnaryFn) {
-    return (value: any) => some(value).filter(criteria);
+  predicate(...args: any[]): any {
+    if (args.length === 1) {
+      const [predicate] = args as [AnyUnaryFn];
+      return (value: any) => some(value).filter(predicate);
+    }
+
+    const [value, criteria] = args as [any, AnyUnaryFn];
+    return some(value).filter(criteria as never) as never;
   },
   fn(cb: Function) {
     return (...args: any[]) => {
@@ -598,6 +604,49 @@ interface OptionTrait {
   predicate<Criteria extends Predicate.Predicate<any>>(
     criteria: Criteria,
   ): (...args: Parameters<Criteria>) => Option<Parameters<Criteria>[0]>;
+
+  /**
+   * Asserts that a value passes the provided type guard.
+   *
+   * If the test fails, returns `Option.None`.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * declare const input: Shape;
+   *
+   * //       ┌─── Option<Circle>
+   * //       ▼
+   * const option = Option.predicate(
+   *   input,
+   *   (shape): shape is Circle => shape.kind === 'circle',
+   * );
+   * ```
+   */
+  predicate<Input, Output extends Input>(
+    value: Input,
+    criteria: Predicate.Guard<Input, Output>,
+  ): Option<Output>;
+
+  /**
+   * Asserts that a value passes the provided predicate.
+   *
+   * If the test fails, returns `Option.None`.
+   *
+   * @example
+   * ```ts
+   * import { Option } from 'funkcia';
+   *
+   * //       ┌─── Option<number>
+   * //       ▼
+   * const option = Option.predicate(10, (value) => value > 0);
+   * ```
+   */
+  predicate<Input>(
+    value: Input,
+    criteria: Predicate.Predicate<Input>,
+  ): Option<Input>;
 
   /**
    * Declare a function that always returns an `Option`.
